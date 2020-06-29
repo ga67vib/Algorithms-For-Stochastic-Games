@@ -14,4 +14,6 @@ For QP stuff [TODO: Sasha write tutorial]
 - Fix things in Readme
 - Try it out
 - If time permits: Make it work even without license; maybe by putting a dummy license file called 'your-license-here' and telling gurobi/AMPL to look there
-
+- scripts and case studies
+- README should tell people where they find our stuff
+- polish code
