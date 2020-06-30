@@ -17,6 +17,8 @@ Follow the guidelines on https://www.gurobi.com/documentation/quickstart.html to
 Now you should be able to execute following command to check whether everything works:
 [SOME EXAMPLE TEST-LINE like ./bin/prism ../prism-examples/smgs/simple/dice.prism ../prism-examples/smgs/simple/dice.props -const N=1 -qp]
 
+[TODO: LD_LIBRARY_PATH]
+
 CPLEX:
 [ACTUALLY I'M NOT SURE HOW TO SHIP CPLEX, SINCE THEY DON'T REALLY REQUIRE A LICENSE]
 
