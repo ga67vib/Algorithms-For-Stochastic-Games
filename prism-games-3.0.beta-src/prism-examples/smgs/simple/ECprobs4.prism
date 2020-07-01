@@ -1,0 +1,31 @@
+smg
+
+global state: [0..6];
+
+player P1 player1, [a11], [a12] endplayer
+player P2 player2, [a21], [a22] endplayer
+
+module player1	
+	[a11] state=2 -> (state'=4);
+	[a12] state=2 -> (state'=0);
+	[a11] state=1 -> (state'=0);
+	[a12] state=1 -> (state'=5);
+	[] state=4 -> (state'=4);
+	[] state=6 -> (state'=6);
+
+endmodule
+
+module player2	
+	[a21] state=0 -> (state'=2);
+	[a22] state=0 -> 1/3 : (state'=2) + 1/3 : (state'=1) + 1/3 : (state'=3);
+	[a21] state=3 -> 1/2 : (state'=6) + 1/2 : (state'=5);
+	[a21] state=3 -> (state'=2);
+	[] state=5 -> (state'=5);
+
+endmodule
+
+//Labels
+formula done = state=4 | state=5 | state=6;
+label "done" = done;
+label "p1win" = done & (state=4 | state=6);
+label "p2win" = done & state=5;

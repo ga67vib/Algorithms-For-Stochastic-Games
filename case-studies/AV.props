@@ -1,0 +1,7 @@
+<<1>> Pmax=? [ F "caught" ]
+
+<<1>> Pmax=? [ F "exit" ]
+
+<<1>> Pmax=? [ F "found_item" ]
+
+<<1>> (P<0 [ F "caught" ] & P>0 [ F "exit" ] & P>0 [ F "found_item" ])

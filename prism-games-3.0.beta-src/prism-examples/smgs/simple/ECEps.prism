@@ -1,0 +1,28 @@
+smg
+
+global state: [0..3];
+
+const int N;
+
+player P1 player1, [a11], [a12] endplayer
+player P2 player2, [a21], [a22] endplayer
+
+module player1	
+	[a11] state=1 -> (1024 - N)/1024 : (state'=0) + N/1024 : (state'=3);
+	[a12] state=1 -> 2/5 : (state'=2) + 3/5 : (state'=3);
+	[] state=2 -> (state'=2);	
+
+endmodule
+
+module player2	
+	[a21] state=0 -> (1024 - N)/1024 : (state'=1) + N/1024 : (state'=3);
+	[a22] state=0 -> 1/2 : (state'=2) + 1/2 : (state'=3);
+	[] state=3 -> (state'=3);	
+
+endmodule
+
+//Labels
+formula done = state=3 | state=2;
+label "done" = done;
+label "p1win" = done & state=2;
+label "p2win" = done & state=3;

@@ -1,0 +1,4 @@
+<<sched,1>> Pmax=? [F all_prefer_1]
+<<sched,1,2>> Pmax=? [F all_prefer_1]
+<<sched,1,2,3>> Pmax=? [F all_prefer_1]
+

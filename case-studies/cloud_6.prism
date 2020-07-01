@@ -1,0 +1,219 @@
+
+
+smg
+
+//Each of the servers and VMs running on it have different probabilities of failure
+const double A_server_Fail=0.001;
+const double B_server_Fail=0.01;
+const double Deploy_Fail_vm1=0.001;
+const double Deploy_Fail_vm2=0.001;
+const double Deploy_Fail_vm3=0.01;
+const double Deploy_Fail_vm4=0.01;
+const double Deploy_Fail_vm5=0.01;
+const double Deploy_Fail_vm6=0.01;
+const double pVM1_Fail=0.001;
+const double pVM2_Fail=0.001;
+const double pVM3_Fail=0.01;
+const double pVM4_Fail=0.01;
+const double pVM5_Fail=0.01;
+const double pVM6_Fail=0.01;
+
+player env
+
+[aSERVER_FAIL],[down_sa],
+[bSERVER_FAIL],[down_sb]
+
+endplayer
+
+player controller
+
+[start],
+[operate_vm1],[operate_vm2],[down_vm1],[down_vm2],
+[deploy_on_vm1],[deploy_on_vm2], [down_web1_web2_web3_web4], 
+
+[operate_vm3],[down_vm3],[operate_vm4], [down_vm4],[operate_vm5],[down_vm5],[operate_vm6],[down_vm6],
+[deploy_on_vm3],[deploy_on_vm4], [deploy_on_vm5], [deploy_on_vm6],
+[down_web5_web6_web7_web8_web9_web10_web11_web12],[loop_c],
+
+[WEB_FAIL], [SERVICE_FAIL]
+
+endplayer
+
+module player1_start
+  st : [0..1];
+  [start] st = 0 -> (st'=1);
+endmodule
+
+//We use PlayerScheduler to alternate between two players
+
+module PlayerScheduler
+  p : [0..1];
+
+  [aSERVER_FAIL] p=0 & st=1  -> (p'=1); 
+  [down_sa] p=0 & st=1  -> (p'=1);
+
+  [bSERVER_FAIL] p=0 & st=1  -> (p'=1);
+  [down_sb] p=0 & st=1 -> (p'=1);
+
+  [operate_vm1] p=1 -> (p'=0);
+  [down_vm1] p=1 -> (p'=0); 
+  
+  [operate_vm2] p=1 -> (p'=0);
+  [down_vm2] p=1 -> (p'=0); 
+  
+  [operate_vm3] p=1 -> (p'=0);
+  [down_vm3] p=1 -> (p'=0); 
+
+  [operate_vm4] p=1 -> (p'=0);
+  [down_vm4] p=1 -> (p'=0); 
+
+  [operate_vm5] p=1 -> (p'=0);
+  [down_vm5] p=1 -> (p'=0); 
+
+  [operate_vm6] p=1 -> (p'=0);
+  [down_vm6] p=1 -> (p'=0); 
+  
+  [down_web1_web2_web3_web4] p=1 -> (p'=0);
+  [deploy_on_vm1] p=1 -> (p'=0);
+  [deploy_on_vm2] p=1 -> (p'=0);
+
+  [down_web5_web6_web7_web8_web9_web10_web11_web12] p=1 -> (p'=0);
+  [deploy_on_vm3] p=1 -> (p'=0);
+  [deploy_on_vm4] p=1 -> (p'=0);
+  [deploy_on_vm5] p=1 -> (p'=0);
+  [deploy_on_vm6] p=1 -> (p'=0);
+  [WEB_FAIL] p=1 -> (p'=0);
+  [SERVICE_FAIL] p=1 -> (p'=0);
+  [loop_c] p=1 -> true; 
+endmodule
+//Each server has to two possible states, server is working sa=0, and server 
+//entered its failure state sa=1
+//------------------------------------------------------------------------
+module ServerA
+sa : [0..1] init 0;
+  [aSERVER_FAIL] (sa=0)&(p=0) -> A_server_Fail:(sa'=1)+(1-A_server_Fail):(sa'=0);
+  [down_sa] (sa=1)&(p=0) -> true;
+endmodule
+//------------------------------------------------------------------------
+module ServerB
+   sb : [0..1] init 0;
+  [bSERVER_FAIL] (sb=0)&(p=0) -> B_server_Fail:(sb'=1)+(1-B_server_Fail):(sb'=0);
+  [down_sb] (sb=1)&(p=0) -> true;
+endmodule
+//------------------------------------------------------------------------
+module VM1
+vm1 : [0..2] init 2;//1 = down, 2 = up.
+[operate_vm1] (vm1=0 & sa=0)&(p=1) -> pVM1_Fail:(vm1'=1)+(1-pVM1_Fail):(vm1'=2);
+   [down_vm1] (vm1=1)&(p=1) -> true;
+     //[up_vm1] (vm1=2 & sa=0) -> true; 
+endmodule 
+//------------------------------------------------------------------------
+module VM2
+vm2 : [0..2] init 2;//1 = down, 2 = up.
+[operate_vm2] (vm2=0 & sa=0)&(p=1) -> pVM2_Fail:(vm2'=1)+(1-pVM2_Fail):(vm2'=2);
+   [down_vm2] (vm2=1)&(p=1) -> true;
+     //[up_vm2] (vm2=2 & sa=0) -> true; 
+endmodule 
+//------------------------------------------------------------------------
+module VM3
+vm3 : [0..2] init 2;//1 = down, 2 = up.
+[operate_vm3] (vm3=0 & sb=0)&(p=1) -> pVM3_Fail:(vm3'=1)+(1-pVM3_Fail):(vm3'=2);
+   [down_vm3] (vm3=1)&(p=1) -> true;
+     //[up_vm3] (vm3=2 & sb=0) -> true; 
+endmodule 
+//------------------------------------------------------------------------
+module VM4
+vm4 : [0..2] init 2;//1 = down, 2 = up.
+[operate_vm4] (vm4=0 & sb=0)&(p=1) -> pVM4_Fail:(vm4'=1)+(1-pVM4_Fail):(vm4'=2);
+   [down_vm4] (vm4=1)&(p=1) -> true;
+     //[up_vm4] (vm4=2 & sb=0) -> true; 
+endmodule 
+//------------------------------------------------------------------------
+module VM5
+vm5 : [0..2] init 2;//1 = down, 2 = up.
+[operate_vm5] (vm5=0 & sb=0)&(p=1) -> pVM5_Fail:(vm5'=1)+(1-pVM5_Fail):(vm5'=2);
+   [down_vm5] (vm5=1)&(p=1) -> true;
+     //[up_vm4] (vm4=2 & sb=0) -> true; 
+endmodule 
+module VM6
+vm6 : [0..2] init 2;//1 = down, 2 = up.
+[operate_vm6] (vm6=0 & sb=0)&(p=1) -> pVM6_Fail:(vm6'=1)+(1-pVM6_Fail):(vm6'=2);
+   [down_vm6] (vm6=1)&(p=1) -> true;
+     //[up_vm4] (vm4=2 & sb=0) -> true; 
+endmodule 
+//------------------------------------------------------------------------
+//We allow two webapps on each VM
+module FunctionsOnServerA
+//we allow two webapps on each VM
+web1 : [0..2] init 0;//0 - not deployed, 1 - deployed, 2 - error
+web2 : [0..2] init 0;
+web3 : [0..2] init 0;
+web4 : [0..2] init 0;
+
+[down_vm1] (vm1=1)&(p=1) -> (web1'=2)&(web2'=2);
+[down_vm2] (vm2=1)&(p=1) -> (web3'=2)&(web4'=2);
+[down_sa] (sa=1)&(p=0) -> (web1'=2)&(web2'=2)&(web3'=2)&(web4'=2);
+[down_web1_web2_web3_web4] (web1=2 & web2=2 & web3=2 & web4=2)&(p=1) -> true;
+
+[deploy_on_vm1] (web1=0 & vm1=2)&(p=1) -> Deploy_Fail_vm1: (web1'=0) + (1-Deploy_Fail_vm1):(web1'=1);
+[deploy_on_vm1] (web2=0 & vm1=2)&(p=1) -> Deploy_Fail_vm1: (web2'=0) + (1-Deploy_Fail_vm1):(web2'=1);
+[deploy_on_vm2] (web3=0 & vm2=2)&(p=1) -> Deploy_Fail_vm2: (web3'=0) + (1-Deploy_Fail_vm2):(web3'=1);
+[deploy_on_vm2] (web4=0 & vm2=2)&(p=1) -> Deploy_Fail_vm2: (web4'=0) + (1-Deploy_Fail_vm2):(web4'=1);
+endmodule
+//------------------------------------------------------------------------
+//Second server is a identical copy of ServerA with additional VMs
+module FunctionsOnServerB
+web5 : [0..2] init 0;//0 - not deployed, 1 - deployed, 2 - error
+web6 : [0..2] init 0;
+web7 : [0..2] init 0;
+web8 : [0..2] init 0;
+web9 : [0..2] init 0;
+web10 : [0..2] init 0;
+web11 : [0..2] init 0;
+web12 : [0..2] init 0;
+
+[down_vm3] (vm3=1)&(p=1) -> (web5'=2)&(web6'=2);
+[down_vm4] (vm4=1)&(p=1) -> (web7'=2)&(web8'=2);
+[down_vm5] (vm5=1)&(p=1) -> (web9'=2)&(web10'=2);
+[down_vm6] (vm6=1)&(p=1) -> (web11'=2)&(web12'=2);
+[down_sb] (sb=1)&(p=0) -> (web5'=2) & (web6'=2) & (web7'=2) & (web8'=2)&(web9'=2)&(web10'=2)&(web11'=2)&(web12'=2) ;
+[down_web5_web6_web7_web8_web9_web10_web11_web12] (web5=2 & web6=2 & web7=2 & web8=2 & web9=2 & web10=2 & web11=2 & web12=2)&(p=1) -> true;
+
+//Deploy actions are the main actions of the controller player, they define on which virtual machine
+//web app will run
+[deploy_on_vm3] (web5=0 & vm3=2)&(p=1) -> Deploy_Fail_vm3: (web5'=0) + (1-Deploy_Fail_vm3):(web5'=1);
+[deploy_on_vm3] (web6=0 & vm3=2)&(p=1) -> Deploy_Fail_vm3: (web6'=0) + (1-Deploy_Fail_vm3):(web6'=1);
+[deploy_on_vm4] (web7=0 & vm4=2)&(p=1) -> Deploy_Fail_vm4: (web7'=0) + (1-Deploy_Fail_vm4):(web7'=1);
+[deploy_on_vm4] (web8=0 & vm4=2)&(p=1) -> Deploy_Fail_vm4: (web8'=0) + (1-Deploy_Fail_vm4):(web8'=1);
+[deploy_on_vm5] (web9=0 & vm5=2)&(p=1) -> Deploy_Fail_vm5: (web9'=0) + (1-Deploy_Fail_vm5):(web9'=1);
+[deploy_on_vm5] (web10=0 & vm5=2)&(p=1) -> Deploy_Fail_vm5: (web10'=0) + (1-Deploy_Fail_vm5):(web10'=1);
+[deploy_on_vm6] (web11=0 & vm6=2)&(p=1) -> Deploy_Fail_vm6: (web11'=0) + (1-Deploy_Fail_vm6):(web11'=1);
+[deploy_on_vm6] (web12=0 & vm6=2)&(p=1) -> Deploy_Fail_vm6: (web12'=0) + (1-Deploy_Fail_vm6):(web12'=1);
+endmodule
+//------------------------------------------------------------------------
+module Service
+web1234 : [0..1] init 0;//0 - up, 1 - down
+web56789101112 : [0..1] init 0;
+    s : [0..1] init 0;
+
+[down_web1_web2_web3_web4] (web1234 = 0)&(p=1) -> (web1234'=1);
+[down_web5_web6_web7_web8_web9_web10_web11_web12] (web56789101112 = 0)&(p=1) -> (web56789101112'=1);
+
+[WEB_FAIL] (web1234 = 1) & (web56789101112 = 1)&(p=1) -> (s'=1);
+[SERVICE_FAIL] (s=1)&(p=1) -> true;
+endmodule
+
+label "service_fail" = s=1;
+label "eventually_deployed" = web1=1|web2=1|web3=1|web4=1|web5=1|web6=1|web7=1|web8=1|web9=1|web10=1|web11=1|web12=1;
+
+//We assign equal (unit) penalties to a subset of controller actions
+rewards "penalties"
+
+[deploy_on_vm5] true : 1;
+[deploy_on_vm6] true : 1;
+
+endrewards
+
+label "deployed" = web9 = 1 | web10=1 |web11 = 1;
+
+

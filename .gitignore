@@ -21,3 +21,16 @@
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+
+*.so
+prism-games-3.0.beta-src/prism/.idea/libraries/Demo.xml
+prism-games-3.0.beta-src/prism/.idea/libraries/Demo1.xml
+prism-games-3.0.beta-src/prism/.idea/libraries/Demo2.xml
+prism-games-3.0.beta-src/prism/.idea/libraries/Demo3.xml
+prism-games-3.0.beta-src/prism/.idea/libraries/demo.xml
+prism-games-3.0.beta-src/prism/.idea/libraries/demo1.xml
+prism-games-3.0.beta-src/prism/.idea/libraries/demo2.xml
+prism-games-3.0.beta-src/prism/.idea/libraries/demo3.xml
+prism-games-3.0.beta-src/prism/out/
+prism-games-3.0.beta-src/prism/model.lp
+prism-games-3.0.beta-src/prism/.idea/codeStyles/codeStyleConfig.xml

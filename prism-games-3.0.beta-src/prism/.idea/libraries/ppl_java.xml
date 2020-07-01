@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="ppl_java">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/ext/ppl_java/ppl_java.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

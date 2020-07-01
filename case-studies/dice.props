@@ -1,0 +1,10 @@
+<<P1>> Pmax=? [ F "p1win" ]
+
+//<<P2>> Pmax=? [ F "p2win" ]
+
+<<P1>> Pmax=? [ F "draw" ]
+
+//<<P2>> Pmax=? [ F "draw" ]
+
+<<P1>> (P>0 [ F "p1win" ] & P>0 [ F "draw"])
+

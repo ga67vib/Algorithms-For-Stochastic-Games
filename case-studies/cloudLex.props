@@ -1,0 +1,4 @@
+//Probability of eventually deploying a web application on a subset of the virtual machines
+<<controller>> P>0.95 [ F "deployed"] & P>0.5 [ F "deployed1"]
+
+

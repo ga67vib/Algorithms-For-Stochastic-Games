@@ -1,0 +1,108 @@
+// Avoid-The-Observer example
+
+// model type is stochastic multiplayer game
+smg 
+
+// set up players
+player p1
+	intruder // module introder is controlled by player p1
+endplayer
+
+player p2
+	observer
+endplayer
+
+// set up globals
+
+global turn : [1..2] init 1; // whose player's turn?
+global caught : bool init false; // intruder has been caught
+global found_item : bool init false;
+
+// set up constants
+
+// dimension of grid
+const int X_MAX = 15;
+const int Y_MAX = 15;
+
+const int RANGE_SQRD = 8;
+
+formula same_pos = x=a & y=b;
+formula intruder_at_exit = x=X_MAX-1 & y=Y_MAX-1;
+
+formula are_close = pow(x-a, 2) + pow(y-b, 2) <= RANGE_SQRD ;
+
+
+module intruder
+
+	// position on grid
+	x : [0..X_MAX-1] init 0;
+	y : [0..Y_MAX-1] init 0;
+
+	// local state
+	s1: [0..1] init 0; // 0: check if caught, 1: move
+	
+	// check if caught
+	[] turn=1 & s1=0 & same_pos & !intruder_at_exit -> (caught'=true); // caught
+        [] turn=1 & s1=0 & same_pos & intruder_at_exit -> (s1'=1); // not caught
+	[] turn=1 & s1=0 & !same_pos -> (s1'=1); // also not caught
+
+	// movements - up to four directions possible
+
+	// right
+	[] turn=1 & s1=1 & x<X_MAX-1 &!caught-> (x'=x+1) & (turn'=2) & (s1'=0);
+	// left
+	[] turn=1 & s1=1 & x>0 &!caught-> (x'=x-1) & (turn'=2) & (s1'=0);
+	//up
+	[] turn=1 & s1=1 & y<Y_MAX &!caught-> (y'=y+1) & (turn'=2) & (s1'=0);
+	// down
+	[] turn=1 & s1=1 & y>0 &!caught-> (y'=y-1) & (turn'=2) & (s1'=0);
+        // nothing
+        [] turn=1 & s1=1 &!caught & !intruder_at_exit->
+			0.9 : (turn'=2) & (s1'=0)
+		      + 0.1 : (turn'=2) & (s1'=0) & (found_item'=true);
+
+	[] turn=1 & s1=1 &!caught -> (turn'=2) & (s1'=0);
+
+
+endmodule
+
+module observer
+	
+	// position on grid
+	a : [0..X_MAX-1] init X_MAX-1;
+	b : [0..Y_MAX-1] init Y_MAX-1;
+
+	// local state
+        s2 : [0..1] init 0; // 0: check if detected, 1: move
+        detected : bool init false;
+
+	// check if detected
+	[] turn=2 & s2=0 & are_close -> (detected'=true) & (s2'=1);
+        [] turn=2 & s2=0 & !are_close -> (detected'=false) & (s2'=1);
+
+	// if detected: observer has control over moves
+
+	// right
+	[] turn=2 & s2=1 & detected & a<X_MAX-1-> (a'=a+1) & (turn'=1) & (s2'=0);
+	// left
+	[] turn=2 & s2=1 & detected & a>0 -> (a'=a-1) & (turn'=1) & (s2'=0);
+	//up
+	[] turn=2 & s2=1 & detected & b<Y_MAX-1 -> (b'=b+1) & (turn'=1) & (s2'=0);
+	// down
+	[] turn=2 & s2=1 & detected & b>0 -> (b'=b-1) & (turn'=1) & (s2'=0);
+        // nothing
+        [] turn=2 & s2=1 & detected -> (turn'=1) & (s2'=0);
+
+	// move randomly if not detected
+	[] turn=2 & s2=1 & !detected ->
+		  0.25: (a'=min(a+1,X_MAX-1)) & (turn'=1) & (s2'=0)// right
+		+ 0.25: (a'=max(a-1,0)) & (turn'=1) & (s2'=0) // left
+		+ 0.25: (b'=min(b+1,X_MAX-1)) & (turn'=1) & (s2'=0) // up
+		+ 0.25: (b'=max(b-1,0)) & (turn'=1) & (s2'=0); // down
+
+endmodule
+
+label "exit" = intruder_at_exit;
+label "caught" = caught=true;
+label "found_item" = found_item=true;
+label "detected" = detected;

@@ -1,0 +1,25 @@
+<component name="libraryTable">
+  <library name="lib1">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/commons-math3-3.3.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jcommon.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/colt.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/pepa.zip!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jfreechart.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/gurobi.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/epsgraphics.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jas.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/nailgun-server.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/log4j.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jhoafparser.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/cplex.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/Jama-1.0.3.jar!/" />
+      <root url="jar://$PROJECT_DIR$/ext/z3/com.microsoft.z3.jar!/" />
+      <root url="jar://$PROJECT_DIR$/ext/lp_solve_5.5_java/lib/lpsolve55j.jar!/" />
+      <root url="jar://$PROJECT_DIR$/ext/ppl_java/ppl_java.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/ampl-2.0.3.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
