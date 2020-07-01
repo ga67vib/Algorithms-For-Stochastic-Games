@@ -15,11 +15,10 @@ public class SMGPolyProgSolverAMPL extends SMGPolyProgSolver{
 
     //AMPL-RELATED STUFF:
     final static String STATE_PREFIX = "s";
-    //final static String AMPL_PATH = "/home/sasha/Documents/Unikram/AMPL/amplide.linux64";
-    final static String AMPL_PATH = "../../../../AMPL/amplide.linux64";
+    final static String AMPL_PATH = "";
+    final static String AMPL_PATH_FROM_SCRIPT= "../prism-games-3.0.beta-src/prism";
     final static String MODEL_NAME = "model.mod";
-    //final static String MODEL_DIR = "/home/sasha/Documents/Unikram/gamesFinish/games-brtdp/code/prism-games-3.0.beta-src/prism/";
-    final static String MODEL_DIR = "../../code/prism-games-3.0.beta-src/prism/";
+    final static String MODEL_DIR = "";
     final static String MODEL_PATH = MODEL_DIR+MODEL_NAME;
     String solver;
 
@@ -29,8 +28,15 @@ public class SMGPolyProgSolverAMPL extends SMGPolyProgSolver{
     public SMGPolyProgSolverAMPL(STPGModelChecker modelChecker, STPG stpg, BitSet no, BitSet yes, boolean min1,
                                    boolean min2, double[] init, BitSet known, PrismSettings settings, int verbosity) {
         super(modelChecker, stpg, no, yes, min1, min2, init, known, settings, verbosity);
-        env = new Environment(AMPL_PATH);
-        ampl = new AMPL(env);
+        try {
+            env = new Environment(AMPL_PATH);
+            ampl = new AMPL(env);
+        }
+        catch (RuntimeException e) {
+            System.out.println("USING FOLLOWING PATH TO AMPL EXECUTABLE: "+AMPL_PATH_FROM_SCRIPT);
+            env = new Environment(AMPL_PATH_FROM_SCRIPT);
+            ampl = new AMPL(env);
+        }
     }
 
     public ModelCheckerResult solve(int variant) throws GRBException, PrismException {
@@ -182,7 +188,7 @@ public class SMGPolyProgSolverAMPL extends SMGPolyProgSolver{
 
                 }
 
-                //else { //No MECs due to Condons Transformation
+                //else {
                 //    variables.add(stateName);
                 //    s = "var "+stateName+" >=0, <=1;";
                 //}
