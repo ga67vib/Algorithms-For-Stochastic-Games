@@ -2,9 +2,12 @@ package explicit;
 
 import common.IntSet;
 import gurobi.*;
+/** =============CPLEX-RELATED=============
 import ilog.concert.IloException;
 import ilog.concert.IloLPMatrix;
 import ilog.cplex.IloCplex;
+**/
+import prism.ModelChecker;
 import prism.PrismException;
 import prism.PrismSettings;
 
@@ -38,7 +41,10 @@ public class SMGPolyProgSolverGurobi extends SMGPolyProgSolver {
                             "is already provided in the prism folder and is called 'model.lp'");
                 }
                 method="CPLEX with model already provided by Gurobi";
-                res = solveQPCplex();
+                /**===============CPLEX-RELATED==========
+                 * res = solveQPCplex();
+                 */
+                res = throwCplexError();
                 break;
             case 3:
                 method="CPLEX with model created during run by Gurobi";
@@ -103,6 +109,15 @@ public class SMGPolyProgSolverGurobi extends SMGPolyProgSolver {
             model.set(GRB.IntParam.LogToConsole, 0);
         }
     }
+
+    private ModelCheckerResult throwCplexError() {
+        System.out.println("WARNING: WE DISABLED CPLEX FOR NOW!! YOU WILL HAVE TO AQUIRE CPLEX " +
+                "AND A LICENSE YOURSELF. FOLLOW THE GUIDELINES PROVIDED AT:\n" +
+                "https://github.com/ga67vib/Algorithms-For-Stochastic-Games/blob/master/README.md#cplex");
+        return null;
+    }
+
+    /**===================CPLEX-RELATED========================
     private void setCplexParams(IloCplex cplex) throws IloException {
         cplex.setParam(IloCplex.Param.OptimalityTarget, IloCplex.OptimalityTarget.FirstOrder);
         cplex.setParam(IloCplex.Param.MIP.Strategy.File, 3);
@@ -177,6 +192,7 @@ public class SMGPolyProgSolverGurobi extends SMGPolyProgSolver {
         res.timeTaken = (solveTimeEnd - solveTimeStart) + (buildTimeEnd - buildTimeStart);
         return res;
     }
+     **/
 
     private ModelCheckerResult computeReachProbsQPGurobiCondonStrict(STPG stpg, BitSet no, BitSet yes, boolean min1, boolean min2, double init[], BitSet known, boolean solveGRB)
             throws PrismException, GRBException {
@@ -556,7 +572,10 @@ public class SMGPolyProgSolverGurobi extends SMGPolyProgSolver {
 
         if (!solveGRB) {
             readWriteTimeStart = System.nanoTime();
+            /** ======================CPLEX-RELATED=================
             return solveQPCplex();
+            **/
+            return throwCplexError();
         }
 
         solveTimeStart = System.nanoTime();
