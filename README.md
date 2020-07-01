@@ -28,19 +28,14 @@ At this point you should be able to run the case-study script for everything exc
 
 
 ### Using quadratic programming
-To be able to use our quadratic programming implementation, you need a Gurobi 9.0.0 or more recent license file. We use Gurobi to construct the quadratic program from the stochastic game as well as to solve it.
-To obtain a license, check out the following website:<br/>
-https://www.gurobi.com/documentation/9.0/quickstart_linux/obtaining_a_grb_license.html#section:ObtainLicense<br/>
-Gurobi provides free academic licenses that expire after 1 year.
-
-Follow the guidelines on https://www.gurobi.com/documentation/quickstart.html to get Gurobi, to obtain a license and to activate it using `grbgetkey`.
-Now you should be able to execute following command from the folder prism-games-3.0.beta-src/prism to check whether everything works:<br/>
+To be able to use our quadratic programming implementation, you need a Gurobi 9.0.0 or more recent license file. We use Gurobi to construct the quadratic program from the stochastic game as well as to solve it. Gurobi provides free academic licenses that expire after one year.
+To obtain a license, install gurobi and activate the license follow the guidelines provided on:<br/>
+https://www.gurobi.com/documentation/quickstart.html<br/>
+After executing `./grbgetkey <YOUR_LICENSE_KEY>` in the bin folder of Gurobi, you should be able to use quadratic programming to solve simple stochastic games with our implementation. To verify this, try out the following command in the prism-games-3.0.beta-src/prism folder:<br/>
 `./bin/prism ../../case_studies/BigMec.prism ../../case_studies/BigMec.props -const N=1 -qp`
 
-[TODO: LD_LIBRARY_PATH, INSTALL GUROBI?]
-
-CPLEX:
-[ACTUALLY I'M NOT SURE HOW TO SHIP CPLEX, SINCE THEY DON'T REALLY REQUIRE A LICENSE]
+**CPLEX:**
+Due to license requirements, we disabled solving simple stochastic games with CPLEX
 
 ### Using higher order programming
 To be able to use higher order programming, you will require an AMPL license. We use AMPL to formulate the stochastic game as a nonlinear program and Minos to compute the optimal solution.
