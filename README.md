@@ -5,20 +5,28 @@ Algorithms as described in GandALF submission "Title".
 
 ## Installation
 
-Standard PRISM tutorial.
-For QP stuff [TODO: Sasha write tutorial]
-
 ### Dependencies
 - Java 8 or more recent
 - Python 3.7 or more recent
-- PRISM-Games (https://prismmodelchecker.org/games/)
-  - PPL (and also a C and C++ compiler) 
+- C and C++ compiler
+- PRISM-Games (https://prismmodelchecker.org/games/installation.php)
+  - PIL
 - Gurobi Optimizer 9.0.0 or more recent (Optional) (https://www.gurobi.com/)
 - AMPL (Optional) (https://ampl.com/)
 
-We assume in this guide that you have Linux distribution. [Probably I will find also some nice stuff for Winows later]
+**We assume that you are using a Linux distribution.** For Windows and Mac OS users the guides we refer to also provide instructions, but you may encounter difficulties putting everything together.
 
-<br/>[Not sure where to place that we expect the people (also for this guide) to have Linux]
+### Setting up PRISM-games
+
+Our implementation is an extension of PRISM-games.
+Thus, we require PPL to be installed.
+Follow the guidelines given at:<br/>
+https://prismmodelchecker.org/games/installation.php<br/>
+Now the following command should execute without errors from the prism-games-3.0.beta-src/prism folder:
+`./bin/prism`
+At this point you should be able to run the case-study script for everything except for the mathematical programming approaches.
+
+
 ### Using quadratic programming
 To be able to use our quadratic programming implementation, you need a Gurobi 9.0.0 or more recent license file. We use Gurobi to construct the quadratic program from the stochastic game as well as to solve it.
 To obtain a license, check out the following website:<br/>
@@ -51,3 +59,7 @@ Note that we expect you to use prism for AMPL from either the prism-games-3.0.be
 - scripts and case studies
 - README should tell people where they find our stuff
 - polish code
+
+## License:
+
+For our modifications of the code, we have give an MIT license. For the code that was originally part of PRISM-games, we refer to their license file in prism-games-3.0.beta-src/COPYING.txt and the "Licensing" section of their README in prism-games-3.0.beta-src/COPYING.txtprism-games-3.0.beta-src/README.md
