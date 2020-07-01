@@ -34,7 +34,7 @@ https://www.gurobi.com/documentation/quickstart.html<br/>
 After executing `./grbgetkey <YOUR_LICENSE_KEY>` in the bin folder of Gurobi, you should be able to use quadratic programming to solve simple stochastic games with our implementation. To verify this, try out the following command in the prism-games-3.0.beta-src/prism folder:<br/>
 `./bin/prism ../../case_studies/BigMec.prism ../../case_studies/BigMec.props -const N=1 -qp`
 
-**CPLEX:**
+####CPLEX
 Due to license requirements, we disabled solving simple stochastic games with CPLEX
 
 ### Using higher order programming
