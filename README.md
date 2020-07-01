@@ -7,6 +7,17 @@ Algorithms as described in GandALF submission "Title".
 
 Standard PRISM tutorial.
 For QP stuff [TODO: Sasha write tutorial]
+
+### Dependencies
+- Java 8 or more recent
+- Python 3.7 or more recent
+- PRISM-Games (https://prismmodelchecker.org/games/)
+[- PPL?]
+- Gurobi Optimizer 9.0.0 or more recent (Optional) (https://www.gurobi.com/)
+- AMPL (Optional) (https://ampl.com/)
+
+We assume in this guide that you have Linux distribution. [Probably I will find also some nice stuff for Winows later]
+
 <br/>[Not sure where to place that we expect the people (also for this guide) to have Linux]
 ### Using quadratic programming
 To be able to use our quadratic programming implementation, you need a Gurobi 9.0.0 or more recent license file. We use Gurobi to construct the quadratic program from the stochastic game as well as to solve it.
