@@ -12,7 +12,7 @@ For QP stuff [TODO: Sasha write tutorial]
 - Java 8 or more recent
 - Python 3.7 or more recent
 - PRISM-Games (https://prismmodelchecker.org/games/)
-[- PPL?]
+  - PPL (and also a C and C++ compiler) 
 - Gurobi Optimizer 9.0.0 or more recent (Optional) (https://www.gurobi.com/)
 - AMPL (Optional) (https://ampl.com/)
 
