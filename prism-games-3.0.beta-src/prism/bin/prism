@@ -3,7 +3,7 @@
 # Startup script for PRISM (Linux/Solaris)
 
 # PRISM home directory
-PRISM_DIR="/home/sasha/Documents/Unikram/BachelorArbeit/HiWi/games-brtdp/code/prism-games-3.0.beta-src/prism"
+PRISM_DIR="/home/manu/Repos/Algorithms-For-Stochastic-Games/prism-games-3.0.beta-src/prism"
 
 # Command to launch Java
 if [ "$PRISM_JAVA" = "" ]; then
