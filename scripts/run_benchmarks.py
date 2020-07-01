@@ -161,7 +161,6 @@ elif sys.argv[1] == "run":
                     print(e)
 
 else:  # sys.argv[0] == "read"
-    # TODO: Make sure that I read only the model checking time from everyone, and that everyone just uses one CPU core.
     # Model, #States, [min/mean/max runtime for each solver]
     with open(output_dir+"/times.csv", "w") as outfile:
         outfile.write("Model,#States")
