@@ -43,16 +43,8 @@ cplexOutput
 prism-games-3.0.beta-src/prism/ext/lp_solve_5.5_java/lib/ux64/
 prism-games-3.0.beta-src/prism/ext/z3/libz3.so
 prism-games-3.0.beta-src/prism/ext/z3/libz3java.so
-prism-games-3.0.beta-src/prism/lib/libGurobiJni90.so
-prism-games-3.0.beta-src/prism/lib/libampl.so.2
-prism-games-3.0.beta-src/prism/lib/libampl.so.2.0.3.0
-prism-games-3.0.beta-src/prism/lib/libcplex12100.so
-prism-games-3.0.beta-src/prism/lib/libcsharpswigwrapper.so
 prism-games-3.0.beta-src/prism/lib/libdd.so
 prism-games-3.0.beta-src/prism/lib/libdv.so
-prism-games-3.0.beta-src/prism/lib/libgurobi.so.9.0.0
-prism-games-3.0.beta-src/prism/lib/libgurobi90.so
-prism-games-3.0.beta-src/prism/lib/libjavaswigwrapper.so
 prism-games-3.0.beta-src/prism/lib/libjdd.so
 prism-games-3.0.beta-src/prism/lib/liblpsolve55.so
 prism-games-3.0.beta-src/prism/lib/liblpsolve55j.so
