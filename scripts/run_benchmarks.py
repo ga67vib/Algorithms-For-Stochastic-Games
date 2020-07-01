@@ -150,7 +150,7 @@ elif sys.argv[1] == "run":
             for i in range(1, reps+1):
                 print("\t\t"+str(i))
                 rep_string = "" if reps == 1 else "_rep" + str(i)
-                prismParams = "-javamaxmem 32g -javastack 1g"  # ToDo: Change this appropriately
+                prismParams = "-javamaxmem 32g -javastack 16g"  # Change this appropriately
                 command = "timeout 5m " + prism_path + " " + \
                     models[model] + " " + configurations[conf] + " " + prismParams + \
                     " > " + output_dir + "/" + conf + "/" + model + rep_string + ".log"
