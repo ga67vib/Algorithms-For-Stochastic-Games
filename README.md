@@ -54,7 +54,7 @@ To be able to use higher order programming, you will require an AMPL license. We
 To obtain a license, check out the following website:<br/>
 https://ampl.com/products/ampl/ampl-for-research/<br/>
 AMPL provides a free 30-day trail-license and a student license. Once you have obtained the license, put it into prism-games-3.0.beta-src/prism. In this folder you should be able to get information about your license with:<br/>
-`./ampl version`<br/>
+`./ampl -v`<br/>
 Note that we expect you to use prism for AMPL from either the prism-games-3.0.beta-src/prism folder (via `./bin/prism`) or from the scripts-folder using for example the run_benchmarks.py script. Otherwise you may encounter difficulties since the program won't be able to find it's path to the AMPL executable.
 
 ## TODO:
