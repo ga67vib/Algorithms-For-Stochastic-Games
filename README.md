@@ -1,7 +1,10 @@
 # Algorithms-For-Stochastic-Games
 
-Extension of PRISM-games (link).
-Algorithms as described in GandALF submission "Title".
+Extension of the project PRISM-games [https://github.com/prismmodelchecker/prism-games] with the algorithms as described in GandALF submission "Comparison of Algorithms for Stochastic Games".
+
+## License:
+
+For our modifications of the code, we have give an MIT license. For the code that was originally part of PRISM-games, we refer to their license file in prism-games-3.0.beta-src/COPYING.txt and the "Licensing" section of their README in prism-games-3.0.beta-src/COPYING.txtprism-games-3.0.beta-src/README.md
 
 ## Installation
 
@@ -19,7 +22,7 @@ Algorithms as described in GandALF submission "Title".
 ### Setting up PRISM-games
 
 Our implementation is an extension of PRISM-games.
-Thus, we require PPL to be installed.
+Thus, we require PPL and PRISM to be installed.
 Follow the guidelines given at:<br/>
 https://prismmodelchecker.org/games/installation.php<br/>
 Now the following command should execute without errors from the prism-games-3.0.beta-src/prism folder:
@@ -57,13 +60,12 @@ AMPL provides a free 30-day trail-license and a student license. Once you have o
 `./ampl -v`<br/>
 Note that we expect you to use prism for AMPL from either the prism-games-3.0.beta-src/prism folder (via `./bin/prism`) or from the scripts-folder using for example the run_benchmarks.py script. Otherwise you may encounter difficulties since the program won't be able to find it's path to the AMPL executable.
 
-## TODO:
-- Check license of PRISM, check where to add our names
-- Fix things in Readme
-- What to do about CPLEX in the end?
-- README should tell people where they find our stuff
-- polish code
+## Running the code
 
-## License:
+You can either use the script scripts/run_benchmarks.py to perform multiple (or all) experiments at once, see scripts/README for more details.
+Or you can directly execute PRISM from command line. The necessary switches are -ii for BVI, -qp for mathematical programming and -politer for strategy iteration.
+The switch -smg_opts can be used to select the optimizations. Refer to the runscript to see which number corresponds to which combination of optimizations.
 
-For our modifications of the code, we have give an MIT license. For the code that was originally part of PRISM-games, we refer to their license file in prism-games-3.0.beta-src/COPYING.txt and the "Licensing" section of their README in prism-games-3.0.beta-src/COPYING.txtprism-games-3.0.beta-src/README.md
+## Looking at the code
+
+Our new algorithms are located in prism-games-3.0.beta-src/prism/src/explicit/STPGModelChecker.java, namely computeReachProbsValIter (with bounded=true), computeReachProbsPolIter and computeReachProbsQuadProg.
