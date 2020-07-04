@@ -4,7 +4,7 @@ Extension of the project PRISM-games [https://github.com/prismmodelchecker/prism
 
 ## License:
 
-For our modifications of the code, we have give an MIT license. For the code that was originally part of PRISM-games, we refer to their license file in prism-games-3.0.beta-src/COPYING.txt and the "Licensing" section of their README in prism-games-3.0.beta-src/COPYING.txtprism-games-3.0.beta-src/README.md
+For our modifications of the code, we have give an MIT license. For the code that was originally part of PRISM-games, we refer to their license file in prism-games-3.0.beta-src/COPYING.txt and the "Licensing" section of their README in prism-games-3.0.beta-src/README.md.
 
 ## Installation
 
