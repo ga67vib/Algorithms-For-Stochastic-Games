@@ -1,6 +1,6 @@
 # Algorithms-For-Stochastic-Games
 
-Extension of the project PRISM-games [https://github.com/prismmodelchecker/prism-games] with the algorithms as described in GandALF submission "Comparison of Algorithms for Stochastic Games".
+Extension of the project PRISM-games [https://github.com/prismmodelchecker/prism-games] with the algorithms as described in GandALF submission "Comparison of Algorithms for Simple Stochastic Games".
 
 ## License:
 
