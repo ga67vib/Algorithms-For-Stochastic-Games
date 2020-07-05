@@ -1,8 +1,8 @@
-These case studies are either from PRISM-games (http://www.prismmodelchecker.org/games/casestudies.php), from the paper https://dblp.uni-trier.de/rec/bibtex/journals/corr/abs-2005-04018 or handcrafted for the GandALF paper.
+These case studies are either from PRISM-games (http://www.prismmodelchecker.org/games/casestudies.php), from the paper [https://dblp.uni-trier.de/rec/bibtex/journals/corr/abs-2005-04018] or handcrafted for the GandALF paper.
 
 More concretely:
 
-The case studies coins, prison_dil, adt, charlton, cdmsn, cloud, mdsm, dice and two_investors are distributed with PRISM-games 3 or available on their case-study-website \url{http://www.prismmodelchecker.org/games/casestudies.php}.
+The case studies coins, prison_dil, adt, charlton, cdmsn, cloud, mdsm, dice and two_investors are distributed with PRISM-games 3 or available on their case-study-website [http://www.prismmodelchecker.org/games/casestudies.php].
 
 To judge the impact of a single small MEC, we prepended dice and cdmsn with a single MEC. The exits lead to the initial state of the original model with some probability, and the remaining probability leads to a sink. 
 
