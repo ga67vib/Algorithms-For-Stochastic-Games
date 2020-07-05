@@ -4,7 +4,7 @@ Extension of the project PRISM-games [https://github.com/prismmodelchecker/prism
 
 ## License:
 
-For our modifications of the code, we have give an MIT license. For the code that was originally part of PRISM-games, we refer to their license file in prism-games-3.0.beta-src/COPYING.txt and the "Licensing" section of their README in prism-games-3.0.beta-src/README.md.
+For our modifications of the code, we give an MIT license. For the code that was originally part of PRISM-games, we refer to their license file in prism-games-3.0.beta-src/COPYING.txt and the "Licensing" section of their README in prism-games-3.0.beta-src/README.md.
 
 ## Installation
 
@@ -13,8 +13,9 @@ For our modifications of the code, we have give an MIT license. For the code tha
 - Python 3.7 or more recent
 - C and C++ compiler
 - PRISM-Games (https://prismmodelchecker.org/games/installation.php)
-  - PIL
+  - PPL
 - Gurobi Optimizer 9.0.0 or more recent (Optional) (https://www.gurobi.com/)
+- CPLEX (Optional) (https://www.ibm.com/products/ilog-cplex-optimization-studio)
 - AMPL (Optional) (https://ampl.com/)
 
 **We assume that you are using a Linux distribution.** For Windows and Mac OS users the guides we refer to also provide instructions, but you may encounter difficulties putting everything together.
@@ -49,21 +50,21 @@ If you want to use CPLEX to solve simple stochastic games with quadratic program
 - Remove the comments that are marked with "CPLEX-RELATED" in the file SMGPolyProgSolverGurobi.java in prism-games-3.0.beta-src/prism/src/explicit
   - Exchange the `throwCplexError()`-calls in the file by the method `solveQPCplex()`
 - If you have already built PRISM, you will have to use `make clean && make` in prism-games-3.0.beta-src/prism
-Once you have followed through these steps the following command should compute work without errors in the prism-games-3.0.beta-src/prism folder:<br/>
+Once you have followed these steps, the following command should work without errors in the prism-games-3.0.beta-src/prism folder:<br/>
 `./bin/prism ../../case_studies/BigMec.prism ../../case_studies/BigMec.props -const N=1 -qp -smg_opts 3`
 
 ### Using higher order programming
-To be able to use higher order programming, you will require an AMPL license. We use AMPL to formulate the stochastic game as a nonlinear program and Minos to compute the optimal solution.
+To be able to use higher order programming, you require an AMPL license. We use AMPL to formulate the stochastic game as a nonlinear program and Minos to compute the optimal solution.
 To obtain a license, check out the following website:<br/>
 https://ampl.com/products/ampl/ampl-for-research/<br/>
 AMPL provides a free 30-day trail-license and a student license. Once you have obtained the license, put it into prism-games-3.0.beta-src/prism. In this folder you should be able to get information about your license with:<br/>
 `./ampl -v`<br/>
-Note that we expect you to use prism for AMPL from either the prism-games-3.0.beta-src/prism folder (via `./bin/prism`) or from the scripts-folder using for example the run_benchmarks.py script. Otherwise you may encounter difficulties since the program won't be able to find it's path to the AMPL executable.
+Note that we expect you to use prism for AMPL from either the prism-games-3.0.beta-src/prism folder (via `./bin/prism`) or from the scripts-folder using for example the run_benchmarks.py script. Otherwise you may encounter difficulties since the program won't be able to find its path to the AMPL executable.
 
 ## Running the code
 
-You can either use the script scripts/run_benchmarks.py to perform multiple (or all) experiments at once, see scripts/README for more details.
-Or you can directly execute PRISM from command line. The necessary switches are -ii for BVI, -qp for mathematical programming and -politer for strategy iteration.
+You can either use the script scripts/run_benchmarks.py to perform multiple (or all) experiments at once, see scripts/README.md for more details.
+Or you can directly execute PRISM from the command line. The necessary switches are -ii for BVI, -qp for mathematical programming and -politer for strategy iteration.
 The switch -smg_opts can be used to select the optimizations. Refer to the runscript to see which number corresponds to which combination of optimizations.
 
 ## Looking at the code
