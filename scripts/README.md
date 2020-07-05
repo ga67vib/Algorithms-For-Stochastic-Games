@@ -5,5 +5,5 @@ Use<br>
 ''' python3 run_benchmarks.py run '''<br>
 to execute every uncommented configuration on every uncommented model.
 Use <br>
-''' python3 run_benchmarks.py run '''<br>
+''' python3 run_benchmarks.py read '''<br>
 to read the resulting output files and compile them into a file output_dir+"/times.csv" with the runtimes and output_dir+"/values.csv" with the results.
