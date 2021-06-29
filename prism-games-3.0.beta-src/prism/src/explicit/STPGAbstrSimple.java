@@ -688,6 +688,16 @@ public class STPGAbstrSimple extends ModelExplicit implements STPG, NondetModelS
 		}
 	}
 
+
+//  @Override
+//  public void mvMultMinMax(double vect[], boolean min1, boolean min2, double result[], BitSet subset,
+//      int bestChoice)
+//  {
+//    for (int s : new IterableStateSet(subset, numStates, false)) {
+//      result[s] = mvMultMinMaxSingle(s, vect, min1, min2);
+//    }
+//  }
+
 	@Override
 	public double mvMultMinMaxSingle(int s, double vect[], boolean min1, boolean min2)
 	{

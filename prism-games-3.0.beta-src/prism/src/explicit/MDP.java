@@ -178,6 +178,7 @@ public interface MDP extends MDPGeneric<Double>
 			// Compute sum for this distribution
 			double d = mvMultSingle(s, choice, vect);
 
+
 			// Check whether we have exceeded min/max so far
 			if (first || (min && d < minmax) || (!min && d > minmax)) {
 				minmax = d;
@@ -199,6 +200,32 @@ public interface MDP extends MDPGeneric<Double>
 
 		return minmax;
 	}
+
+
+
+	// added by muqsit 28.06.2021
+  // might be useless: to be deleted in that case
+  /**
+   * Do a single row of matrix-vector multiplication followed by min/max,
+   * i.e. return min/max_k { sum_j P_k(s,j)*vect[j] }
+   * Optionally, store optimal (memoryless) strategy info.
+   * @param s Row index
+   * @param vect Vector to multiply by
+   * @param min Min or max for (true=min, false=max)
+   * @param bestChoice Storage for (memoryless) strategy choice indices (ignored if null)
+   */
+//  public default double mvMultMinMaxSingle(int s, double vect[], boolean min, int bestChoice)
+//  {
+//    double minmax = 0;
+//    // Compute sum for this distribution
+//    double d = mvMultSingle(s, bestChoice, vect);
+//
+//    // Check whether we have exceeded min/max so far
+//    if ((min && d < minmax) || (!min && d > minmax))
+//      minmax = d;
+//
+//    return minmax;
+//  }
 
 	/**
 	 * Determine which choices result in min/max after a single row of matrix-vector multiplication.

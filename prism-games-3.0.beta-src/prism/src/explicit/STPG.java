@@ -133,7 +133,14 @@ public interface STPG extends NondetModel
 	 */
 	public void mvMultMinMax(double vect[], boolean min1, boolean min2, double result[], BitSet subset, boolean complement, int adv[]);
 
-	/**
+  // for SVI: added by muqsit on 28.06.2020
+  //  void mvMultMinMax(double vect[], boolean min1, boolean min2, double result[], BitSet subset, int bestChoice);
+
+//  // for SVI: added by muqsit on 28.06.2020
+//  void mvMultMinMax(double vect[], boolean min1, boolean min2, double result[],
+//      BitSet subset, int bestChoice);
+
+  /**
 	 * Do a single row of matrix-vector multiplication followed by min/max,
 	 * i.e. return min/max_{k1,k2} { sum_j P_{k1,k2}(s,j)*vect[j] }
 	 * @param s Row index

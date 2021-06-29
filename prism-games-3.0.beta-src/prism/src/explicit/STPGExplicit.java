@@ -369,6 +369,28 @@ public class STPGExplicit extends MDPSimple implements STPG
 		}
 	}
 
+//  // for SVI: added by muqsit on 28.06.2020
+//  @Override
+//  public void mvMultMinMax(double vect[], boolean min1, boolean min2, double result[],
+//      BitSet subset, int bestChoice)
+//  {
+//    int s;
+//    boolean min = false;
+//    // Loop depends on subset/complement arguments
+//    if (subset == null) {
+//      for (s = 0; s < numStates; s++) {
+//        result[s] = mvMultSingle(s, bestChoice, vect);
+//      }
+//    } else {
+//      for (s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+//        //min = (getPlayer(s) == 1) ? min1 : min2;
+//        //result[s] = mvMultMinMaxSingle(s, vect, min, bestChoice);
+//        // Compute sum for this distribution
+//        result[s] = mvMultSingle(s, bestChoice, vect);
+//      }
+//    }
+//  }
+
 	@Override
 	public double mvMultMinMaxSingle(int s, double vect[], boolean min1, boolean min2)
 	{
