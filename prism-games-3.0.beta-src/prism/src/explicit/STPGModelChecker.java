@@ -941,7 +941,7 @@ public class STPGModelChecker extends ProbModelChecker
           decisionValueMax = decisionValueMax > decisionValue ? decisionValueMax : decisionValue;
 
         // Matrix-vector multiply and min/max ops (Bellman update)
-//        stpg.mvMultMinMax(stepBoundReach, min1, min2, stepBoundReach2, subset, a);
+        //stpg.mvMultMinMax(stepBoundReach, min1, min2, stepBoundReach2, subset, a);
         stepBoundReach2[s] = stpg.mvMultSingle(s, a, stepBoundReach);
         stepBoundStay2[s] = stpg.mvMultSingle(s, a, stepBoundStay);
       }
@@ -983,6 +983,7 @@ public class STPGModelChecker extends ProbModelChecker
           if(lower_val > stepBoundReach[s]/(1-stepBoundStay[s]))
             lower_val = stepBoundReach[s]/(1-stepBoundStay[s]);
         }
+        if(decisionValueMin < lower_val) System.out.println("Need of DECISION VALUE for LB: "+decisionValueMin + ", approx_lower: "+ lower_val + ",oldlowerBound: "+ lowerBound2);
         lower_val = decisionValueMin < lower_val ? decisionValueMin : lower_val;
         lowerBound = lowerBound2 > lower_val ? lowerBound2 : lower_val;
 
@@ -992,9 +993,20 @@ public class STPGModelChecker extends ProbModelChecker
           if(upper_val < stepBoundReach[s]/(1-stepBoundStay[s]))
             upper_val = stepBoundReach[s]/(1-stepBoundStay[s]);
         }
+        if(decisionValueMax > upper_val) System.out.println("Need of DECISION VALUE for UB: "+decisionValueMax + ", approx_upper: "+ upper_val + ",oldupperBound: "+ upperBound2);
         upper_val = decisionValueMax > upper_val ? decisionValueMax : upper_val;
         upperBound = upperBound2 < upper_val ? upperBound2 : upper_val;
+        System.out.println("upperBound:"+upperBound2);
       }
+
+      tmp = upperBound;
+      upperBound = upperBound2;
+      upperBound2 = tmp;
+
+
+      tmp = lowerBound;
+      lowerBound = lowerBound2;
+      lowerBound2 = tmp;
 
 
 
