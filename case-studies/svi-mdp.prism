@@ -1,0 +1,24 @@
+// Simple game (MDP) from svi paper only max-player
+
+smg
+
+global state: [0..6] init 0;
+
+player P1 player1, [alpha], [beta] endplayer
+
+
+module player1
+	[alpha] state=0 -> 8/10 : (state'=1) + 2/10 : (state'=6);
+	[beta] state=0 -> 4/10 : (state'=0) + 3/10 : (state'=3) + 3/10 : (state'=5);
+	[] state=1 -> 9/10 : (state'=2) + 1/10 : (state'=4);
+	[] state=2 -> 1/10 : (state'=4) + 9/10 : (state'=6);
+	[] state=3 -> (state'=3);
+	[] state=4 -> (state'=4);
+	[] state=5 -> (state'=5);
+	[] state=6 -> (state'=6);
+endmodule
+
+
+//Labels
+formula done = state=3 | state=4;
+label "done" = done;
