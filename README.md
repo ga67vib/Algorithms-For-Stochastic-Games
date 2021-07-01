@@ -1,6 +1,6 @@
 # Algorithms-For-Stochastic-Games
 
-Extension of the project PRISM-games [https://github.com/prismmodelchecker/prism-games] with the algorithms as described in GandALF submission "Comparison of Algorithms for Simple Stochastic Games".
+Extension of the project PRISM-games [https://github.com/prismmodelchecker/prism-games] with the algorithms as described in GandALF'20 paper "Comparison of Algorithms for Simple Stochastic Games" and the FSTTCS'21 submission "Faster Value Iteration for Simple Stochastic Games".
 
 ## License:
 
@@ -29,6 +29,42 @@ https://prismmodelchecker.org/games/installation.php<br/>
 Now the following command should execute without errors from the prism-games-3.0.beta-src/prism folder:
 `./bin/prism`
 At this point you should be able to run the case-study script for everything except for the mathematical programming approaches.
+
+### More tutorial on setting up PRISM-games
+- Download PRISM sources (not binaries), e.g. from https://github.com/ga67vib/Algorithms-For-Stochastic-Games or https://prismmodelchecker.org/games/
+
+- Install PRISM (more instructions available here: https://prismmodelchecker.org/games/installation.php)
+    - Open project in IntelliJ (use prism folder inside prism-games-3-sthsth-whatever folder). Note: This is important. If you select choose right, IntelliJ finds some libraries and stuff itself. Otherwise you'll have to manually add them or tell it where sources are and stuff.
+    - From prism folder, run make
+        Possibly encounter weird errors. Fix by googling or asking supervisor
+    - Check that installation worked: execute (from prism folder) bin/prism in terminal. Should report version and stuff. Congrats, you can now run prism!
+
+- How to be able to run it from IntelliJ:
+    - Build the project (There's a menu at the top)
+        Possible errors we know:
+            a: Rightclick on the src-folder -> Mark Directory as -> Sources root
+            b: Project settings (Ctrl+Alt+Shift+S) -> Set output directory as prism/classes
+            c: Also in project settings, select correct JDK (and make sure to use java 8, at least if using prism-games)
+            d: Also in project settings, add lib folder to libraries
+    - Add a configuration to run it, i.e. top right there should be "Add configuration" or "edit configuration". Add new configuration of type "Application". Set the Main class to prism.PrismCL and add a new Environment variable - LD_LIBRARY_PATH=:lib. Note that on MAC OS, this is called DYLD_LIBRARY_PATH.
+            In case of weird errors, check a, b, d from before (often stuff with libraries missing, so copy them from some other place. Or source folder not specified (can't select PrismCL as main class), so select it. Or wrong Java/no SDK selected)
+            In case of errors that include "Parma Polyhedra Library", you still have to properly install the ppl library, which is needed for multi-objective stuff (and hence sadly also in general, cause we have to compile all of PRISM)
+                In the Algorithms-for-SG github, PPL is already in ext folder, so it might also work out of the box (and break if you try to install it manually)
+            If there are libraries not missing (PPL or commons or sth like that), then go to project settings (Ctrl Alt Shift S) -> Libraries -> + and add the ext and lib folder. Or PPl.jar directly. 
+    - Click play and see if it runs. If yes: Party. If no: Call someone who knows what to do, e.g. Tobi, Pranav or Maxi
+
+- Now to add command line parameters in order to run the specific thing you want
+    Syntax when calling from command line: bin/prism <path/to/model> <path/to/property> -const <constants> <configuration modifiers>
+    In IntelliJ, you add everything but the "bin/prism" in front to the "command line arguments" field of the configuration.
+    E.g. put in 
+        ../../case-studies/BigMec.prism ../../case-studies/BigMec.props -const N=1 -ii -smg_opts 2
+    in order run on the model BigMec with the BigMec.props property file. We set the free scaling constant of the model N to 1. We use -ii, so bounded value iteration (aka interval iteration). And we set smg_opts to 2, which the method can use to differentiate variants of the algorithm. E.g. 2 corresponds to sound value iteration (unless we changed it in the meantime).
+
+- How to modify the code
+    Find the method that actually does the stuff you are interested in. Often this is in explicit/STPGModelChecker (at least for my research), as this class contains the algorithms to model check an STPG. 
+    
+- How to pass arguments through PRISM
+    Breakpoint in PrismCL.main, debug, pray
 
 
 ### Using quadratic programming
