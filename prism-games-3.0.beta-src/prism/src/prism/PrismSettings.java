@@ -87,7 +87,7 @@ public class PrismSettings implements Observer
 	public static final String PRISM_TOPOLOGICAL_VI					= "prism.topologicalVI";
 	public static final	String PRISM_PMAX_QUOTIENT					= "prism.pmaxQuotient";
 	public static final	String PRISM_INTERVAL_ITER					= "prism.intervalIter";
-	public static final	String PRISM_INTERVAL_ITER_OPTIONS			= "prism.intervalIterOptions";
+  public static final	String PRISM_INTERVAL_ITER_OPTIONS			= "prism.intervalIterOptions";
 	public static final	String PRISM_MDP_SOLN_METHOD				= "prism.mdpSolnMethod";
 	public static final	String PRISM_SMG_SOLN_METHOD				= "prism.smgSolnMethod";
 	public static final	String PRISM_SMG_SOLN_OPTIONS				= "prism.smgSolnOptions";
@@ -282,7 +282,7 @@ public class PrismSettings implements Observer
 																	"Interval iteration options, a comma-separated list of the following:\n" + OptionsIntervalIteration.getOptionsDescription() },
 			{ CHOICE_TYPE,		PRISM_MDP_SOLN_METHOD,					"MDP solution method",				"4.0",			"Value iteration",																"Value iteration,Gauss-Seidel,Policy iteration,Modified policy iteration,Linear programming",
 																			"Which method to use when solving Markov decision processes." },
-			{ CHOICE_TYPE,		PRISM_SMG_SOLN_METHOD,					"SMG solution method",				"Maxi0",			"Value iteration",																"Value iteration,Interval iteration,Quadratic programming,Policy iteration,Gauss-Seidel",
+			{ CHOICE_TYPE,		PRISM_SMG_SOLN_METHOD,					"SMG solution method",				"Maxi0",			"Value iteration",																"Value iteration,Interval iteration,Sound value iteration,Quadratic programming,Policy iteration,Gauss-Seidel",
 					"Which method to use when solving stochastic games; Gauss-Seidel only for reward, others only for reach." },
 			{ INTEGER_TYPE,		PRISM_SMG_SOLN_OPTIONS,					"Options for SMG solution method",				"Maxi0",			new Integer(0),																"0,",
 						"An int that is passed to the SMG solution method and can be used to distinguish variants. For info on semantics, check the respective method." },
@@ -1152,7 +1152,9 @@ public class PrismSettings implements Observer
 			set(PRISM_MDP_MULTI_SOLN_METHOD, "Linear programming");
 		} else if (sw.equals("qp")){
 			set(PRISM_SMG_SOLN_METHOD, "Quadratic programming");
-		}
+		} else if (sw.equals("svi")){
+      set(PRISM_SMG_SOLN_METHOD, "Sound value iteration");
+    }
 		//SMG solution method options
 		else if (sw.equals("smg_opts")) {
 			if (i < args.length - 1) {
@@ -1194,6 +1196,30 @@ public class PrismSettings implements Observer
 				set(PRISM_INTERVAL_ITER_OPTIONS, iiOptions);
 			}
 		}
+
+		// added by muqsit on 13.06.2021
+    else if (sw.equals("soundvaliter") ||
+        sw.equals("svi")) {
+      set(PRISM_INTERVAL_ITER, true);
+      set(PRISM_SMG_SOLN_METHOD, "Sound value iteration");
+
+      if (optionsString != null) {
+        optionsString = optionsString.trim();
+        try {
+          OptionsIntervalIteration.validate(optionsString);
+        } catch (PrismException e) {
+          throw new PrismException("In options for -" + sw + " switch: " + e.getMessage());
+        }
+
+        // append options to existing ones
+        String iiOptions = getString(PRISM_INTERVAL_ITER_OPTIONS);
+        if ("".equals(iiOptions))
+          iiOptions = optionsString;
+        else
+          iiOptions += "," + optionsString;
+        set(PRISM_INTERVAL_ITER_OPTIONS, iiOptions);
+      }
+    }
 
 		// Pmax quotient
 		else if (sw.equals("pmaxquotient")) {
@@ -2017,6 +2043,7 @@ public class PrismSettings implements Observer
 		mainLog.println("-politer ....................... Use policy iteration for solving MDPs");
 		mainLog.println("-modpoliter .................... Use modified policy iteration for solving MDPs");
 		mainLog.println("-intervaliter (or -ii) ......... Use interval iteration to solve MDPs/MCs (see -help -ii)");
+    mainLog.println("-soundvaliter (or -svi) ........ Use sound value iteration to solve STPGs (see -help -svi)");
 		mainLog.println("-topological ................... Use topological value iteration");
 		mainLog.println();
 		mainLog.println("SOLUTION METHOD SETTINGS");
@@ -2128,6 +2155,11 @@ public class PrismSettings implements Observer
 			mainLog.println(OptionsIntervalIteration.getOptionsDescription());
 			return true;
 		}
+    else if (sw.equals("svi") || sw.equals("soundvaliter")) {
+      mainLog.println("Switch: -soundvaliter (or -svi) optionally takes a comma-separated list of options:\n");
+      //TODO: complete the help for the SVI
+      return true;
+    }
 
 		return false;
 	}
