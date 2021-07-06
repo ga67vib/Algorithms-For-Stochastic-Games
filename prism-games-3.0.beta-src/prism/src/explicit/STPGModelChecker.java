@@ -889,6 +889,117 @@ public class STPGModelChecker extends ProbModelChecker
 	}
 
 
+  /**
+   * SVI deflate operation.
+   */
+  private double[][] svi_deflate(STPGExplicit stpg, boolean min1, boolean min2, double[] stepBoundReach, double[] stepBoundStay, BitSet mec, explicit.ECComputerDefault ec, double upperbound) throws PrismException {
+
+    //TODO: I might turn on repeated adjustment again
+    //TODO: I might optimize for MDP handling again (i.e. not recompute SECs and stuff
+    double [] currentValReachAndStay = new double[stpg.numStates];
+    for(int s=0; s < stpg.numStates; s++){
+//      for(int a=0; a < stpg.getNumChoices(s); a++)
+//        for (int succ : stpg.getChoice(s, a).keySet()) {
+          currentValReachAndStay[s] = stepBoundReach[s] + stepBoundStay[s] * upperbound;
+    }
+    // Find all SECs in given MEC
+    List<BitSet> SECs = ec.getSECs(mec,currentValReachAndStay,min1,min2);
+    for (int j = 0; j < SECs.size(); j++) {
+      // Get best Maximizer exit from SEC
+      BitSet sec = SECs.get(j);
+      int maxPlayer = min1 ? (min2 ? -1 : 2) : (min2 ? 1 : 3);
+      int[] bestExitStateAndAction = getBestExitDeflate(sec, stpg, stepBoundReach, stepBoundStay, maxPlayer, upperbound);
+
+      // deflate the best state
+      int bestExitState = bestExitStateAndAction[0];
+      int bestExitAction = bestExitStateAndAction[1];
+      double reachVal = 0, stayVal = 0;
+      Distribution succ_dist = stpg.getChoice(bestExitState, bestExitAction);
+      for (int succ : succ_dist.keySet()) {
+        reachVal += succ_dist.get(succ) * stepBoundReach[succ];
+        stayVal += succ_dist.get(succ) * stepBoundStay[succ];
+      }
+
+
+      BitSet attractor = computeAttactor(stpg, bestExitState, sec, maxPlayer);
+
+//        boolean min = stpg.getPlayer(s)==1 ? min1 : min2;
+//        double decisionValue;
+//        if(!min) {
+//          decisionValue = computeDecisionValue(stpg, stepBoundReach, stepBoundStay,
+//              bestExitState, bestExitAction, min);
+//          System.out.println("decision value for the state: " + s + " is: " + decisionValue);
+//        }
+
+      //deflate attrators in SECs
+      for (int s = attractor.nextSetBit(0); s >= 0; s = attractor.nextSetBit(s+1)) {
+        stepBoundReach[s] = Math.max(stepBoundReach[s], reachVal);
+        stepBoundStay[s] = Math.min(stepBoundStay[s], stayVal);
+      }
+
+
+
+
+//      stepBoundReach[bestExitState] = Math.max(stepBoundReach[bestExitState], reachVal);
+//      stepBoundStay[bestExitState] = Math.min(stepBoundStay[bestExitState], stayVal);
+
+
+
+      // And deflate all states in SEC
+//      for (int s = sec.nextSetBit(0); s >= 0; s = SECs.get(j).nextSetBit(s+1)) {
+//        double formerStayValue = stepBoundStay[s];
+//        if(formerStayValue>bestStayingValue) {//monotonic: only decrease if new value smaller
+//          stepBoundStay[s]=bestStayingValue;
+//        }
+//        double formerReachValue = stepBoundReach[s];
+//        if(formerReachValue<bestStayingValue) {//monotonic: only decrease if new value smaller
+//          stepBoundStay[s]=bestStayingValue;
+//        }
+//      }
+    }
+    return new double[][]{stepBoundStay,stepBoundReach};
+  }
+
+  private BitSet computeAttactor(STPGExplicit stpg, int bestExitState, BitSet sec, int maxPlayer) {
+
+    BitSet attractor = new BitSet();
+    BitSet attractor2 =  new BitSet();
+    attractor.set(bestExitState);
+    boolean done = false;
+    while(!done) {
+      for (int s = sec.nextSetBit(0); s >= 0; s = sec.nextSetBit(s + 1)) {
+        if (stpg.getPlayer(s) == 1 || maxPlayer == 3) {
+          //Some successor states for some actions in attractor
+          for (int i = 0; i < stpg.getNumChoices(s); i++) {
+            boolean some = stpg.someSuccessorsInSet(s, i, attractor);
+            if (some) {
+              attractor.set(s);
+              break;
+            }
+          }
+        } else {
+          // all successor states of all actions for the minimizer must be in attractor
+          boolean exitExist = false;
+          for (int i = 0; i < stpg.getNumChoices(s); i++) {
+            boolean all = stpg.allSuccessorsInSet(s, i, attractor);
+            if (!all) {
+              exitExist = true;
+              break;
+            }
+          }
+          if(!exitExist) attractor.set(s);
+        }
+      }
+      if (attractor.equals(attractor2)) {
+        done = true;
+      } else {
+        attractor2 = (BitSet) attractor.clone();
+      }
+
+    }
+    return attractor;
+  }
+
 
   /**
    * main part of the Sound Value iteration
@@ -901,11 +1012,11 @@ public class STPGModelChecker extends ProbModelChecker
     boolean done = false;
     double tmpsoln[];
     this.termCritParam = 1e-6 ; //TODO: precision as parameter
-    double decisionValueMin, decisionValueMin2, decisionValueMax, decisionValueMax2, lowerBound, lowerBound2, upperBound, upperBound2;
+    double decisionValueMin, decisionValueMax, lowerBound, lowerBound2, upperBound, upperBound2;
     lowerBound = lowerBound2 = 0;
     upperBound = upperBound2 = 1;
-    decisionValueMax = decisionValueMax2 = 0;
-    decisionValueMin = decisionValueMin2 = 1;
+    decisionValueMax = 0;
+    decisionValueMin = 1;
 
     // Need initstate to determine whether done in bounded case
     int initialState = stpg.getFirstInitialState();
@@ -913,41 +1024,21 @@ public class STPGModelChecker extends ProbModelChecker
       iters++;
       System.out.println("ITERATION: " +iters);
       for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
-        //stpg.mvMultMinMaxSingle();
-        //List<Distribution> actions = stpgExplicit.getChoices(s);
-        // for (SuccessorsIterator succ = stpg.chi(s); succ.hasNext();){
-        // for(int i = 0; i <actions.size(); i++){
-        //int action = actions.get(i);
-        //stpgExplicit.mvMultMinMaxSingle(s, action, )
-        //stpg.mvMultMinMaxSingle(s, );
-
-        //first way of finding player (max/min)
-        //boolean min = (stpg.getPlayer(s) == 1) ? min1 : min2;
-        // boolean max = min ? false : true;
-
-        // second way of finding player (max/min)
-        //boolean max = (stpg.getPlayer(s) == 1) ? min2 : min1;
-
-        // third way of finding player (max/min)
-        //boolean max=true;
-        //if(stpg.getPlayer(s) == 1 && min1 || stpg.getPlayer(s) == 2 && min2) max=false;
-        //else if(stpg.getPlayer(s) == 1 && !min1 || stpg.getPlayer(s) == 2 && !min2) max=true;
-
+        // find if the player is min or max
         boolean min = (stpg.getPlayer(s) == 1) ? min1 : min2;
         int a = findAction(stpg, s, stepBoundReach, stepBoundStay, min, lowerBound, upperBound);
         double decisionValue = computeDecisionValue(stpg, stepBoundReach, stepBoundStay, s, a, min);
         System.out.println("decision value for the state: " + s + " is: " + decisionValue);
         if(min)
-          decisionValueMin = decisionValueMin < decisionValue ? decisionValueMin : decisionValue;
+          decisionValueMin = Math.min(decisionValueMin, decisionValue);
         else
-          decisionValueMax = decisionValueMax > decisionValue ? decisionValueMax : decisionValue;
+          decisionValueMax = Math.max(decisionValueMax, decisionValue);
 
         // Matrix-vector multiply and min/max ops (Bellman update)
         // stpg.mvMultMinMax(stepBoundReach, min1, min2, stepBoundReach2, subset, a);
-        stepBoundReach2[s] = stpg.mvMultSingle(s, a, stepBoundReach);
-        stepBoundStay2[s] = stpg.mvMultSingle(s, a, stepBoundStay);
+        stepBoundReach2[s] = Math.max(stpg.mvMultSingle(s, a, stepBoundReach), stepBoundReach[s]);
+        stepBoundStay2[s] = Math.min(stpg.mvMultSingle(s, a, stepBoundStay), stepBoundStay[s]);
       }
-
 
 
       // Swap vectors for next iter
@@ -958,15 +1049,6 @@ public class STPGModelChecker extends ProbModelChecker
       tmpsoln = stepBoundStay;
       stepBoundStay = stepBoundStay2;
       stepBoundStay2 = tmpsoln;
-
-//      double tmp = decisionValueMin;
-//      decisionValueMin = decisionValueMin2;
-//      decisionValueMin2 = tmp;
-//
-//      tmp = decisionValueMax;
-//      decisionValueMax = decisionValueMax2;
-//      decisionValueMax2 = tmp;
-
 
 
       boolean isallreach = true;
@@ -985,9 +1067,10 @@ public class STPGModelChecker extends ProbModelChecker
           if(lower_val > stepBoundReach[s]/(1-stepBoundStay[s]))
             lower_val = stepBoundReach[s]/(1-stepBoundStay[s]);
         }
-        if(decisionValueMin < lower_val) System.out.println("Need of DECISION VALUE for LB: "+decisionValueMin + ", approx_lower: "+ lower_val + ",oldlowerBound: "+ lowerBound2);
-        lower_val = decisionValueMin < lower_val ? decisionValueMin : lower_val;
-        lowerBound = lowerBound2 > lower_val ? lowerBound2 : lower_val;
+        if(decisionValueMin < lower_val) System.out.println("Need of DECISION VALUE for LB: "+decisionValueMin + ", approx_lower: "+ lower_val + ", oldlowerBound: "+ lowerBound2);
+        lower_val = Math.min(decisionValueMin, lower_val);
+        lowerBound = Math.max(lowerBound2, lower_val);
+        System.out.println("lowerBound: "+lowerBound2);
 
         //double upper_val=Double.NEGATIVE_INFINITY;
         double upper_val = 0.0;
@@ -995,10 +1078,10 @@ public class STPGModelChecker extends ProbModelChecker
           if(upper_val < stepBoundReach[s]/(1-stepBoundStay[s]))
             upper_val = stepBoundReach[s]/(1-stepBoundStay[s]);
         }
-        if(decisionValueMax > upper_val) System.out.println("Need of DECISION VALUE for UB: "+decisionValueMax + ", approx_upper: "+ upper_val + ",oldupperBound: "+ upperBound2);
-        upper_val = decisionValueMax > upper_val ? decisionValueMax : upper_val;
-        upperBound = upperBound2 < upper_val ? upperBound2 : upper_val;
-        System.out.println("upperBound:"+upperBound2);
+        if(decisionValueMax > upper_val) System.out.println("Need of DECISION VALUE for UB: "+decisionValueMax + ", approx_upper: "+ upper_val + ", oldupperBound: "+ upperBound2);
+        upper_val = Math.max(decisionValueMax, upper_val);
+        upperBound = Math.min(upperBound2, upper_val);
+        System.out.println("upperBound: "+upperBound2);
       }
 
       double tmp = upperBound;
@@ -1011,10 +1094,20 @@ public class STPGModelChecker extends ProbModelChecker
       lowerBound2 = tmp;
 
 
+      //arbitrary improvement: do not adjust every step, cause it usually takes very long and needs to be propagated;
+      // abusing the maxIters parameter, since I don't need it when bounded and handing down stuff through prism is horrible
+      if (iters % maxIters == 0) {
+        //only look at mecs in the current subset
+        for (BitSet mec : mecs){
+          if(subset.intersects(mec)){
+            svi_deflate(stpg, min1, min2, stepBoundReach, stepBoundStay, mec, ec, upperBound);
+          }
+        }
+      }
+
       // Check termination
       done = (upperBound - lowerBound) * stepBoundStay[initialState] < 2 * this.termCritParam;
       double valueReach = stepBoundReach[initialState] + stepBoundStay[initialState]*(upperBound+lowerBound)*0.5;
-
 
       if(done) System.out.println("REACHABILITY PROBABILITY: " + valueReach);
 
@@ -1064,6 +1157,46 @@ public class STPGModelChecker extends ProbModelChecker
 	}
 
 
+
+  /**
+   *
+   * @param sec
+   * @param stpg
+   * @param stepBoundReach
+   * @param stepBoundStay
+   * @param maxPlayer -1: Both want to minimize => return 0. 1 or 2: Respective player. 3: Both
+   * @param upperbound
+   * @return
+   */
+  private static int[] getBestExitDeflate(BitSet sec, STPGExplicit stpg, double[] stepBoundReach, double[] stepBoundStay, int maxPlayer, double upperbound){
+    double bestValSoFar = 0;
+    int bestAction = -1;
+    int exitState = -1;
+    //find best stay props bound belonging to maxPlayer that does not let stuck
+    for (int s = sec.nextSetBit(0); s >= 0; s = sec.nextSetBit(s+1)) {
+      if (stpg.getPlayer(s)==maxPlayer || maxPlayer == 3) {
+        //mainLog.println("Searching for best leaving value; state belongs to maximizer");
+        for (int i = 0; i < stpg.getNumChoices(s); i++) {
+            boolean all = stpg.allSuccessorsInSet(s, i, sec);
+            if (!all) {
+              double val = 0;
+              for (int succ : stpg.getChoice(s, i).keySet()) {
+                val += stepBoundReach[succ] + stepBoundStay[succ] * upperbound;
+              }
+              if (val > bestValSoFar) {
+                bestValSoFar = val;
+                bestAction = i;
+                exitState = s;
+              }
+            }
+        }
+      }
+      //TODO: We might want to deflate minimizer stuff to 0. Should be handled by prob0 though.
+    }
+    return new int[]{exitState, bestAction};
+  }
+
+
   private static int findAction(STPGExplicit stpg, int s, double[] stepBoundReach, double[] stepBoundStay, boolean min, double lowerbound, double uperbound){
     // best choice -1 means it does not exit
     int bestChoice=-1;
@@ -1078,9 +1211,10 @@ public class STPGModelChecker extends ProbModelChecker
       //for each state the choices are from 0 to NumChoices-1
       for (int curr_action = 0; curr_action < numChoices; curr_action++) {
         Distribution d = stpg.getChoice(s,curr_action);
+        Set<Integer> successors = d.keySet();
         double currentValue=0;
-        for(int j=0; j<stpg.numStates; j++){
-          currentValue += d.get(j) * (stepBoundReach[j]+stepBoundStay[j]*uperbound);
+        for(int succ : d.keySet()){
+          currentValue += d.get(succ) * (stepBoundReach[succ]+stepBoundStay[succ]*uperbound);
         }
         if (currentValue>bestValueSoFar){
           bestValueSoFar = currentValue;
@@ -1093,8 +1227,8 @@ public class STPGModelChecker extends ProbModelChecker
       for (int curr_action = 0; curr_action < numChoices; curr_action++) {
         Distribution d = stpg.getChoice(s,curr_action);
         double currentValue=0;
-        for(int j=0; j<stpg.numStates; j++){
-          currentValue += d.get(j) * (stepBoundReach[j]+stepBoundStay[j]*lowerbound);
+        for(int succ : d.keySet()){
+          currentValue += d.get(succ) * (stepBoundReach[succ]+stepBoundStay[succ]*lowerbound);
         }
         if (currentValue<bestValueSoFar){
           bestValueSoFar = currentValue;
@@ -1115,19 +1249,24 @@ public class STPGModelChecker extends ProbModelChecker
         Distribution d_other = stpg.getChoice(s, curr_action);
         Distribution d_choice = stpg.getChoice(s, bestChoice);
         double y_delta = 0;
-        for (int j = 0; j < stpg.numStates; j++) {
+        Set<Integer> possible_successors = new HashSet<>(d_choice.keySet());
+        //possible_successors.addAll(d_choice.keySet());
+        possible_successors.addAll(d_other.keySet());
+        //for (int j = 0; j < stpg.numStates; j++) {
+        for(int j : possible_successors){
           y_delta += (d_choice.get(j) - d_other.get(j)) * stepBoundStay[j];
         }
         if (y_delta > 0) {
           double x_delta = 0;
-          for (int j = 0; j < stpg.numStates; j++) {
+          //for (int j = 0; j < stpg.numStates; j++) {
+          for(int j : possible_successors){
             x_delta += (d_other.get(j) - d_choice.get(j)) * stepBoundReach[j];
           }
           if(min){
-            decisionValue = decisionValue < x_delta / y_delta ? decisionValue : x_delta / y_delta;
+            decisionValue = Math.min(decisionValue, x_delta / y_delta);
           }
           else{
-            decisionValue = decisionValue > x_delta / y_delta ? decisionValue : x_delta / y_delta;
+            decisionValue = Math.max(decisionValue, x_delta / y_delta);
           }
         }
       }
