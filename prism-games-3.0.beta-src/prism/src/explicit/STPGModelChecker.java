@@ -658,7 +658,8 @@ public class STPGModelChecker extends ProbModelChecker
 				lowerBounds[s] = lowerBounds2[s] = yes.get(s) ? 1.0 : no.get(s) ? 0.0 : initVal;
 		}
 		if (needsUpperBounds){
-			if(variant==SolnMethod.INTERVAL_ITERATION) {
+			if(variant==SolnMethod.INTERVAL_ITERATION || variant==SolnMethod.OPTIMISTIC_VALUE_ITERATION) {
+				//Note: We need the upperBounds for OVI, because for states outside the subset where it is currently working (e.g. targets, when it is working on S?), OVI needs to know the value
 				for (s = 0; s < n; s++)
 					upperBounds[s] = upperBounds2[s] = no.get(s) ? 0.0 : 1.0;
 			}
@@ -738,7 +739,10 @@ public class STPGModelChecker extends ProbModelChecker
 						statesForSCC.set(state);
 					}
 					//Solve the SCC until all states are close (initialState argument is -1 to ensure all states are solved, not just initial)
-					itersInSCC = iterateOnSubset((STPGExplicit) stpg, min1, min2, upperBounds, upperBounds2, lowerBounds2, lowerBounds, genAdv, adv, itersInSCC, variant, mecs, ec, statesForSCC, statesForSCCIntSet, -1);
+					double[][] subres = iterateOnSubset((STPGExplicit) stpg, min1, min2, upperBounds, upperBounds2, lowerBounds2, lowerBounds, genAdv, adv, itersInSCC, variant, mecs, ec, statesForSCC, statesForSCCIntSet, -1);
+					itersInSCC = (int) subres[2][0];
+					lowerBounds = subres[0];
+					upperBounds = subres[1];
 
 					IterationMethod.intervalIterationCheckForProblems(lowerBounds, upperBounds, statesForSCCIntSet.iterator());
 //					mainLog.println("Non-trivial SCC done in " + itersInSCC + " many iterations");
@@ -747,7 +751,10 @@ public class STPGModelChecker extends ProbModelChecker
 			}
 		}
 		else{
-			iters = iterateOnSubset((STPGExplicit) stpg, min1, min2, upperBounds, upperBounds2, lowerBounds2, lowerBounds, genAdv, adv, iters, variant, mecs, ec, unknown, null, initialState);
+			double[][] subres = iterateOnSubset((STPGExplicit) stpg, min1, min2, upperBounds, upperBounds2, lowerBounds2, lowerBounds, genAdv, adv, iters, variant, mecs, ec, unknown, null, initialState);
+			iters = (int) subres[2][0];
+			lowerBounds = subres[0];
+			upperBounds = subres[1];
 		}
 
 
@@ -823,9 +830,11 @@ public class STPGModelChecker extends ProbModelChecker
 	 * Gets the whole context of VI + 2 things:
 	 * @param subset Set to iterate on; should be unknown if working on whole thing at once and SCC if doing topological VI
 	 * @param initialState used for checking done; if we only care about initstate, set to its index. If we need everything to be close (topological VI), then set to -1.
-	 * @return number of iterations; upper and lower bounds are modified as side effect
+	 * @return number of iterations; upper and lower bounds are modified as side effect: Changed by Maxi on 07.07.21, since side effect not working as expected
+	 * Sometimes it returns the previous iteration, thus resulting in result which is not eps-precise
+	 * Thus we return an array of double arrays: LowerBounds, UpperBounds and an array containing only iters
 	 */
-	private int iterateOnSubset(STPGExplicit stpg, boolean min1, boolean min2, double[] upperBounds, double[] upperBoundsNew, double[] lowerBoundsNew, double[] lowerBounds,
+	private double[][] iterateOnSubset(STPGExplicit stpg, boolean min1, boolean min2, double[] upperBounds, double[] upperBoundsNew, double[] lowerBoundsNew, double[] lowerBounds,
 								boolean genAdv, int[] adv, int iters, SolnMethod variant, List<BitSet> mecs, explicit.ECComputerDefault ec,
 								BitSet subset, IntSet subsetAsIntSet, int initialState) throws PrismException{
 		iters = 0;
@@ -994,7 +1003,7 @@ public class STPGModelChecker extends ProbModelChecker
 							relevantStayVal = Math.max(relevantStayVal,upperBounds[s]);
 						}
 					}
-					done = (upperBound - lowerBound) * relevantStayVal < 2 * this.termCritParam;
+					done = (upperBound - lowerBound) * relevantStayVal < this.termCritParam;
 					if(done){
 						//When we are done, we have to insert the smarter values
 						if(initialState != -1){
@@ -1024,7 +1033,8 @@ public class STPGModelChecker extends ProbModelChecker
 						else{
 							mainLog.println("Starting a verification phase in iteration " + iters);
 							//If we look close, guess a candidate upper bound, which we will then verify
-							upperBounds = diffPlus(lowerBounds);
+							//Since we only work on subset (S? or the current SCC) we have to keep values from outside subset as they were when coming in
+							upperBounds = diffPlus(lowerBounds,upperBounds,subset);
 							//Also precompute the SECs according to the current lowerBound, which will then be used for deflating
 							OVI_SECs = new ArrayList<BitSet>();
 							for (BitSet mec : mecs) {
@@ -1039,6 +1049,7 @@ public class STPGModelChecker extends ProbModelChecker
 						//If we are in verifPhase, check, whether we are done
 						boolean allUp = true;
 						boolean allDown = true;
+						boolean abort = verifIters>(1.0/epsPrime);
 						for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
 							//Note: upperBounds is k-th iteration, upperBoundsNew is (k-1)-th iteration, since we already switched. Maybe putting everything in one method wasn't a good idea...
 							//In this loop, we do three things: 1. check, whether all states went down. 2. Check whether all states went up. 3. set upperBounds to the min of upperBounds and upperBoundsNew, ensuring monotonicity
@@ -1047,25 +1058,36 @@ public class STPGModelChecker extends ProbModelChecker
 								allDown=false;
 								upperBounds[s] = upperBoundsNew[s];//upperBounds must not increase between iterations, see termination proof
 							}
+							if(OVI_L_in_verification_phase){
+								//If we still iterate on L, we can check whether L has passed U
+								if (lowerBounds[s] > upperBounds[s]){
+									abort=true;
+									mainLog.println("L has passed U in some state. Aborting verification phase.");
+									break;
+								}
+							}
 						}
 						if(allDown){
 							//upper bound is inductive, everything stayed or went down
 							done=true;
+							mainLog.println("Proved U to be inductive upper bound in iteration " + iters + " after " + verifIters + " iterations in the verification phase.");
 						}
 						else if(allUp){
-							//upper bound is an inductive lower bound. Abort verifying, but use U as the new L
-							verifPhase=false;
-							lowerBounds = upperBounds;
-							verifIters=0;
-							epsPrime = epsPrime/2.0;
-							mainLog.println("U is inductive lower bound. Stopping verification.");
+							//upper bound is an inductive lower bound. Abort verifying, but use U as the new L (on subset. Outside stuff should stay the same)
+							abort=true;
+							for(int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s+1)) {
+								lowerBounds[s] = upperBounds[s];
+							}
+							mainLog.println("U is inductive lower bound. Using it as new L, stopping verification phase.");
 						}
-						else if(verifIters>(1.0/epsPrime)){
-							//we tried for too long, let's just stop for now. Try again with a stricter epsPrime unguaranteed stopping criterion
+						if(abort){
+							//Either allUp or L passed U or the initialization of abort, namely:
+							//we tried for too long, let's just stop for now.
+							// Try again with a stricter epsPrime unguaranteed stopping criterion
+							mainLog.println("Aborting verification phase after " + verifIters + " iterations of not being able to prove inductivity.");
 							verifPhase=false;
 							verifIters=0;
 							epsPrime = epsPrime/2.0;
-							mainLog.println("Aborting verification phase after " + verifIters + " iterations of not being able to prove inductivity.");
 						}
 					}
 					break;
@@ -1078,8 +1100,10 @@ public class STPGModelChecker extends ProbModelChecker
 
 
 		}
-		//return new double[][]{upperBounds,lowerBounds};
-		return iters;
+		if(initialState!=-1)
+			mainLog.println("Result: ["+lowerBounds[initialState]+","+upperBounds[initialState]+"]");
+
+		return new double[][]{lowerBounds,upperBounds,{iters}};
 	}
 
 	/**
@@ -1222,20 +1246,23 @@ public class STPGModelChecker extends ProbModelChecker
 
 	/**
 	 * Method for guessing the upper bound for OVI. See definition of diff^+ in original OVI paper or the new one.
-	 * @param vector The lower bound which is the basis of the guess
-	 * @return something that is epsilon (termcritparam) greater than vector, relatively or absolutely
-	*/
-	private double[] diffPlus(double[] vector){
-		double[] result = new double[vector.length];
-		for (int s=0; s<vector.length;s++){
+	 * @param lowerBounds The lower bound which is the basis of the guess
+	 * @param upperBounds The upper bounds which is filled on the considered subset and kept unchanged outside the subset
+	 * @param subset The subset that we are currently working on (S? or the current SCC)
+	 * @return upperBounds, since I don't want to rely on side effects anymore. Sometimes they don't work.
+	 * On subset, UpperBounds are now set to sth that is epsilon (termcritparam) greater than vector, relatively or absolutely.
+	 * Corner case: 0 stays 0, nothing greater than 1
+	 */
+	private double[] diffPlus(double[] lowerBounds, double[] upperBounds, BitSet subset){
+		for(int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s+1)){
 			if(this.termCrit == TermCrit.ABSOLUTE){
-				result[s] = vector[s] == 0 ? 0 : vector[s] + this.termCritParam;
+				upperBounds[s] = Math.min(1,lowerBounds[s] == 0 ? 0 : lowerBounds[s] + this.termCritParam);
 			}
 			else{ //if(termCrit == TermCrit.RELATIVE){
-				result[s] = vector[s] * (1+this.termCritParam);
+				upperBounds[s] = Math.min(1,lowerBounds[s] * (1+this.termCritParam));
 			}
 		}
-		return result;
+		return upperBounds;
 	}
 
 
