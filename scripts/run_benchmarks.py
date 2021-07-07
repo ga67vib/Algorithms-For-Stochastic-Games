@@ -1,4 +1,5 @@
 import os
+from os.path import exists
 import sys
 import subprocess
 import statistics
@@ -150,6 +151,9 @@ elif sys.argv[1] == "run":
             for i in range(1, reps+1):
                 print("\t\t"+str(i))
                 rep_string = "" if reps == 1 else "_rep" + str(i)
+                if exists(output_dir + "/" + conf + "/" + model + rep_string + ".log"):
+                    print("\t\tAlready there, skipping")
+                    continue
                 prismParams = "-javamaxmem 32g -javastack 16g"  # Change this appropriately
                 command = "timeout 15m " + prism_path + " " + \
                     models[model] + " " + configurations[conf] + " " + prismParams + \
