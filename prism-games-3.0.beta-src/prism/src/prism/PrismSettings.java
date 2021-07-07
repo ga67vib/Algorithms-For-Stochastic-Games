@@ -282,7 +282,7 @@ public class PrismSettings implements Observer
 																	"Interval iteration options, a comma-separated list of the following:\n" + OptionsIntervalIteration.getOptionsDescription() },
 			{ CHOICE_TYPE,		PRISM_MDP_SOLN_METHOD,					"MDP solution method",				"4.0",			"Value iteration",																"Value iteration,Gauss-Seidel,Policy iteration,Modified policy iteration,Linear programming",
 																			"Which method to use when solving Markov decision processes." },
-			{ CHOICE_TYPE,		PRISM_SMG_SOLN_METHOD,					"SMG solution method",				"Maxi0",			"Value iteration",																"Value iteration,Interval iteration,Sound value iteration,Quadratic programming,Policy iteration,Gauss-Seidel",
+			{ CHOICE_TYPE,		PRISM_SMG_SOLN_METHOD,					"SMG solution method",				"Maxi0",			"Value iteration",																"Value iteration,Interval iteration,Sound value iteration,Optimistic value iteration,Quadratic programming,Policy iteration,Gauss-Seidel",
 					"Which method to use when solving stochastic games; Gauss-Seidel only for reward, others only for reach." },
 			{ INTEGER_TYPE,		PRISM_SMG_SOLN_OPTIONS,					"Options for SMG solution method",				"Maxi0",			new Integer(0),																"0,",
 						"An int that is passed to the SMG solution method and can be used to distinguish variants. For info on semantics, check the respective method." },
@@ -1153,7 +1153,9 @@ public class PrismSettings implements Observer
 		} else if (sw.equals("qp")){
 			set(PRISM_SMG_SOLN_METHOD, "Quadratic programming");
 		} else if (sw.equals("svi")){
-      set(PRISM_SMG_SOLN_METHOD, "Sound value iteration");
+      		set(PRISM_SMG_SOLN_METHOD, "Sound value iteration");
+		} else if (sw.equals("ovi")){
+			set(PRISM_SMG_SOLN_METHOD, "Optimistic value iteration");
     }
 		//SMG solution method options
 		else if (sw.equals("smg_opts")) {

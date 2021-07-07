@@ -32,7 +32,7 @@ public class SMGPolyProgSolverGurobi extends SMGPolyProgSolver {
         switch (variant) {
             case 1:
                 method="Improved quadratic programming with value iteration for start vector";
-                res = modelChecker.computeReachProbsValIter(stpg, no, yes, min1, min2, init, known, false);
+                res = modelChecker.computeReachProbsValIter(stpg, no, yes, min1, min2, init, known, ProbModelChecker.SolnMethod.VALUE_ITERATION);
                 res = computeReachProbsQPGurobiCondonLoose(stpg, no, yes, min1, min2, init, known, res, true, false);
                 break;
             case 2:
@@ -70,7 +70,7 @@ public class SMGPolyProgSolverGurobi extends SMGPolyProgSolver {
                 break;
             case 8:
                 method="Topological QP Gurobi with warm start";
-                res = modelChecker.computeReachProbsValIter(stpg, no, yes, min1, min2, init, known, false);
+                res = modelChecker.computeReachProbsValIter(stpg, no, yes, min1, min2, init, known, ProbModelChecker.SolnMethod.VALUE_ITERATION);
                 res = computeReachProbsQPGurobiCondonLoose(stpg, no, yes, min1, min2, init, known, res, true, true);
                 break;
             default:
