@@ -1101,7 +1101,7 @@ public class STPGModelChecker extends ProbModelChecker
 
 		}
 		if(initialState!=-1)
-			mainLog.println("Result: ["+lowerBounds[initialState]+","+((upperBounds!=null) ? upperBounds[initialState] : "none")+"]");
+			mainLog.println("Resulting interval: ["+lowerBounds[initialState]+","+((upperBounds!=null) ? upperBounds[initialState] : "none")+"]");
 
 		return new double[][]{lowerBounds,upperBounds,{iters}};
 	}
