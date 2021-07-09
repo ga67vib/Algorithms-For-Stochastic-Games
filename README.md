@@ -12,7 +12,7 @@ For our modifications of the code, we give an MIT license. For the code that was
 - Java 8 or more recent
 - Python 3.7 or more recent
 - C and C++ compiler
-- PRISM-Games (https://prismmodelchecker.org/games/installation.php)
+- PRISM-Games (https://www.prismmodelchecker.org/games/)
   - PPL
 - Gurobi Optimizer 9.0.0 or more recent (Optional) (https://www.gurobi.com/)
 - CPLEX (Optional) (https://www.ibm.com/products/ilog-cplex-optimization-studio)
@@ -25,7 +25,7 @@ For our modifications of the code, we give an MIT license. For the code that was
 Our implementation is an extension of PRISM-games.
 Thus, we require PPL and PRISM to be installed.
 Follow the guidelines given at:<br/>
-https://prismmodelchecker.org/games/installation.php<br/>
+https://www.prismmodelchecker.org/games/installation.php<br/>
 Now the following command should execute without errors from the prism-games-3.0.beta-src/prism folder:
 `./bin/prism`
 At this point you should be able to run the case-study script for everything except for the mathematical programming approaches.
@@ -41,17 +41,17 @@ At this point you should be able to run the case-study script for everything exc
 
 - How to be able to run it from IntelliJ:
     - Build the project (There's a menu at the top)
-        Possible errors we know:
-            a: Rightclick on the src-folder -> Mark Directory as -> Sources root
-            b: Project settings (Ctrl+Alt+Shift+S) -> Set output directory as prism/classes
-            c: Also in project settings, select correct JDK (and make sure to use java 8, at least if using prism-games)
-            d: Also in project settings, add lib folder to libraries
-    - Add a configuration to run it, i.e. top right there should be "Add configuration" or "edit configuration". Add new configuration of type "Application". Set the Main class to prism.PrismCL and add a new Environment variable - LD_LIBRARY_PATH=:lib. Note that on MAC OS, this is called DYLD_LIBRARY_PATH.
-            In case of weird errors, check a, b, d from before (often stuff with libraries missing, so copy them from some other place. Or source folder not specified (can't select PrismCL as main class), so select it. Or wrong Java/no SDK selected)
-            In case of errors that include "Parma Polyhedra Library", you still have to properly install the ppl library, which is needed for multi-objective stuff (and hence sadly also in general, cause we have to compile all of PRISM)
-                In the Algorithms-for-SG github, PPL is already in ext folder, so it might also work out of the box (and break if you try to install it manually)
-            If there are libraries not missing (PPL or commons or sth like that), then go to project settings (Ctrl Alt Shift S) -> Libraries -> + and add the ext and lib folder. Or PPl.jar directly. 
-    - Click play and see if it runs. If yes: Party. If no: Call someone who knows what to do, e.g. Tobi, Pranav or Maxi
+        Possible errors we know:<br>
+            a: Rightclick on the src-folder -> Mark Directory as -> Sources root<br>
+            b: Project settings (Ctrl+Alt+Shift+S) -> Set output directory as prism/classes<br>
+            c: Also in project settings, select correct JDK (and make sure to use java 8, at least if using prism-games)<br>
+            d: Also in project settings, add lib folder to libraries<br>
+    - Add a configuration to run it, i.e. top right there should be "Add configuration" or "edit configuration". Add new configuration of type "Application". Set the Main class to prism.PrismCL and add a new Environment variable - LD_LIBRARY_PATH=:lib. Note that on MAC OS, this is called DYLD_LIBRARY_PATH.<br>
+            In case of weird errors, check a, b, d from before (often stuff with libraries missing, so copy them from some other place. Or source folder not specified (can't select PrismCL as main class), so select it. Or wrong Java/no SDK selected)<br>
+            In case of errors that include "Parma Polyhedra Library", you still have to properly install the ppl library, which is needed for multi-objective stuff (and hence sadly also in general, cause we have to compile all of PRISM)<br>
+                In the Algorithms-for-SG github, PPL is already in ext folder, so it might also work out of the box (and break if you try to install it manually)<br>
+            If there are libraries missing (PPL or commons or sth like that), then go to project settings (Ctrl Alt Shift S) -> Libraries -> + and add the ext and lib folder. Or PPl.jar directly. 
+    - Click play and see if it runs. If yes: Party. If no: Call someone who might know what to do, e.g. Pranav, Tobi or Maxi.
 
 - Now to add command line parameters in order to run the specific thing you want
     Syntax when calling from command line: bin/prism <path/to/model> <path/to/property> -const <constants> <configuration modifiers>

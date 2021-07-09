@@ -51,7 +51,7 @@ public class SMGPolyProgSolverAMPL extends SMGPolyProgSolver{
         switch (variant) {
             case 10:
                 method="AMPL minos with warm start"; //ToDo
-                res = modelChecker.computeReachProbsValIter(stpg, no, yes, min1, min2, init, known, false);
+                res = modelChecker.computeReachProbsValIter(stpg, no, yes, min1, min2, init, known, ProbModelChecker.SolnMethod.VALUE_ITERATION);
                 res = computeReachProbsPolyProgAMPL(stpg,no,yes,min1,min2,init,known,false,res);
                 break;
             case 11:

@@ -280,13 +280,13 @@ public class STPGModelChecker extends ProbModelChecker
 			switch (solnMethod) {
 			case VALUE_ITERATION:
 				this.generateStrategy = true;
-				res = computeReachProbsValIter(stpg, no, yes, min1, min2, init, known, false);
+				res = computeReachProbsValIter(stpg, no, yes, min1, min2, init, known, solnMethod);
 				break;
 			case GAUSS_SEIDEL:
 				res = computeReachProbsGaussSeidel(stpg, no, yes, min1, min2, init, known);
 				break;
 			case INTERVAL_ITERATION:
-				res = computeReachProbsValIter(stpg, no, yes, min1, min2, init, known, true);
+				res = computeReachProbsValIter(stpg, no, yes, min1, min2, init, known, solnMethod);
 				break;
 			case POLICY_ITERATION:
 				res = computeReachProbsPolIter(stpg, no, yes, min1, min2, init, known);
@@ -295,9 +295,12 @@ public class STPGModelChecker extends ProbModelChecker
 				res = computeReachProbsQuadProg(stpg, no, yes, min1, min2, init, known);
 				break;
 			case SOUND_VALUE_ITERATION:
-			  this.generateStrategy = true;
-			  res = computeReachProbsSoundValIter(stpg, no, yes, min1, min2, init, known, true);
-			  break;
+			    this.generateStrategy = true;
+			    res = computeReachProbsValIter(stpg, no, yes, min1, min2, init, known, solnMethod);
+			    break;
+			case OPTIMISTIC_VALUE_ITERATION:
+				res = computeReachProbsValIter(stpg, no, yes, min1, min2, init, known, solnMethod);
+				break;
 			default:
 				throw new PrismException("Unknown STPG solution method " + solnMethod);
 			}
@@ -478,107 +481,107 @@ public class STPGModelChecker extends ProbModelChecker
 	}
 
 
-  protected ModelCheckerResult computeReachProbsSoundValIter(STPG stpg, BitSet no, BitSet yes, boolean min1, boolean min2, double init[], BitSet known, boolean bounded)
-      throws PrismException
-  {
-    mainLog.println("Doing SVI where bounded is " + bounded + " and maxIters is " + this.maxIters + " and topological is " + this.getDoTopologicalValueIteration());
-
-    ModelCheckerResult res = null;
-    BitSet unknown;
-    int s, n, iters;
-    iters=0;
-    double initVal;
-//    double lowerBound;
-//    double upperBound;
-//    double lowerBound2;
-//    double upperBound2;
-//    double decisionValue;
-//    double decisionValue2;
-    double stepBoundReach[];
-    double stepBoundReach2[];
-    double stepBoundStay[];
-    double stepBoundStay2[];
-//    int adv[] = null;
-//    boolean genAdv;
-    long timer;
-
-
-    // Start sound value iteration
-    timer = System.currentTimeMillis();
-    if (verbosity >= 1)
-      mainLog.println("Starting sound value iteration (" + (min1 ? "min" : "max") + (min2 ? "min" : "max") + ")...");
-
-
-    // Store num states
-    n = stpg.getNumStates();
-
-    // Create solution vector(s)
-    stepBoundReach = new double[n];
-    stepBoundReach2 = new double[n];
-    stepBoundStay = new double[n];
-    stepBoundStay2 = new double[n];
-
-//    lowerBound = lowerBound2 = 0.0;
-//    upperBound = upperBound2 = 1.0;
-
-    // Determine set of states (S_?) actually need to compute values for
-    unknown = new BitSet();
-    unknown.set(0, n);
-    unknown.andNot(yes);
-    unknown.andNot(no);
-//    int maybe = unknown.cardinality();
-
-
-    // Initialise solution vectors. Use (where available) the following in order of preference:
-    // (1) exact answer, if already known; (2) 1.0/0.0 if in yes/no; (3) passed in initial value; (4) initVal
-    // where initVal is 0.0 or 1.0, depending on whether we converge from below/above.
-    // If bounded, initVal is set to 0 for lower and 1 for upper
-
-    initVal = bounded ? 0 : ((valIterDir == ValIterDir.BELOW) ? 0.0 : 1.0);
-
-    for (s = 0; s < n; s++){
-      stepBoundReach[s] = stepBoundReach2[s] = yes.get(s) ? 1.0 : 0.0;
-      stepBoundStay[s] = stepBoundStay2[s] = unknown.get(s) ? 1.0 : 0.0;
-    }
-    // decisionValue = decisionValue2 = Double.NEGATIVE_INFINITY;
-    // decisionValue = decisionValue2 = 0;
-    // lowerBound = lowerBound2 = 0;
-    // upperBound = upperBound2 = 1;
-
-
-    // For Bounded VI, we need MECs and an EC computer to find SECs
-    List<BitSet> mecs = null;
-    explicit.ECComputerDefault ec =null;
-    if (bounded){
-      mainLog.println("Getting MECs...");
-      //compute MECs one time, use the decomposition in every iteration; SECs still have to be recomputed
-      ec = (ECComputerDefault) ECComputer.createECComputer(this, stpg);
-      //need a copy of unknown, since EC computation empties the set as a side effect
-      BitSet unknownForEC = new BitSet();
-      unknownForEC.or(unknown);
-      ec.computeMECStates(unknownForEC);
-      mecs = ec.getMECStates();
-      mainLog.println("Number of MECs: " + mecs.size());
-    }
-
-    // write find action function
-    // iters = iterateOnSVISubset((STPGExplicit) stpg, min1, min2, stepBoundReach, stepBoundReach2, stepBoundStay, stepBoundStay2, upperBound, upperBound2, lowerBound, lowerBound2, decisionValue, decisionValue2, iters, mecs, ec, unknown, null, initialState);
-    iters = iterateOnSVISubset((STPGExplicit) stpg, min1, min2, stepBoundReach, stepBoundReach2, stepBoundStay, stepBoundStay2, mecs, ec, unknown);
-
-    // Store results/strategy
-    res = new ModelCheckerResult();
-    //res.soln = lowerBounds;
-    res.numIters = iters;
-    res.timeTaken = timer / 1000.0;
-    res.soln = stepBoundReach;
-    // Finished sound value iteration
-    timer = System.currentTimeMillis() - timer;
-    if (verbosity >= 1) {
-      mainLog.print("Sound value iteration (" + (min1 ? "min" : "max") + (min2 ? "min" : "max") + ")");
-      mainLog.println(" took " + iters + " iterations and " + timer / 1000.0 + " seconds.");
-    }
-    return res;
-  }
+//  protected ModelCheckerResult computeReachProbsSoundValIter(STPG stpg, BitSet no, BitSet yes, boolean min1, boolean min2, double init[], BitSet known, boolean bounded)
+//      throws PrismException
+//  {
+//    mainLog.println("Doing SVI where bounded is " + bounded + " and maxIters is " + this.maxIters + " and topological is " + this.getDoTopologicalValueIteration());
+//
+//    ModelCheckerResult res = null;
+//    BitSet unknown;
+//    int s, n, iters;
+//    iters=0;
+//    double initVal;
+////    double lowerBound;
+////    double upperBound;
+////    double lowerBound2;
+////    double upperBound2;
+////    double decisionValue;
+////    double decisionValue2;
+//    double stepBoundReach[];
+//    double stepBoundReach2[];
+//    double stepBoundStay[];
+//    double stepBoundStay2[];
+////    int adv[] = null;
+////    boolean genAdv;
+//    long timer;
+//
+//
+//    // Start sound value iteration
+//    timer = System.currentTimeMillis();
+//    if (verbosity >= 1)
+//      mainLog.println("Starting sound value iteration (" + (min1 ? "min" : "max") + (min2 ? "min" : "max") + ")...");
+//
+//
+//    // Store num states
+//    n = stpg.getNumStates();
+//
+//    // Create solution vector(s)
+//    stepBoundReach = new double[n];
+//    stepBoundReach2 = new double[n];
+//    stepBoundStay = new double[n];
+//    stepBoundStay2 = new double[n];
+//
+////    lowerBound = lowerBound2 = 0.0;
+////    upperBound = upperBound2 = 1.0;
+//
+//    // Determine set of states (S_?) actually need to compute values for
+//    unknown = new BitSet();
+//    unknown.set(0, n);
+//    unknown.andNot(yes);
+//    unknown.andNot(no);
+////    int maybe = unknown.cardinality();
+//
+//
+//    // Initialise solution vectors. Use (where available) the following in order of preference:
+//    // (1) exact answer, if already known; (2) 1.0/0.0 if in yes/no; (3) passed in initial value; (4) initVal
+//    // where initVal is 0.0 or 1.0, depending on whether we converge from below/above.
+//    // If bounded, initVal is set to 0 for lower and 1 for upper
+//
+//    initVal = bounded ? 0 : ((valIterDir == ValIterDir.BELOW) ? 0.0 : 1.0);
+//
+//    for (s = 0; s < n; s++){
+//      stepBoundReach[s] = stepBoundReach2[s] = yes.get(s) ? 1.0 : 0.0;
+//      stepBoundStay[s] = stepBoundStay2[s] = unknown.get(s) ? 1.0 : 0.0;
+//    }
+//    // decisionValue = decisionValue2 = Double.NEGATIVE_INFINITY;
+//    // decisionValue = decisionValue2 = 0;
+//    // lowerBound = lowerBound2 = 0;
+//    // upperBound = upperBound2 = 1;
+//
+//
+//    // For Bounded VI, we need MECs and an EC computer to find SECs
+//    List<BitSet> mecs = null;
+//    explicit.ECComputerDefault ec =null;
+//    if (bounded){
+//      mainLog.println("Getting MECs...");
+//      //compute MECs one time, use the decomposition in every iteration; SECs still have to be recomputed
+//      ec = (ECComputerDefault) ECComputer.createECComputer(this, stpg);
+//      //need a copy of unknown, since EC computation empties the set as a side effect
+//      BitSet unknownForEC = new BitSet();
+//      unknownForEC.or(unknown);
+//      ec.computeMECStates(unknownForEC);
+//      mecs = ec.getMECStates();
+//      mainLog.println("Number of MECs: " + mecs.size());
+//    }
+//
+//    // write find action function
+//    // iters = iterateOnSVISubset((STPGExplicit) stpg, min1, min2, stepBoundReach, stepBoundReach2, stepBoundStay, stepBoundStay2, upperBound, upperBound2, lowerBound, lowerBound2, decisionValue, decisionValue2, iters, mecs, ec, unknown, null, initialState);
+//    iters = iterateOnSVISubset((STPGExplicit) stpg, min1, min2, stepBoundReach, stepBoundReach2, stepBoundStay, stepBoundStay2, mecs, ec, unknown);
+//
+//    // Store results/strategy
+//    res = new ModelCheckerResult();
+//    //res.soln = lowerBounds;
+//    res.numIters = iters;
+//    res.timeTaken = timer / 1000.0;
+//    res.soln = stepBoundReach;
+//    // Finished sound value iteration
+//    timer = System.currentTimeMillis() - timer;
+//    if (verbosity >= 1) {
+//      mainLog.print("Sound value iteration (" + (min1 ? "min" : "max") + (min2 ? "min" : "max") + ")");
+//      mainLog.println(" took " + iters + " iterations and " + timer / 1000.0 + " seconds.");
+//    }
+//    return res;
+//  }
 
 	/**
 	 * Compute reachability probabilities using value iteration.
@@ -589,18 +592,21 @@ public class STPGModelChecker extends ProbModelChecker
 	 * @param min2 Min or max probabilities for player 2 (true=min, false=max)
 	 * @param init Optionally, an initial solution vector (will be overwritten) 
 	 * @param known Optionally, a set of states for which the exact answer is known
-	 * @param bounded Added by Maxi on 15.05.20. True if you want interval iteration/bounded value iteration as in CAV18.
+	 * @param variant The SolnMethod, namely one of normal VI, II, OVI and SVI. All share lots of code, so they all are the same method (Maxi 07.07.21, replacing the previous "bounded" parameter. II is the bounded value iteration from CAV18, SVI and OVI are described in the paper we are writing for FSTTCS21 right now)
 	 * Note: if 'known' is specified (i.e. is non-null, 'init' must also be given and is used for the exact values.  
 	 */
-	protected ModelCheckerResult computeReachProbsValIter(STPG stpg, BitSet no, BitSet yes, boolean min1, boolean min2, double init[], BitSet known, boolean bounded)
+	protected ModelCheckerResult computeReachProbsValIter(STPG stpg, BitSet no, BitSet yes, boolean min1, boolean min2, double init[], BitSet known, SolnMethod variant)
 			throws PrismException
 	{
-		mainLog.println("Doing VI where bounded is " + bounded + " and solnMethodOptions is " + this.solnMethodOptions + " and maxIters is " + this.maxIters + " and topological is " + this.getDoTopologicalValueIteration());
+		mainLog.println("Doing value iteration variant " + variant + " with solnMethodOptions=" + this.solnMethodOptions + ", maxIters=" + this.maxIters + ", epsilon=" + this.termCritParam + " and topological=" + this.getDoTopologicalValueIteration());
+
+		//TODO: Use solnMethodOptions to decide whether to use Gauss-Seidel. If yes, then in iterateOnSubset use Gauss-Seidel mv.mult.blub thingy in Bellman part.
 
 		ModelCheckerResult res = null;
 		BitSet unknown;
 		int s, n, iters;
 		iters=0;
+		// Note: For SVI, lowerBounds are stepBoundReach-values (x) and upperBounds are the stepBoundStay-values (y)
 		double lowerBounds[], lowerBounds2[], upperBounds[], upperBounds2[], initVal;
 		int adv[] = null;
 		boolean genAdv;
@@ -617,16 +623,28 @@ public class STPGModelChecker extends ProbModelChecker
 		// Store num states
 		n = stpg.getNumStates();
 
+		// Determine set of states actually need to compute values for
+		unknown = new BitSet();
+		unknown.set(0, n);
+		unknown.andNot(yes);
+		unknown.andNot(no);
+		// Maxi changed this on 22.06.20: known can be any lower bound we know, need not be precise; so we have to compute known again
+//		if (known != null)
+//			unknown.andNot(known);
+
+		boolean needsUpperBounds = !(variant==SolnMethod.VALUE_ITERATION); //don't need upper bounds for classic VI, save memory and time
+
 		// Create solution vector(s)
 		lowerBounds = new double[n];
 		lowerBounds2 = new double[n];
-		upperBounds = bounded ? new double[n] : null;
-		upperBounds2 = bounded ? new double[n] : null;
+		upperBounds = needsUpperBounds ? new double[n] : null;
+		upperBounds2 = needsUpperBounds ? new double[n] : null;
 		// Initialise solution vectors. Use (where available) the following in order of preference:
 		// (1) exact answer, if already known; (2) 1.0/0.0 if in yes/no; (3) passed in initial value; (4) initVal
 		// where initVal is 0.0 or 1.0, depending on whether we converge from below/above.
-		// If bounded, initVal is set to 0 for lower and 1 for upper
-		initVal = bounded ? 0 : ((valIterDir == ValIterDir.BELOW) ? 0.0 : 1.0);
+		// If needsUpperBounds, initVal is set to 0 for lower and 1 for upper
+		// The valIterDir thing is only relevant for unguaranteed VI, which might also come from above
+		initVal = needsUpperBounds ? 0 : ((valIterDir == ValIterDir.BELOW) ? 0.0 : 1.0);
 		if (init != null) {
 			if (known != null) {
 				for (s = 0; s < n; s++)
@@ -639,24 +657,24 @@ public class STPGModelChecker extends ProbModelChecker
 			for (s = 0; s < n; s++)
 				lowerBounds[s] = lowerBounds2[s] = yes.get(s) ? 1.0 : no.get(s) ? 0.0 : initVal;
 		}
-		if (bounded){
-			for (s = 0; s < n; s++)
-				upperBounds[s] = upperBounds2[s] = no.get(s) ? 0.0 : 1.0;
+		if (needsUpperBounds){
+			if(variant==SolnMethod.INTERVAL_ITERATION || variant==SolnMethod.OPTIMISTIC_VALUE_ITERATION) {
+				//Note: We need the upperBounds for OVI, because for states outside the subset where it is currently working (e.g. targets, when it is working on S?), OVI needs to know the value
+				for (s = 0; s < n; s++)
+					upperBounds[s] = upperBounds2[s] = no.get(s) ? 0.0 : 1.0;
+			}
+			else if(variant==SolnMethod.SOUND_VALUE_ITERATION){
+				for (s = 0; s < n; s++)
+					upperBounds[s] = upperBounds2[s] = unknown.get(s) ? 1.0 : 0.0;
+			}
 		}
 
-		// Determine set of states actually need to compute values for
-		unknown = new BitSet();
-		unknown.set(0, n);
-		unknown.andNot(yes);
-		unknown.andNot(no);
-		// Maxi changed this on 22.06.20: known can be any lower bound we know, need not be precise; so we have to compute known again
-//		if (known != null)
-//			unknown.andNot(known);
 
-		// For Bounded VI, we need MECs and an EC computer to find SECs
+
+		// For guaranteed VI, we need MECs and an EC computer to find SECs
 		List<BitSet> mecs = null;
 		explicit.ECComputerDefault ec =null;
-		if (bounded){
+		if (needsUpperBounds){
 			mainLog.println("Getting MECs...");
 			//compute MECs one time, use the decomposition in every iteration; SECs still have to be recomputed
 			ec = (ECComputerDefault) ECComputer.createECComputer(this, stpg);
@@ -698,14 +716,11 @@ public class STPGModelChecker extends ProbModelChecker
 		int initialState = stpg.getFirstInitialState();
 
 
-
-
-
 		// Start iterations
 		if (getDoTopologicalValueIteration()){
 			for (int scc = 0; scc < sccs.getNumSCCs(); scc++) {
 				if (sccs.isSingletonSCC(scc)) {
-					// get the single state in this SCC
+					// get the single state in this SCC and finish it. Trivial.
 					int state = sccs.getStatesForSCC(scc).iterator().nextInt();
 					// finish doing that state in all vectors
 					lowerBounds[state] = stpg.mvMultJacMinMaxSingle(state, lowerBounds, min1, min2);
@@ -723,24 +738,30 @@ public class STPGModelChecker extends ProbModelChecker
 					for (int state : statesForSCCIntSet){
 						statesForSCC.set(state);
 					}
-					//Solve the SCC until all states are close (initialState argument is -1)
-					itersInSCC = iterateOnSubset(stpg, min1, min2, upperBounds, upperBounds2, lowerBounds2, lowerBounds, genAdv, adv, itersInSCC, bounded, mecs, ec, statesForSCC, statesForSCCIntSet, -1);
+					//Solve the SCC until all states are close (initialState argument is -1 to ensure all states are solved, not just initial)
+					double[][] subres = iterateOnSubset((STPGExplicit) stpg, min1, min2, upperBounds, upperBounds2, lowerBounds2, lowerBounds, genAdv, adv, itersInSCC, variant, mecs, ec, statesForSCC, statesForSCCIntSet, -1);
+					itersInSCC = (int) subres[2][0];
+					lowerBounds = subres[0];
+					upperBounds = subres[1];
 
 					IterationMethod.intervalIterationCheckForProblems(lowerBounds, upperBounds, statesForSCCIntSet.iterator());
-					mainLog.println("Non-trivial SCC done in " + itersInSCC + " many iterations");
+//					mainLog.println("Non-trivial SCC done in " + itersInSCC + " many iterations");
 					iters+=itersInSCC;
 				}
 			}
 		}
 		else{
-			iters = iterateOnSubset(stpg, min1, min2, upperBounds, upperBounds2, lowerBounds2, lowerBounds, genAdv, adv, iters, bounded, mecs, ec, unknown, null, initialState);
+			double[][] subres = iterateOnSubset((STPGExplicit) stpg, min1, min2, upperBounds, upperBounds2, lowerBounds2, lowerBounds, genAdv, adv, iters, variant, mecs, ec, unknown, null, initialState);
+			iters = (int) subres[2][0];
+			lowerBounds = subres[0];
+			upperBounds = subres[1];
 		}
 
 
 		// Finished value iteration
 		timer = System.currentTimeMillis() - timer;
 		if (verbosity >= 1) {
-			mainLog.print("Value iteration (" + (min1 ? "min" : "max") + (min2 ? "min" : "max") + ")");
+			mainLog.print("Value iteration variant "+ variant + "(" + (min1 ? "min" : "max") + (min2 ? "min" : "max") + ")");
 			mainLog.println(" took " + iters + " iterations and " + timer / 1000.0 + " seconds.");
 		}
 
@@ -809,57 +830,280 @@ public class STPGModelChecker extends ProbModelChecker
 	 * Gets the whole context of VI + 2 things:
 	 * @param subset Set to iterate on; should be unknown if working on whole thing at once and SCC if doing topological VI
 	 * @param initialState used for checking done; if we only care about initstate, set to its index. If we need everything to be close (topological VI), then set to -1.
-	 * @return number of iterations; upper and lower bounds are modified as side effect
+	 * @return number of iterations; upper and lower bounds are modified as side effect: Changed by Maxi on 07.07.21, since side effect not working as expected
+	 * Sometimes it returns the previous iteration, thus resulting in result which is not eps-precise
+	 * Thus we return an array of double arrays: LowerBounds, UpperBounds and an array containing only iters
 	 */
-	private int iterateOnSubset(STPG stpg, boolean min1, boolean min2, double[] upperBounds, double[] upperBounds2, double[] lowerBounds2, double[] lowerBounds,
-									   boolean genAdv, int[] adv, int iters, boolean bounded, List<BitSet> mecs, explicit.ECComputerDefault ec,
-									   BitSet subset, IntSet subsetAsIntSet, int initialState) throws PrismException{
+	private double[][] iterateOnSubset(STPGExplicit stpg, boolean min1, boolean min2, double[] upperBounds, double[] upperBoundsNew, double[] lowerBoundsNew, double[] lowerBounds,
+								boolean genAdv, int[] adv, int iters, SolnMethod variant, List<BitSet> mecs, explicit.ECComputerDefault ec,
+								BitSet subset, IntSet subsetAsIntSet, int initialState) throws PrismException{
 		iters = 0;
 		boolean done = false;
 		double tmpsoln[];
-		this.termCritParam = 1e-6 ; //TODO: precision as parameter
-		while (!done) {
 
+		// Helper variables needed for SVI
+		double decisionValueMin, decisionValueMax, lowerBound, lowerBoundNew, upperBound, upperBoundNew;
+		lowerBound = lowerBoundNew = 0;
+		upperBound = upperBoundNew = 1;
+		decisionValueMax = 0;
+		decisionValueMin = 1;
+
+		// Helper variables needed for OVI
+		double epsPrime = this.termCritParam; //precision that OVI gives the normal VI phase. Will decrease over time.
+		boolean OVI_L_in_verification_phase = ((this.solnMethodOptions&2) == 2); // Continue to work on L in verification phase?
+		int verifIters = 0; //counts how many iterations we made in verification phases
+		boolean verifPhase = false; //indicates whether we are in a verification phase right now
+		List<BitSet> OVI_SECs = null;
+
+		while (!done) {
 			iters++;
-			// Matrix-vector multiply and min/max ops (Bellman update)
-			stpg.mvMultMinMax(lowerBounds, min1, min2, lowerBounds2, subset, false, genAdv ? adv : null);
-			if (bounded) {
-				stpg.mvMultMinMax(upperBounds, min1, min2, upperBounds2, subset, false, genAdv ? adv : null);
+			//Debug output:
+			if(iters % 100000 == 0){
+				mainLog.println(iters+"\t\t LB: " + lowerBounds[0] + " UB: " + (upperBounds!=null ? upperBounds[0] : "none"));
+				if(variant==SolnMethod.SOUND_VALUE_ITERATION){mainLog.println("l:" + lowerBound + "; u:" + upperBound);}
+			}
+			//System.out.println("ITERATION: " +iters);
+
+			/**
+			 * BELLMAN UPDATES
+			 * (Very special for SVI, others just normal Bellmann. OVI however only does some things sometimes.)
+			 */
+			if(variant == SolnMethod.SOUND_VALUE_ITERATION){
+				// For SVI, we need the special find action
+				// Recall that lower bounds are stepBoundReach and upperBounds are stepBoundStay. So in fact, upperBounds are not upperBounds but sth completely different. We just use the name, because this code is for four different kinds of VI at once
+				for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+					// find if the player is min or max
+					boolean min = (stpg.getPlayer(s) == 1) ? min1 : min2;
+					int a = findAction(stpg, s, lowerBounds, upperBounds, min, lowerBound, upperBound);
+					double decisionValue = computeDecisionValue(stpg, lowerBounds, upperBounds, s, a, min);
+					//System.out.println("decision value for the state: " + s + " is: " + decisionValue);
+					if(min)
+						decisionValueMin = Math.min(decisionValueMin, decisionValue);
+					else
+						decisionValueMax = Math.max(decisionValueMax, decisionValue);
+
+					// Matrix-vector multiply and min/max ops (Monotonic Bellman update); monotonic thing is needed, since deflating can make weird values occur
+					lowerBoundsNew[s] = Math.max(stpg.mvMultSingle(s, a, lowerBounds), lowerBounds[s]);
+					upperBoundsNew[s] = Math.min(stpg.mvMultSingle(s, a, upperBounds), upperBounds[s]);
+				}
+
+				//Can only to smart stuff for SVI if every stayVal is less than 1 (else we would divide by 0)
+				boolean allStatesStayValLessThan1 = true;
+				for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+					if(upperBoundsNew[s]==1){
+						allStatesStayValLessThan1 = false;
+						break;
+					}
+				}
+
+				// Do smart SVI stuff: Compute upper and lower bound. This is used for checking termination.
+				// When we terminate, the vectors lowerBounds and upperBounds are updated to contain the smarter values, i.e. best lower and upper bound SVI can give us right now
+				if(allStatesStayValLessThan1){
+					//double lower_val=Double.POSITIVE_INFINITY; //would be for rewards
+					double lower_val = 1.0;
+					for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+						lower_val = Math.min(lower_val,lowerBoundsNew[s]/(1- upperBoundsNew[s]));
+					}
+					//if(decisionValueMin < lower_val) System.out.println("Need of DECISION VALUE for LB in iteration " + iters + ". DecVal: "+decisionValueMin + ", approx_lower: "+ lower_val + ", oldlowerBound: "+ lowerBound2);
+					lower_val = Math.min(decisionValueMin, lower_val);
+					lowerBound = Math.max(lowerBoundNew, lower_val);
+					lowerBoundNew = lowerBound; //remember this for next iteration
+					//System.out.println("lowerBound: "+lowerBound2);
+
+					//double upper_val=Double.NEGATIVE_INFINITY;
+					double upper_val = 0.0;
+					for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+						upper_val = Math.max(upper_val,lowerBoundsNew[s]/(1- upperBoundsNew[s]));
+					}
+					//if(decisionValueMax > upper_val) System.out.println("Need of DECISION VALUE for UBin iteration " + iters + ". DecVal: "+decisionValueMax + ", approx_upper: "+ upper_val + ", oldupperBound: "+ upperBound2);
+					upper_val = Math.max(decisionValueMax, upper_val);
+					upperBound = Math.min(upperBoundNew, upper_val);
+					upperBoundNew = upperBound;
+					//System.out.println("upperBound: "+upperBound2);
+				}
+
+			}
+			else{
+				// All others just use standard Bellman update for lower bounds
+				if(variant==SolnMethod.VALUE_ITERATION || variant==SolnMethod.INTERVAL_ITERATION || (variant==SolnMethod.OPTIMISTIC_VALUE_ITERATION && (OVI_L_in_verification_phase || !verifPhase))) {
+					//OVI for lower bound if a) not in verification phase or b) switch says we also do lower bound, even if in verification phase
+					stpg.mvMultMinMax(lowerBounds, min1, min2, lowerBoundsNew, subset, false, genAdv ? adv : null);
+				}
+
+				//For II, also perform Bellman update on upper bounds. For OVI, do it if we are in verification phase
+				if (variant==SolnMethod.INTERVAL_ITERATION || (variant==SolnMethod.OPTIMISTIC_VALUE_ITERATION && verifPhase)) {
+					stpg.mvMultMinMax(upperBounds, min1, min2, upperBoundsNew, subset, false, genAdv ? adv : null);
+					verifIters++;
+				}
 			}
 
-			// Check termination			doneSCC = PrismUtils.doublesAreClose(below.getSolnVector(), above.getSolnVector(), statesForSCC.iterator(), termCritParam, absolute);
+			/**
+			 * DEFLATING
+			 * for II as in KKKW18. For SVI a bit special. For OVI, use the fixed SECs we found before.
+			 */
 
-			if (bounded && (initialState != -1)) {
-				done = upperBounds[initialState] - lowerBounds[initialState] < this.termCritParam;
-			} else if (bounded){
-				done = PrismUtils.doublesAreClose(lowerBounds, upperBounds, subsetAsIntSet.iterator(), termCritParam, termCrit == TermCrit.ABSOLUTE);
-			} else {
-				done = PrismUtils.doublesAreClose(lowerBounds, lowerBounds2, termCritParam, termCrit == TermCrit.ABSOLUTE)
-					|| iters > maxIters;
+			//arbitrary improvement: do not adjust every step, cause it usually takes very long and needs to be propagated;
+			// abusing the maxIters parameter, since I don't need it when bounded and handing down stuff through prism is horrible
+			if (iters % maxIters == 0) {
+				if(variant==SolnMethod.SOUND_VALUE_ITERATION || variant==SolnMethod.INTERVAL_ITERATION || variant==SolnMethod.OPTIMISTIC_VALUE_ITERATION) {
+					//For SVI and II: only look at mecs in the current subset
+					for (BitSet mec : mecs) {
+						if (subset.intersects(mec)) {
+							if (variant == SolnMethod.INTERVAL_ITERATION) {
+//								deflate(stpg, min1, min2, lowerBoundsNew, upperBoundsNew, mec, ec);
+								upperBoundsNew = deflate(stpg, min1, min2, lowerBoundsNew, upperBoundsNew, mec, ec)[0];
+							}
+							if (variant == SolnMethod.SOUND_VALUE_ITERATION) {
+//								svi_deflate(stpg, min1, min2, lowerBoundsNew, upperBoundsNew, mec, ec, upperBound);
+								double[][] reachNstay = svi_deflate(stpg, min1, min2, lowerBoundsNew, upperBoundsNew, mec, ec, upperBound);
+								lowerBoundsNew = reachNstay[1];
+								upperBoundsNew = reachNstay[0];
+							}
+						}
+					}
+				}
+				//For OVI: If in verification phase, deflate using the precomputed set of SECs
+				if(variant==SolnMethod.OPTIMISTIC_VALUE_ITERATION && verifPhase) {
+					for (BitSet sec : OVI_SECs) {
+						upperBoundsNew = deflate(stpg, min1, min2, lowerBoundsNew, upperBoundsNew, sec, ec)[0];
+					}
+				}
 			}
 
 			// Swap vectors for next iter
 			tmpsoln = lowerBounds;
-			lowerBounds = lowerBounds2;
-			lowerBounds2 = tmpsoln;
+			lowerBounds = lowerBoundsNew;
+			lowerBoundsNew = tmpsoln;
 
 			tmpsoln = upperBounds;
-			upperBounds = upperBounds2;
-			upperBounds2 = tmpsoln;
+			upperBounds = upperBoundsNew;
+			upperBoundsNew = tmpsoln;
 
-			//arbitrary improvement: do not adjust every step, cause it usually takes very long and needs to be propagated;
-			// abusing the maxIters parameter, since I don't need it when bounded and handing down stuff through prism is horrible
-			if (bounded && iters % maxIters == 0) {
-				//only look at mecs in the current subset
-				for (BitSet mec : mecs){
-					if(subset.intersects(mec)){
-						deflate((STPGExplicit) stpg, min1, min2, upperBounds, lowerBounds, mec, ec);
+			/**
+			 * Check termination
+ 			 */
+
+			switch(variant) {
+				case VALUE_ITERATION:
+					done = PrismUtils.doublesAreClose(lowerBounds, lowerBoundsNew, termCritParam, termCrit == TermCrit.ABSOLUTE)
+							|| iters > maxIters;
+					break;
+				case INTERVAL_ITERATION:
+					done = (initialState != -1) ?
+							upperBounds[initialState] - lowerBounds[initialState] < this.termCritParam :
+							PrismUtils.doublesAreClose(lowerBounds, upperBounds, subsetAsIntSet.iterator(), termCritParam, termCrit == TermCrit.ABSOLUTE);
+					break;
+				case SOUND_VALUE_ITERATION:
+					double relevantStayVal=0;
+					if(initialState != -1){
+						relevantStayVal = upperBounds[initialState];
 					}
-				}
+					else{
+						for(int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s+1)){
+							relevantStayVal = Math.max(relevantStayVal,upperBounds[s]);
+						}
+					}
+					done = (upperBound - lowerBound) * relevantStayVal < this.termCritParam;
+					if(done){
+						//When we are done, we have to insert the smarter values
+						if(initialState != -1){
+							//Only in initial state
+							lowerBounds[initialState] = lowerBounds[initialState] + upperBounds[initialState]*lowerBound;
+							upperBounds[initialState] = lowerBounds[initialState] + upperBounds[initialState]*upperBound;
+						}
+						else{
+							//in all states, for topological VI. Need the second thing as temp, since meaning of content switches from reach/stayVal to actual lower/upper bound
+							for(int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s+1)){
+								lowerBoundsNew[s] = lowerBounds[s] + upperBounds[s]*lowerBound;
+								upperBoundsNew[s] = lowerBounds[s] + upperBounds[s]*upperBound;
+								lowerBounds = lowerBoundsNew;
+								upperBounds = upperBoundsNew;
+							}
+						}
+					}
+					break;
+				case OPTIMISTIC_VALUE_ITERATION:
+					if(!verifPhase){
+						//If we are not yet in verifPhase:
+						//First check "normal" convergence according to epsPrime
+						verifPhase = PrismUtils.doublesAreClose(lowerBounds, lowerBoundsNew, epsPrime, termCrit == TermCrit.ABSOLUTE);
+						if(!verifPhase){
+							break; //if we are not done yet, continue VI from below
+						}
+						else{
+							mainLog.println("Starting a verification phase in iteration " + iters);
+							//If we look close, guess a candidate upper bound, which we will then verify
+							//Since we only work on subset (S? or the current SCC) we have to keep values from outside subset as they were when coming in
+							upperBounds = diffPlus(lowerBounds,upperBounds,subset);
+							//Also precompute the SECs according to the current lowerBound, which will then be used for deflating
+							OVI_SECs = new ArrayList<BitSet>();
+							for (BitSet mec : mecs) {
+								if (subset.intersects(mec)) {
+									List<BitSet> SECs = ec.getSECs(mec, lowerBounds, min1, min2);
+									OVI_SECs.addAll(SECs);
+								}
+							}
+						}
+					}
+					else{
+						//If we are in verifPhase, check, whether we are done
+						boolean allUp = true;
+						boolean allDown = true;
+						boolean abort = verifIters>(1.0/epsPrime);
+						for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+							//Note: upperBounds is k-th iteration, upperBoundsNew is (k-1)-th iteration, since we already switched. Maybe putting everything in one method wasn't a good idea...
+							//In this loop, we do three things: 1. check, whether all states went down. 2. Check whether all states went up. 3. set upperBounds to the min of upperBounds and upperBoundsNew, ensuring monotonicity
+							if(upperBounds[s]<upperBoundsNew[s]){allUp=false;}
+							else if(upperBounds[s]>upperBoundsNew[s]){
+								allDown=false;
+								upperBounds[s] = upperBoundsNew[s];//upperBounds must not increase between iterations, see termination proof
+							}
+							if(OVI_L_in_verification_phase){
+								//If we still iterate on L, we can check whether L has passed U
+								if (lowerBounds[s] > upperBounds[s]){
+									abort=true;
+									mainLog.println("L has passed U in some state. Aborting verification phase.");
+									break;
+								}
+							}
+						}
+						if(allDown){
+							//upper bound is inductive, everything stayed or went down
+							done=true;
+							mainLog.println("Proved U to be inductive upper bound in iteration " + iters + " after " + verifIters + " iterations in the verification phase.");
+						}
+						else if(allUp){
+							//upper bound is an inductive lower bound. Abort verifying, but use U as the new L (on subset. Outside stuff should stay the same)
+							abort=true;
+							for(int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s+1)) {
+								lowerBounds[s] = upperBounds[s];
+							}
+							mainLog.println("U is inductive lower bound. Using it as new L, stopping verification phase.");
+						}
+						if(abort){
+							//Either allUp or L passed U or the initialization of abort, namely:
+							//we tried for too long, let's just stop for now.
+							// Try again with a stricter epsPrime unguaranteed stopping criterion
+							mainLog.println("Aborting verification phase after " + verifIters + " iterations of not being able to prove inductivity.");
+							verifPhase=false;
+							verifIters=0;
+							epsPrime = epsPrime/2.0;
+						}
+					}
+					break;
+				default:
+					throw new PrismException("Unknown variant when checking termination in value iteration.");
+
+
 			}
+
+
+
 		}
-		//return new double[][]{upperBounds,lowerBounds};
-		return iters;
+		if(initialState!=-1)
+			mainLog.println("Result: ["+lowerBounds[initialState]+","+upperBounds[initialState]+"]");
+
+		return new double[][]{lowerBounds,upperBounds,{iters}};
 	}
 
 	/**
@@ -868,7 +1112,7 @@ public class STPGModelChecker extends ProbModelChecker
 	private double[][] deflate(STPGExplicit stpg, boolean min1, boolean min2, double[] upperBounds, double[] lowerBounds, BitSet mec, explicit.ECComputerDefault ec) throws PrismException {
 
 		//TODO: I might turn on repeated adjustment again
-		//TODO: I might optimize for MDP handling again (i.e. not recompute SECs and stuff
+		//TODO: I might optimize for MDP handling again (i.e. not recompute SECs and stuff)
 
 		// Find all SECs in given MEC
 		List<BitSet> SECs = ec.getSECs(mec, lowerBounds,min1,min2);
@@ -921,7 +1165,7 @@ public class STPGModelChecker extends ProbModelChecker
       }
 
 
-      BitSet attractor = computeAttactor(stpg, bestExitState, sec, maxPlayer);
+      BitSet attractor = computeAttractor(stpg, bestExitState, sec, maxPlayer);
 
 //        boolean min = stpg.getPlayer(s)==1 ? min1 : min2;
 //        double decisionValue;
@@ -960,7 +1204,7 @@ public class STPGModelChecker extends ProbModelChecker
     return new double[][]{stepBoundStay,stepBoundReach};
   }
 
-  private BitSet computeAttactor(STPGExplicit stpg, int bestExitState, BitSet sec, int maxPlayer) {
+  private BitSet computeAttractor(STPGExplicit stpg, int bestExitState, BitSet sec, int maxPlayer) {
 
     BitSet attractor = new BitSet();
     BitSet attractor2 =  new BitSet();
@@ -1000,120 +1244,141 @@ public class STPGModelChecker extends ProbModelChecker
     return attractor;
   }
 
-
-  /**
-   * main part of the Sound Value iteration
-   * @param subset Set to iterate on; should be unknown if working on whole thing at once and SCC if doing topological VI
-   * initialState used for checking done; if we only care about initstate, set to its index. If we need everything to be close (topological VI), then set to -1.
-   * @return number of iterations; upper and lower bounds are modified as side effect
-   */
-  private int iterateOnSVISubset(STPGExplicit stpg, boolean min1, boolean min2, double[] stepBoundReach, double[] stepBoundReach2, double[] stepBoundStay, double[] stepBoundStay2, List<BitSet> mecs, explicit.ECComputerDefault ec, BitSet subset) throws PrismException{
-    int iters = 0;
-    boolean done = false;
-    double tmpsoln[];
-    this.termCritParam = 1e-6 ; //TODO: precision as parameter
-    double decisionValueMin, decisionValueMax, lowerBound, lowerBound2, upperBound, upperBound2;
-    lowerBound = lowerBound2 = 0;
-    upperBound = upperBound2 = 1;
-    decisionValueMax = 0;
-    decisionValueMin = 1;
-
-    // Need initstate to determine whether done in bounded case
-    int initialState = stpg.getFirstInitialState();
-    while (!done) {
-      iters++;
-      System.out.println("ITERATION: " +iters);
-      for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
-        // find if the player is min or max
-        boolean min = (stpg.getPlayer(s) == 1) ? min1 : min2;
-        int a = findAction(stpg, s, stepBoundReach, stepBoundStay, min, lowerBound, upperBound);
-        double decisionValue = computeDecisionValue(stpg, stepBoundReach, stepBoundStay, s, a, min);
-        System.out.println("decision value for the state: " + s + " is: " + decisionValue);
-        if(min)
-          decisionValueMin = Math.min(decisionValueMin, decisionValue);
-        else
-          decisionValueMax = Math.max(decisionValueMax, decisionValue);
-
-        // Matrix-vector multiply and min/max ops (Bellman update)
-        // stpg.mvMultMinMax(stepBoundReach, min1, min2, stepBoundReach2, subset, a);
-        stepBoundReach2[s] = Math.max(stpg.mvMultSingle(s, a, stepBoundReach), stepBoundReach[s]);
-        stepBoundStay2[s] = Math.min(stpg.mvMultSingle(s, a, stepBoundStay), stepBoundStay[s]);
-      }
+	/**
+	 * Method for guessing the upper bound for OVI. See definition of diff^+ in original OVI paper or the new one.
+	 * @param lowerBounds The lower bound which is the basis of the guess
+	 * @param upperBounds The upper bounds which is filled on the considered subset and kept unchanged outside the subset
+	 * @param subset The subset that we are currently working on (S? or the current SCC)
+	 * @return upperBounds, since I don't want to rely on side effects anymore. Sometimes they don't work.
+	 * On subset, UpperBounds are now set to sth that is epsilon (termcritparam) greater than vector, relatively or absolutely.
+	 * Corner case: 0 stays 0, nothing greater than 1
+	 */
+	private double[] diffPlus(double[] lowerBounds, double[] upperBounds, BitSet subset){
+		for(int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s+1)){
+			if(this.termCrit == TermCrit.ABSOLUTE){
+				upperBounds[s] = Math.min(1,lowerBounds[s] == 0 ? 0 : lowerBounds[s] + this.termCritParam);
+			}
+			else{ //if(termCrit == TermCrit.RELATIVE){
+				upperBounds[s] = Math.min(1,lowerBounds[s] * (1+this.termCritParam));
+			}
+		}
+		return upperBounds;
+	}
 
 
-      // Swap vectors for next iter
-      tmpsoln = stepBoundReach;
-      stepBoundReach = stepBoundReach2;
-      stepBoundReach2 = tmpsoln;
-
-      tmpsoln = stepBoundStay;
-      stepBoundStay = stepBoundStay2;
-      stepBoundStay2 = tmpsoln;
-
-
-      boolean isallreach = true;
-      for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
-        if(stepBoundStay[s]==1){
-          isallreach = false;
-          break;
-        }
-      }
-
-
-      if(isallreach){
-        //double lower_val=Double.POSITIVE_INFINITY;
-        double lower_val = 1.0;
-        for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
-          if(lower_val > stepBoundReach[s]/(1-stepBoundStay[s]))
-            lower_val = stepBoundReach[s]/(1-stepBoundStay[s]);
-        }
-        if(decisionValueMin < lower_val) System.out.println("Need of DECISION VALUE for LB: "+decisionValueMin + ", approx_lower: "+ lower_val + ", oldlowerBound: "+ lowerBound2);
-        lower_val = Math.min(decisionValueMin, lower_val);
-        lowerBound = Math.max(lowerBound2, lower_val);
-        System.out.println("lowerBound: "+lowerBound2);
-
-        //double upper_val=Double.NEGATIVE_INFINITY;
-        double upper_val = 0.0;
-        for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
-          if(upper_val < stepBoundReach[s]/(1-stepBoundStay[s]))
-            upper_val = stepBoundReach[s]/(1-stepBoundStay[s]);
-        }
-        if(decisionValueMax > upper_val) System.out.println("Need of DECISION VALUE for UB: "+decisionValueMax + ", approx_upper: "+ upper_val + ", oldupperBound: "+ upperBound2);
-        upper_val = Math.max(decisionValueMax, upper_val);
-        upperBound = Math.min(upperBound2, upper_val);
-        System.out.println("upperBound: "+upperBound2);
-      }
-
-      double tmp = upperBound;
-      upperBound = upperBound2;
-      upperBound2 = tmp;
-
-
-      tmp = lowerBound;
-      lowerBound = lowerBound2;
-      lowerBound2 = tmp;
-
-
-      //arbitrary improvement: do not adjust every step, cause it usually takes very long and needs to be propagated;
-      // abusing the maxIters parameter, since I don't need it when bounded and handing down stuff through prism is horrible
-      if (iters % maxIters == 0) {
-        //only look at mecs in the current subset
-        for (BitSet mec : mecs){
-          if(subset.intersects(mec)){
-            svi_deflate(stpg, min1, min2, stepBoundReach, stepBoundStay, mec, ec, upperBound);
-          }
-        }
-      }
-
-      // Check termination
-      done = (upperBound - lowerBound) * stepBoundStay[initialState] < 2 * this.termCritParam;
-      double valueReach = stepBoundReach[initialState] + stepBoundStay[initialState]*(upperBound+lowerBound)*0.5;
-
-      if(done) System.out.println("REACHABILITY PROBABILITY: " + valueReach);
-
-    }
-    return iters;
-  }
+//  /**
+//   * main part of the Sound Value iteration
+//   * @param subset Set to iterate on; should be unknown if working on whole thing at once and SCC if doing topological VI
+//   * initialState used for checking done; if we only care about initstate, set to its index. If we need everything to be close (topological VI), then set to -1.
+//   * @return number of iterations; upper and lower bounds are modified as side effect
+//   */
+//  private int iterateOnSVISubset(STPGExplicit stpg, boolean min1, boolean min2, double[] stepBoundReach, double[] stepBoundReach2, double[] stepBoundStay, double[] stepBoundStay2, List<BitSet> mecs, explicit.ECComputerDefault ec, BitSet subset) throws PrismException{
+//    int iters = 0;
+//    boolean done = false;
+//    double tmpsoln[];
+//    this.termCritParam = 1e-6 ; //TODO: precision as parameter
+//    double decisionValueMin, decisionValueMax, lowerBound, lowerBound2, upperBound, upperBound2;
+//    lowerBound = lowerBound2 = 0;
+//    upperBound = upperBound2 = 1;
+//    decisionValueMax = 0;
+//    decisionValueMin = 1;
+//
+//    // Need initstate to determine whether done in bounded case
+//    int initialState = stpg.getFirstInitialState();
+//    while (!done) {
+//      iters++;
+//      System.out.println("ITERATION: " +iters);
+//      for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+//        // find if the player is min or max
+//        boolean min = (stpg.getPlayer(s) == 1) ? min1 : min2;
+//        int a = findAction(stpg, s, stepBoundReach, stepBoundStay, min, lowerBound, upperBound);
+//        double decisionValue = computeDecisionValue(stpg, stepBoundReach, stepBoundStay, s, a, min);
+//        System.out.println("decision value for the state: " + s + " is: " + decisionValue);
+//        if(min)
+//          decisionValueMin = Math.min(decisionValueMin, decisionValue);
+//        else
+//          decisionValueMax = Math.max(decisionValueMax, decisionValue);
+//
+//        // Matrix-vector multiply and min/max ops (Bellman update)
+//        // stpg.mvMultMinMax(stepBoundReach, min1, min2, stepBoundReach2, subset, a);
+//        stepBoundReach2[s] = Math.max(stpg.mvMultSingle(s, a, stepBoundReach), stepBoundReach[s]);
+//        stepBoundStay2[s] = Math.min(stpg.mvMultSingle(s, a, stepBoundStay), stepBoundStay[s]);
+//      }
+//
+//
+//      // Swap vectors for next iter
+//      tmpsoln = stepBoundReach;
+//      stepBoundReach = stepBoundReach2;
+//      stepBoundReach2 = tmpsoln;
+//
+//      tmpsoln = stepBoundStay;
+//      stepBoundStay = stepBoundStay2;
+//      stepBoundStay2 = tmpsoln;
+//
+//
+//      boolean isallreach = true;
+//      for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+//        if(stepBoundStay[s]==1){
+//          isallreach = false;
+//          break;
+//        }
+//      }
+//
+//
+//      if(isallreach){
+//        //double lower_val=Double.POSITIVE_INFINITY;
+//        double lower_val = 1.0;
+//        for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+//          if(lower_val > stepBoundReach[s]/(1-stepBoundStay[s]))
+//            lower_val = stepBoundReach[s]/(1-stepBoundStay[s]);
+//        }
+//        if(decisionValueMin < lower_val) System.out.println("Need of DECISION VALUE for LB: "+decisionValueMin + ", approx_lower: "+ lower_val + ", oldlowerBound: "+ lowerBound2);
+//        lower_val = Math.min(decisionValueMin, lower_val);
+//        lowerBound = Math.max(lowerBound2, lower_val);
+//        System.out.println("lowerBound: "+lowerBound2);
+//
+//        //double upper_val=Double.NEGATIVE_INFINITY;
+//        double upper_val = 0.0;
+//        for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+//          if(upper_val < stepBoundReach[s]/(1-stepBoundStay[s]))
+//            upper_val = stepBoundReach[s]/(1-stepBoundStay[s]);
+//        }
+//        if(decisionValueMax > upper_val) System.out.println("Need of DECISION VALUE for UB: "+decisionValueMax + ", approx_upper: "+ upper_val + ", oldupperBound: "+ upperBound2);
+//        upper_val = Math.max(decisionValueMax, upper_val);
+//        upperBound = Math.min(upperBound2, upper_val);
+//        System.out.println("upperBound: "+upperBound2);
+//      }
+//
+//      double tmp = upperBound;
+//      upperBound = upperBound2;
+//      upperBound2 = tmp;
+//
+//
+//      tmp = lowerBound;
+//      lowerBound = lowerBound2;
+//      lowerBound2 = tmp;
+//
+//
+//      //arbitrary improvement: do not adjust every step, cause it usually takes very long and needs to be propagated;
+//      // abusing the maxIters parameter, since I don't need it when bounded and handing down stuff through prism is horrible
+//      if (iters % maxIters == 0) {
+//        //only look at mecs in the current subset
+//        for (BitSet mec : mecs){
+//          if(subset.intersects(mec)){
+//            svi_deflate(stpg, min1, min2, stepBoundReach, stepBoundStay, mec, ec, upperBound);
+//          }
+//        }
+//      }
+//
+//      // Check termination
+//      done = (upperBound - lowerBound) * stepBoundStay[initialState] < 2 * this.termCritParam;
+//      double valueReach = stepBoundReach[initialState] + stepBoundStay[initialState]*(upperBound+lowerBound)*0.5;
+//
+//      if(done) System.out.println("REACHABILITY PROBABILITY: " + valueReach);
+//
+//    }
+//    return iters;
+//  }
 
 
 	/**
@@ -1236,7 +1501,7 @@ public class STPGModelChecker extends ProbModelChecker
         }
       }
     }
-    System.out.println("best choice for state "+ s + " is: "+ bestChoice);
+    //System.out.println("best choice for state "+ s + " is: "+ bestChoice);
     return bestChoice;
   }
 
@@ -1554,7 +1819,7 @@ public class STPGModelChecker extends ProbModelChecker
 			else
 				maxIters = 20;
 			generateStrategy = true;
-			ModelCheckerResult valueRes = computeReachProbsValIter(stpg, no, yes, min1, min2, knownValues, known, false);
+			ModelCheckerResult valueRes = computeReachProbsValIter(stpg, no, yes, min1, min2, knownValues, known, SolnMethod.VALUE_ITERATION);
 			for(int s = 0; s < n; s++) {
 				try {
 					Distribution distribution = valueRes.strat.getNextMove(s);
