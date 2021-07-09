@@ -1101,7 +1101,7 @@ public class STPGModelChecker extends ProbModelChecker
 
 		}
 		if(initialState!=-1)
-			mainLog.println("Result: ["+lowerBounds[initialState]+","+upperBounds[initialState]+"]");
+			mainLog.println("Result: ["+lowerBounds[initialState]+","+((upperBounds!=null) ? upperBounds[initialState] : "none")+"]");
 
 		return new double[][]{lowerBounds,upperBounds,{iters}};
 	}
@@ -1109,7 +1109,7 @@ public class STPGModelChecker extends ProbModelChecker
 	/**
 	 * KKKW18 deflate operation.
 	 */
-	private double[][] deflate(STPGExplicit stpg, boolean min1, boolean min2, double[] upperBounds, double[] lowerBounds, BitSet mec, explicit.ECComputerDefault ec) throws PrismException {
+	private double[][] deflate(STPGExplicit stpg, boolean min1, boolean min2, double[] lowerBounds, double[] upperBounds, BitSet mec, explicit.ECComputerDefault ec) throws PrismException {
 
 		//TODO: I might turn on repeated adjustment again
 		//TODO: I might optimize for MDP handling again (i.e. not recompute SECs and stuff)
