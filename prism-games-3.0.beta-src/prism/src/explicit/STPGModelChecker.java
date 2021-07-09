@@ -1138,12 +1138,8 @@ public class STPGModelChecker extends ProbModelChecker
    */
   private double[][] svi_deflate(STPGExplicit stpg, boolean min1, boolean min2, double[] stepBoundReach, double[] stepBoundStay, BitSet mec, explicit.ECComputerDefault ec, double upperbound) throws PrismException {
 
-    //TODO: I might turn on repeated adjustment again
-    //TODO: I might optimize for MDP handling again (i.e. not recompute SECs and stuff
     double [] currentValReachAndStay = new double[stpg.numStates];
     for(int s=0; s < stpg.numStates; s++){
-//      for(int a=0; a < stpg.getNumChoices(s); a++)
-//        for (int succ : stpg.getChoice(s, a).keySet()) {
           currentValReachAndStay[s] = stepBoundReach[s] + stepBoundStay[s] * upperbound;
     }
     // Find all SECs in given MEC
@@ -1153,10 +1149,10 @@ public class STPGModelChecker extends ProbModelChecker
       BitSet sec = SECs.get(j);
       int maxPlayer = min1 ? (min2 ? -1 : 2) : (min2 ? 1 : 3);
       int[] bestExitStateAndAction = getBestExitDeflate(sec, stpg, stepBoundReach, stepBoundStay, maxPlayer, upperbound);
-
-      // deflate the best state
       int bestExitState = bestExitStateAndAction[0];
       int bestExitAction = bestExitStateAndAction[1];
+
+
       double reachVal = 0, stayVal = 0;
       Distribution succ_dist = stpg.getChoice(bestExitState, bestExitAction);
       for (int succ : succ_dist.keySet()) {
@@ -1164,42 +1160,14 @@ public class STPGModelChecker extends ProbModelChecker
         stayVal += succ_dist.get(succ) * stepBoundStay[succ];
       }
 
-
+      // compute the attractor set for the best exit
       BitSet attractor = computeAttractor(stpg, bestExitState, sec, maxPlayer);
 
-//        boolean min = stpg.getPlayer(s)==1 ? min1 : min2;
-//        double decisionValue;
-//        if(!min) {
-//          decisionValue = computeDecisionValue(stpg, stepBoundReach, stepBoundStay,
-//              bestExitState, bestExitAction, min);
-//          System.out.println("decision value for the state: " + s + " is: " + decisionValue);
-//        }
-
-      //deflate attrators in SECs
+      //deflate every state in the attractor
       for (int s = attractor.nextSetBit(0); s >= 0; s = attractor.nextSetBit(s+1)) {
         stepBoundReach[s] = Math.max(stepBoundReach[s], reachVal);
         stepBoundStay[s] = Math.min(stepBoundStay[s], stayVal);
       }
-
-
-
-
-//      stepBoundReach[bestExitState] = Math.max(stepBoundReach[bestExitState], reachVal);
-//      stepBoundStay[bestExitState] = Math.min(stepBoundStay[bestExitState], stayVal);
-
-
-
-      // And deflate all states in SEC
-//      for (int s = sec.nextSetBit(0); s >= 0; s = SECs.get(j).nextSetBit(s+1)) {
-//        double formerStayValue = stepBoundStay[s];
-//        if(formerStayValue>bestStayingValue) {//monotonic: only decrease if new value smaller
-//          stepBoundStay[s]=bestStayingValue;
-//        }
-//        double formerReachValue = stepBoundReach[s];
-//        if(formerReachValue<bestStayingValue) {//monotonic: only decrease if new value smaller
-//          stepBoundStay[s]=bestStayingValue;
-//        }
-//      }
     }
     return new double[][]{stepBoundStay,stepBoundReach};
   }
@@ -1213,16 +1181,16 @@ public class STPGModelChecker extends ProbModelChecker
     while(!done) {
       for (int s = sec.nextSetBit(0); s >= 0; s = sec.nextSetBit(s + 1)) {
         if (stpg.getPlayer(s) == 1 || maxPlayer == 3) {
-          //Some successor states for some actions in attractor
+          //all successor states for atleast one action for the max in attractor
           for (int i = 0; i < stpg.getNumChoices(s); i++) {
-            boolean some = stpg.someSuccessorsInSet(s, i, attractor);
-            if (some) {
+            boolean all = stpg.allSuccessorsInSet(s, i, attractor);
+            if (all) {
               attractor.set(s);
               break;
             }
           }
         } else {
-          // all successor states of all actions for the minimizer must be in attractor
+          // all successor states of all actions for the min must be in attractor
           boolean exitExist = false;
           for (int i = 0; i < stpg.getNumChoices(s); i++) {
             boolean all = stpg.allSuccessorsInSet(s, i, attractor);
