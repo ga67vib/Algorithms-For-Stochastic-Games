@@ -971,8 +971,8 @@ public class STPGModelChecker extends ProbModelChecker
         if (stpg.getPlayer(s) == 1 || maxPlayer == 3) {
           //Some successor states for some actions in attractor
           for (int i = 0; i < stpg.getNumChoices(s); i++) {
-            boolean some = stpg.someSuccessorsInSet(s, i, attractor);
-            if (some) {
+            boolean all = stpg.allSuccessorsInSet(s, i, attractor);
+            if (all) {
               attractor.set(s);
               break;
             }
