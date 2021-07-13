@@ -955,7 +955,7 @@ public class STPGModelChecker extends ProbModelChecker
 							}
 							if (variant == SolnMethod.SOUND_VALUE_ITERATION) {
 //								svi_deflate(stpg, min1, min2, lowerBoundsNew, upperBoundsNew, mec, ec, upperBound);
-								double[][] reachNstay = svi_deflate(stpg, min1, min2, lowerBoundsNew, upperBoundsNew, mec, ec, upperBound);
+								double[][] reachNstay = svi_deflate(stpg, min1, min2, lowerBoundsNew, upperBoundsNew, mec, ec, lowerBound, upperBound);
 								lowerBoundsNew = reachNstay[1];
 								upperBoundsNew = reachNstay[0];
 							}
@@ -1136,11 +1136,11 @@ public class STPGModelChecker extends ProbModelChecker
   /**
    * SVI deflate operation.
    */
-  private double[][] svi_deflate(STPGExplicit stpg, boolean min1, boolean min2, double[] stepBoundReach, double[] stepBoundStay, BitSet mec, explicit.ECComputerDefault ec, double upperbound) throws PrismException {
+  private double[][] svi_deflate(STPGExplicit stpg, boolean min1, boolean min2, double[] stepBoundReach, double[] stepBoundStay, BitSet mec, explicit.ECComputerDefault ec, double lowerbound, double upperbound) throws PrismException {
 
     double [] currentValReachAndStay = new double[stpg.numStates];
     for(int s=0; s < stpg.numStates; s++){
-          currentValReachAndStay[s] = stepBoundReach[s] + stepBoundStay[s] * upperbound;
+          currentValReachAndStay[s] = stepBoundReach[s] + stepBoundStay[s] * lowerbound;
     }
     // Find all SECs in given MEC
     List<BitSet> SECs = ec.getSECs(mec,currentValReachAndStay,min1,min2);
