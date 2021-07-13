@@ -1179,6 +1179,7 @@ public class STPGModelChecker extends ProbModelChecker
     attractor.set(bestExitState);
     boolean done = false;
     while(!done) {
+      sec.andNot(attractor);
       for (int s = sec.nextSetBit(0); s >= 0; s = sec.nextSetBit(s + 1)) {
         if (stpg.getPlayer(s) == 1 || maxPlayer == 3) {
           //all successor states for atleast one action for the max in attractor
@@ -1207,7 +1208,6 @@ public class STPGModelChecker extends ProbModelChecker
       } else {
         attractor2 = (BitSet) attractor.clone();
       }
-
     }
     return attractor;
   }
