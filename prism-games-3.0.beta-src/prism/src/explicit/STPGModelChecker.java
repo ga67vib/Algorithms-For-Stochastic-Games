@@ -600,7 +600,9 @@ public class STPGModelChecker extends ProbModelChecker
 	{
 		mainLog.println("Doing value iteration variant " + variant + " with solnMethodOptions=" + this.solnMethodOptions + ", maxIters=" + this.maxIters + ", epsilon=" + this.termCritParam + " and topological=" + this.getDoTopologicalValueIteration());
 
-		//TODO: Use solnMethodOptions to decide whether to use Gauss-Seidel. If yes, then in iterateOnSubset use Gauss-Seidel mv.mult.blub thingy in Bellman part.
+		//solnMethodOptions is used to decide whether we use Gauss Seidel or not (%2==1 implies Gauss-Seidel) and for one optimization of OVI. See the iterateOnSubset-method.
+		//The idea of solnMethodOptions is: first bit encodes GS. Second bit encodes OVI. Further bits are still free for further opts.
+
 
 		ModelCheckerResult res = null;
 		BitSet unknown;
@@ -855,14 +857,24 @@ public class STPGModelChecker extends ProbModelChecker
 		boolean verifPhase = false; //indicates whether we are in a verification phase right now
 		List<BitSet> OVI_SECs = null;
 
+		// Gauss-Seidel
+		boolean doGS = ((this.solnMethodOptions%2)==1);
+		if (doGS){mainLog.println("Doing Gauss Seidel variant");}
+
 		while (!done) {
 			iters++;
 			//Debug output:
-			if(iters % 100000 == 0){
-				mainLog.println(iters+"\t\t LB: " + lowerBounds[0] + " UB: " + (upperBounds!=null ? upperBounds[0] : "none"));
-				if(variant==SolnMethod.SOUND_VALUE_ITERATION){mainLog.println("l:" + lowerBound + "; u:" + upperBound);}
-			}
+//			if(iters % 100000 == 0){
+//				mainLog.println(iters+"\t\t LB: " + lowerBounds[0] + " UB: " + (upperBounds!=null ? upperBounds[0] : "none"));
+//				if(variant==SolnMethod.SOUND_VALUE_ITERATION){mainLog.println("l:" + lowerBound + "; u:" + upperBound);}
+//			}
 			//System.out.println("ITERATION: " +iters);
+
+			if(doGS){
+				// For Gauss Seidel, let the new objects have the most up-to-date values, then only work on the new ones
+				lowerBoundsNew = lowerBounds.clone();
+				upperBoundsNew = upperBounds != null ? upperBounds.clone() : null;
+			}
 
 			/**
 			 * BELLMAN UPDATES
@@ -883,8 +895,16 @@ public class STPGModelChecker extends ProbModelChecker
 						decisionValueMax = Math.max(decisionValueMax, decisionValue);
 
 					// Matrix-vector multiply and min/max ops (Monotonic Bellman update); monotonic thing is needed, since deflating can make weird values occur
-					lowerBoundsNew[s] = Math.max(stpg.mvMultSingle(s, a, lowerBounds), lowerBounds[s]);
-					upperBoundsNew[s] = Math.min(stpg.mvMultSingle(s, a, upperBounds), upperBounds[s]);
+					if(!doGS){
+						// keep old bounds as they are and update new bounds object
+						lowerBoundsNew[s] = Math.max(stpg.mvMultSingle(s, a, lowerBounds), lowerBounds[s]);
+						upperBoundsNew[s] = Math.min(stpg.mvMultSingle(s, a, upperBounds), upperBounds[s]);
+					}
+					else{
+						//immediately depend on new bounds object.
+						lowerBoundsNew[s] = Math.max(stpg.mvMultSingle(s, a, lowerBoundsNew), lowerBoundsNew[s]);
+						upperBoundsNew[s] = Math.min(stpg.mvMultSingle(s, a, upperBoundsNew), upperBoundsNew[s]);
+					}
 				}
 
 				//Can only to smart stuff for SVI if every stayVal is less than 1 (else we would divide by 0)
@@ -924,15 +944,28 @@ public class STPGModelChecker extends ProbModelChecker
 
 			}
 			else{
-				// All others just use standard Bellman update for lower bounds
 				if(variant==SolnMethod.VALUE_ITERATION || variant==SolnMethod.INTERVAL_ITERATION || (variant==SolnMethod.OPTIMISTIC_VALUE_ITERATION && (OVI_L_in_verification_phase || !verifPhase))) {
 					//OVI for lower bound if a) not in verification phase or b) switch says we also do lower bound, even if in verification phase
-					stpg.mvMultMinMax(lowerBounds, min1, min2, lowerBoundsNew, subset, false, genAdv ? adv : null);
+					if(!doGS){
+						// keep old bounds as they are and update new bounds object
+						stpg.mvMultMinMax(lowerBounds, min1, min2, lowerBoundsNew, subset, false, genAdv ? adv : null);
+					}
+					else{
+						//Gauss Seidel. Uses only lowerBoundsNew
+						stpg.mvMultGSMinMax(lowerBoundsNew, min1, min2, subset, false, termCrit == TermCrit.ABSOLUTE);
+					}
 				}
 
-				//For II, also perform Bellman update on upper bounds. For OVI, do it if we are in verification phase
 				if (variant==SolnMethod.INTERVAL_ITERATION || (variant==SolnMethod.OPTIMISTIC_VALUE_ITERATION && verifPhase)) {
-					stpg.mvMultMinMax(upperBounds, min1, min2, upperBoundsNew, subset, false, genAdv ? adv : null);
+					//For II, also perform Bellman update on upper bounds. For OVI, do it if we are in verification phase
+					if(!doGS){
+						// keep old bounds as they are and update new bounds object
+						stpg.mvMultMinMax(upperBounds, min1, min2, upperBoundsNew, subset, false, genAdv ? adv : null);
+					}
+					else{
+						//Gauss Seidel. Uses only upperBoundsNew
+						stpg.mvMultGSMinMax(upperBoundsNew, min1, min2, subset, false, termCrit == TermCrit.ABSOLUTE);
+					}
 					verifIters++;
 				}
 			}
@@ -971,6 +1004,7 @@ public class STPGModelChecker extends ProbModelChecker
 			}
 
 			// Swap vectors for next iter
+			// Now lowerBounds is the most up-to-date approximation, while the lowerBoundsNew contains the previous iteration
 			tmpsoln = lowerBounds;
 			lowerBounds = lowerBoundsNew;
 			lowerBoundsNew = tmpsoln;
@@ -1179,7 +1213,7 @@ public class STPGModelChecker extends ProbModelChecker
     attractor.set(bestExitState);
     boolean done = false;
     while(!done) {
-      sec.andNot(attractor);
+      sec.andNot(attractor); //SEC object is not used as SEC after this anymore, so we can use it to store workset of attractor algorithm
       for (int s = sec.nextSetBit(0); s >= 0; s = sec.nextSetBit(s + 1)) {
         if (stpg.getPlayer(s) == 1 || maxPlayer == 3) {
           //all successor states for atleast one action for the max in attractor
