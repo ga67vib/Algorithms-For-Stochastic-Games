@@ -886,7 +886,7 @@ public class STPGModelChecker extends ProbModelChecker
 				for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
 					// find if the player is min or max
 					boolean min = (stpg.getPlayer(s) == 1) ? min1 : min2;
-					int a = findAction(stpg, s, lowerBounds, upperBounds, min, lowerBound, upperBound);
+					int a = findAction(stpg, s, lowerBoundsNew, upperBoundsNew, min, lowerBound, upperBound);
 					double decisionValue = computeDecisionValue(stpg, lowerBounds, upperBounds, s, a, min);
 					//System.out.println("decision value for the state: " + s + " is: " + decisionValue);
 					if(min)
@@ -995,11 +995,12 @@ public class STPGModelChecker extends ProbModelChecker
 						}
 					}
 				}
-				//For OVI: If in verification phase, deflate using the precomputed set of SECs
-				if(variant==SolnMethod.OPTIMISTIC_VALUE_ITERATION && verifPhase) {
-					for (BitSet sec : OVI_SECs) {
-						upperBoundsNew = deflate(stpg, min1, min2, lowerBoundsNew, upperBoundsNew, sec, ec)[0];
-					}
+			}
+			//For OVI: If in verification phase, deflate using the precomputed set of SECs
+			//We *must* deflate every iteration, because otherwise we might have some mixed thing (smaller everywhere but in some best exit), and without deflating we conclude inductive lower bound. With deflating, we realize that the best exit became smaller and it is not inductive lower bound.
+			if(variant==SolnMethod.OPTIMISTIC_VALUE_ITERATION && verifPhase) {
+				for (BitSet sec : OVI_SECs) {
+					upperBoundsNew = deflate(stpg, min1, min2, lowerBoundsNew, upperBoundsNew, sec, ec)[0];
 				}
 			}
 
@@ -1039,6 +1040,7 @@ public class STPGModelChecker extends ProbModelChecker
 					}
 					done = (upperBound - lowerBound) * relevantStayVal < this.termCritParam;
 					if(done){
+//						print_smg(stpg,lowerBounds,upperBounds);
 						//When we are done, we have to insert the smarter values
 						if(initialState != -1){
 							//Only in initial state
