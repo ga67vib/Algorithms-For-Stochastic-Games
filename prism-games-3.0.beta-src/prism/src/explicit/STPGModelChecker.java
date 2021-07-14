@@ -886,7 +886,9 @@ public class STPGModelChecker extends ProbModelChecker
 				for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
 					// find if the player is min or max
 					boolean min = (stpg.getPlayer(s) == 1) ? min1 : min2;
-					int a = findAction(stpg, s, lowerBoundsNew, upperBoundsNew, min, lowerBound, upperBound);
+					int a;
+					if(!doGS){a = findAction(stpg, s, lowerBounds, upperBounds, min, lowerBound, upperBound);}
+					else{a = findAction(stpg, s, lowerBoundsNew, upperBoundsNew, min, lowerBound, upperBound);}
 					double decisionValue = computeDecisionValue(stpg, lowerBounds, upperBounds, s, a, min);
 					//System.out.println("decision value for the state: " + s + " is: " + decisionValue);
 					if(min)
