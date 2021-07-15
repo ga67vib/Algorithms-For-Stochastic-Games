@@ -283,6 +283,9 @@ public class ECComputerDefault extends ECComputer
 			// Also: Only keep actions that reach stuff in the MEC
 			boolean minPlayer = (player == 1 && min1) || (player == 2 && min2);
 			if (minPlayer){
+				//Find action with minimum lower bound L(s,a)
+				double bestLsa = 1.0;
+				Set<Integer> bestActions = new HashSet<>();
 				for (int a = 0; a<model.getNumChoices(s);a++){
 					Distribution distr = ((STPGExplicit) model).trans.get(s).get(a);
 					double Lsa = 0.0;
@@ -291,9 +294,17 @@ public class ECComputerDefault extends ECComputer
 						double prob = (Double) e.getValue();
 						Lsa += prob * L[succ];
 					}
-					if (Lsa == L[s]){
-						gPrime.addChoice(sPrime, makePrimeDistribution(((STPGExplicit) model).getChoice(s,a),g2prime,sink));
+					if (Lsa < bestLsa){
+						bestLsa = Lsa;
+						bestActions.clear();
+						bestActions.add(a);
 					}
+					if (Lsa == bestLsa){
+						bestActions.add(a);
+					}
+				}
+				for (Integer a : bestActions) {
+					gPrime.addChoice(sPrime, makePrimeDistribution(((STPGExplicit) model).getChoice(s, a), g2prime, sink));
 				}
 			}
 			else{
