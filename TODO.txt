@@ -1,0 +1,15 @@
+InC-G:
+- check topological problems really are what I claim
+- Write to Sasha about random model generation => Get a model with many actions
+
+- Run on many action model
+- Update tables with new info on many action model, select top-algos (wins most often?)
+- Mem tests (require answer from Steffi and top-algos):
+	- Merge the fsttcs runscript (pueue) with the rr runscript (/usr/bin/time(
+	- Check that /usr/bin/time is installed
+	- check that rr.py does what it should (creates the time files additionally to the others)
+	- write time file reader for mem reading
+	- select right algos (from gandalf_runscript)
+	- run rr.py to get mems, analyze
+- create graphics (time vs. #bench and vice versa)
+- update algo selection text to include graphics and used metric
