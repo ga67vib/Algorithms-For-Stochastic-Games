@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<config>
+	<MECModel>
+		<use>false</use>
+		<numMECs>2</numMECs>
+		<chainLength>2</chainLength>
+		<probabilityLeadingToSink>0.2</probabilityLeadingToSink>
+		<probabilityToGoBackToInitialState>0.2</probabilityToGoBackToInitialState>
+		<probabilityForChainSwitch>0.1</probabilityForChainSwitch>
+	</MECModel>
+	<ProbabilisticModel>
+		<use>false</use>
+		<numComponents>2</numComponents>
+		<componentBranchingFactor>3</componentBranchingFactor>
+		<componentTreeDepth>1</componentTreeDepth>
+		<probabilityLeadingToSink>0.2</probabilityLeadingToSink>
+		<probabilityToGoBackToInitialState>0.5</probabilityToGoBackToInitialState>
+	</ProbabilisticModel>
+</config>

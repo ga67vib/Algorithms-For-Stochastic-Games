@@ -2625,6 +2625,12 @@ public class SMGModelChecker extends ProbModelChecker
 	{
 		// Temporarily make SMG into an STPG by setting coalition and do computation on STPG
 		smg.setCoalition(coalition);
+
+		String modelExtensionConfigFilePath = settings.getString(PrismSettings.SMG_MODEL_EXTENSION_CONFIG_FILE_PATH);
+		if (modelExtensionConfigFilePath != null && modelExtensionConfigFilePath != "") {
+			SMGModelExtender.extendModel(smg, remain, modelExtensionConfigFilePath);
+		}
+
 		ModelCheckerResult res = createSTPGModelChecker().computeUntilProbs(smg, remain, target, min1, min2, -1);
 		smg.setCoalition(null);
 		return res;

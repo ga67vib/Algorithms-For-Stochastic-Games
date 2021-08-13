@@ -217,7 +217,9 @@ public class PrismSettings implements Observer
 	public static final	String LOG_SELECTION_COLOUR					= "log.selectionColour";
 	public static final	String LOG_BG_COLOUR						= "log.bgColour";
 	public static final	String LOG_BUFFER_LENGTH					= "log.bufferLength";
-	
+
+	//Model Extension Properties (Currently only for STPGs)
+	public static final String SMG_MODEL_EXTENSION_CONFIG_FILE_PATH = "smg.modelExtensionConfigFilePath";
 	
 	//Defaults, types and constaints
 	
@@ -384,6 +386,7 @@ public class PrismSettings implements Observer
 																			"Number of extra DD action variables preallocated for use in model transformation." },
 
 
+			{ STRING_TYPE, 		SMG_MODEL_EXTENSION_CONFIG_FILE_PATH,	"File Path to SMG Extension Config File", 	"4.5", 	"", "", "Must be the path to a Config File"},
 			// ADVERSARIES/COUNTEREXAMPLES:
 			{ CHOICE_TYPE,		PRISM_EXPORT_ADV,						"Adversary export",						"3.3",			"None",																	"None,DTMC,MDP",																
 																			"Type of adversary to generate and export during MDP model checking" },
@@ -1046,7 +1049,7 @@ public class PrismSettings implements Observer
 		// Note: the order of these switches should match the -help output (just to help keep track of things).
 		
 		// ENGINES/METHODS:
-		
+
 		// Main model checking engine
 		if (sw.equals("mtbdd") || sw.equals("m")) {
 			set(PRISM_ENGINE, "MTBDD");
@@ -1110,7 +1113,7 @@ public class PrismSettings implements Observer
 		}
 
 		// NUMERICAL SOLUTION OPTIONS:
-		
+
 		// Linear equation solver + MDP soln method
 		else if (sw.equals("power") || sw.equals("pow") || sw.equals("pwr")) {
 			set(PRISM_LIN_EQ_METHOD, "Power");
@@ -1172,6 +1175,17 @@ public class PrismSettings implements Observer
 				}
 			} else {
 				throw new PrismException("No value specified for -" + sw + " switch");
+			}
+		}
+
+		//SMG extension switches
+		else if (sw.equals("smg_extend")) {
+			if (i < args.length -1) {
+					String path = args[++i];
+					set(SMG_MODEL_EXTENSION_CONFIG_FILE_PATH, path);
+			}
+			else {
+				throw new PrismException("No path specified for -" + sw +" switch");
 			}
 		}
 
