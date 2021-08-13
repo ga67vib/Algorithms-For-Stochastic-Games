@@ -753,6 +753,7 @@ public class STPGModelChecker extends ProbModelChecker
 //					mainLog.println("Non-trivial SCC done in " + itersInSCC + " many iterations");
 					iters+=itersInSCC;
 				}
+//				mainLog.println("SCC done. Precision: [" + lowerBounds[sccs.getStatesForSCC(scc).iterator().nextInt()] + "," + upperBounds[sccs.getStatesForSCC(scc).iterator().nextInt()] + "]. \nIters: " + iters);
 			}
 		}
 		else{
@@ -867,7 +868,7 @@ public class STPGModelChecker extends ProbModelChecker
 		while (!done) {
 			iters++;
 			//Debug output:
-//			if(iters % 100000 == 0){
+//			if(iters % 10000 == 0){
 //				mainLog.println(iters+"\t\t LB: " + lowerBounds[0] + " UB: " + (upperBounds!=null ? upperBounds[0] : "none"));
 //				if(variant==SolnMethod.SOUND_VALUE_ITERATION){mainLog.println("l:" + lowerBound + "; u:" + upperBound);}
 //			}
