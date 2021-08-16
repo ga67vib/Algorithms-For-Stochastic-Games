@@ -28,6 +28,7 @@ public abstract class SMGModelExtension {
         this.statesList = statesList;
         this.stpg = stpg;
         this.remain = remain;
+        this.useExtension = use;
     }
 
     protected Distribution getDistribution(STPG stpg, int state, int action) {

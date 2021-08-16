@@ -203,8 +203,8 @@ else:  # sys.argv[0] == "read"
                         try:
                             time = int(time)
                         except (ValueError):
-                            res = X
-                            sol = X
+                            res = "X"
+                            sol = "X"
                             break
                         times += [time]
                     resTime = min(times) + "/" + \
@@ -247,8 +247,8 @@ else:  # sys.argv[0] == "read"
                         try:
                             sol = float(sol)
                         except (ValueError):
-                            res = X
-                            sol = X
+                            res = "X"
+                            sol = "X"
                             break
                         sols += [sol]
                     resSol = min(sols) + "/" + \

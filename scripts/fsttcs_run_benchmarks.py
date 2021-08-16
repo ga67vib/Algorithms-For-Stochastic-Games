@@ -21,6 +21,9 @@ from functools import reduce
 # If executed in "read" mode,
 # this reads the files created by running the benchmarks and creates three csv files: One for the results (values.csv), one for the time taken (times.csv) and one for the iterations (iters.csv)
 
+# If executed in "analyse" mode,
+# this analyses all the models enabled and prints a report
+
 # Some general parameters
 #prism_path="../../qp/code/prism-games/prism/bin/prism" #Path to PRISM
 prism_path="../prism-games-3.0.beta-src/prism/bin/prism"
@@ -105,6 +108,7 @@ configurations["WP"] = (wp_path, "-ex -BVI_A")
 
 #Models
 models=dict()
+
 models["cdmsn"]="../case-studies/cdmsn.prism ../case-studies/cdmsn.props"
 models["cloud5"]="../case-studies/cloud_5.prism ../case-studies/cloud.props"
 models["cloud6"]="../case-studies/cloud_6.prism ../case-studies/cloud.props"
@@ -147,9 +151,17 @@ models["two_investors"]="../case-studies/two_investors.prism ../case-studies/two
 models["coins"]="../case-studies/coins.prism ../case-studies/coins.props -prop 1"
 models["prison_dil"]="../case-studies/prisoners_dilemma.prism ../case-studies/prisoners_dilemma.props -prop 9"
 
+# Random Models
+model_sizes = [10000]
+num_random_models_per_size = [20]
+for i in range(len(model_sizes)):
+    for j in range(1, num_random_models_per_size[i]+1):
+        modelName = "RANDOM_SIZE_"+str(model_sizes[i])+"_MODEL_"+str(j)+".prism"
+        models["RND_"+str(model_sizes[i])+"_"+str(j)] = "../case-studies/"+modelName+" ../case-studies/randomModels.props -prop 1"
+
 # Parse command line to decide whether to run benchmarks or read them
-if len(sys.argv) == 0 or str(sys.argv[1]) not in ["run", "read"]:
-    print("This script can only run in two modes: run or read. Call it with one of these two as command line parameter")
+if len(sys.argv) == 0 or str(sys.argv[1]) not in ["run", "read", "analyse"]:
+    print("This script can only run in three modes: run, read or analyse. Call it with one of these three as command line parameter")
 elif sys.argv[1] == "run":
     for conf in sorted(configurations.keys()):
         print(conf)
@@ -172,7 +184,7 @@ elif sys.argv[1] == "run":
                     e = sys.exc_info()[0]
                     print(e)
 
-else:  # sys.argv[0] == "read"
+elif (sys.argv[1] == "read"):
     # Model, #States, [min/mean/max runtime for each solver]
     with open(output_dir+"/times.csv", "w") as timefile:
         with open(output_dir+"/values.csv", "w") as valuefile:
@@ -258,3 +270,77 @@ else:  # sys.argv[0] == "read"
                     timefile.write("\n")
                     valuefile.write("\n")
                     iterfile.write("\n")
+
+elif (sys.argv[1] == "analyse"):
+    conf_params = (prism_path, "-analyse")
+    conf_name = "ANALYSIS"
+    print(conf_name)
+    os.system("mkdir -p " + output_dir + "/" + conf_name)
+    
+    #RULES FOR FEATURES: 
+    #The key is the name of the column in the resulting .csv file
+    #The value contain exactly the string as it is printed in the java-file to avoid errors
+    relevantFeatures = dict()
+
+    #Basics
+    relevantFeatures["NumStates"] = "Number of States: "
+    relevantFeatures["NumActions"] = "Number of Choices: "
+    relevantFeatures["NumTargets"] = "Number of Targets (States with trivial value 1): "
+    relevantFeatures["NumSinks"] = "Number of Sinks (States with trivial value 0): "
+    relevantFeatures["NumUnknown"] = "Number of Unknown States: "
+    
+    #Actions-related
+    relevantFeatures["NumMaxActions"] = "Number of maximal choices per state: "
+    relevantFeatures["NumMaxTransitions"] = "Number of maximal transitions per choice: "
+    relevantFeatures["SmallestTransProb"] = "Smallest transition probability: "
+
+    #MEC-related
+    relevantFeatures["NumMECs"] = "Number of MECs: "
+    relevantFeatures["BiggesMEC"] = "Biggest MEC has size: "
+    relevantFeatures["SmallestMEC"] = "Smallest MEC has size: "
+
+    #SCC-related
+    relevantFeatures["NumSCCs"] = "Number of SCCs: "
+
+
+    #Run
+    for model in sorted(models.keys()):
+        print("\t"+model)
+        for i in range(1, reps+1):
+            print("\t\t"+str(i))
+            rep_string = "" if reps == 1 else "_rep" + str(i)
+            if exists(output_dir + "/" + conf_name + "/" + model + rep_string + ".log"):
+                print("\t\tAlready there, skipping")
+                continue
+            prismParams = "" # "-javamaxmem 32g -javastack 16g"  # Change this appropriately
+            command = "timeout 15m " + conf_params[0] + " " + \
+                models[model] + " " + conf_params[1] + " " + prismParams + \
+                " > " + output_dir + "/" + conf_name + "/" + model + rep_string + ".log"
+            try:
+                os.system(command)
+            except:
+                e = sys.exc_info()[0]
+                print(e)
+
+    #Read
+    with open(output_dir+"/analysis.csv", "w") as statisticsfile:
+        header = "Model"
+        for feature in relevantFeatures.keys():
+            header += ","+feature
+        statisticsfile.write(header+"\n")
+
+        for model in sorted(models.keys()):
+
+            infile = output_dir + "/" + conf_name + "/" + model + ".log"
+
+            #Write name of Model
+            statisticsfile.write(str(model))
+
+            for feature in relevantFeatures.keys():
+                #Currently don't look for reps
+                value = pipeline("grep '"+relevantFeatures[feature]+"' "+infile)
+                value = value.replace(relevantFeatures[feature], "")
+                statisticsfile.write(", "+value)
+
+            #Print newline for next Model
+            statisticsfile.write("\n")
