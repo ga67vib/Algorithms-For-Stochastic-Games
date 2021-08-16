@@ -53,7 +53,7 @@ public class SMGModelExtension_BigMEC extends SMGModelExtension {
         }
 
         int numChains = 2;
-        int numNewStatesPerMEC = 2 * numChainedMECs+1;
+        int numNewStatesPerMEC = 2 * this.chainLengthInMEC+1;
         int numNewStates = numChainedMECs*numNewStatesPerMEC;
         int addedSTPGInitialState = stpg.getNumStates();
         int currentInitialState = addedSTPGInitialState;
