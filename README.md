@@ -71,8 +71,9 @@ At this point you should be able to run the case-study script for everything exc
 To be able to use our quadratic programming implementation, you need a Gurobi 9.0.0 or more recent license file. We use Gurobi to construct the quadratic program from the stochastic game as well as to solve it. Gurobi provides free academic licenses that expire after one year.
 To obtain a license, install gurobi and activate the license follow the guidelines provided on:<br/>
 https://www.gurobi.com/documentation/quickstart.html<br/>
+(in a bit more detail: Login, download gurobi optmizer, extract to some folder, get license online, get the license_key command; note that licenses do not work in docker containers)
 After executing `./grbgetkey <YOUR_LICENSE_KEY>` in the bin folder of Gurobi, you should be able to use quadratic programming to solve simple stochastic games with our implementation. To verify this, try out the following command in the prism-games-3.0.beta-src/prism folder:<br/>
-`./bin/prism ../../case_studies/BigMec.prism ../../case_studies/BigMec.props -const N=1 -qp`
+`./bin/prism ../../case-studies/BigMec.prism ../../case-studies/BigMec.props -const N=1 -qp`
 
 #### CPLEX
 Due to license requirements, we disabled solving simple stochastic games with CPLEX.
@@ -106,6 +107,9 @@ The switch -smg_opts can be used to select the optimizations. Refer to the runsc
 ### Pueue
 
 Download pueue (follow instructions here https://github.com/Nukesor/pueue) for the fsttcs runscript. It is an awesome utility for parallelizing commands.
+
+Common bugs: If not found, add the appropriate folder to PATH, e.g. PATH=$PATH:/home/maxi/.cargo/bin
+
 
 Then execute '''pueued -d''', which starts the pueue daemon and makes it listen for tasks.
 Configure pueue as described here: https://github.com/Nukesor/pueue/wiki/Configuration and here https://github.com/Nukesor/pueue/wiki/Groups, setting the number of parallel tasks and using groups to ensure every task has a single CPU.
