@@ -2,4 +2,3 @@
 
 <<1>> Pmax=? [F "reach_goal"]
 
-<<1>> (P<0 [F "accidents"] & P>0 [ F "reach_goal"])

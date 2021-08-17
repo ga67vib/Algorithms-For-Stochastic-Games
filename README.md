@@ -103,6 +103,15 @@ You can either use the script scripts/run_benchmarks.py to perform multiple (or 
 Or you can directly execute PRISM from the command line. The necessary switches are -ii for BVI, -qp for mathematical programming and -politer for strategy iteration.
 The switch -smg_opts can be used to select the optimizations. Refer to the runscript to see which number corresponds to which combination of optimizations.
 
+### Pueue
+
+Download pueue (follow instructions here https://github.com/Nukesor/pueue) for the fsttcs runscript. It is an awesome utility for parallelizing commands.
+
+Then execute '''pueued -d''', which starts the pueue daemon and makes it listen for tasks.
+Configure pueue as described here: https://github.com/Nukesor/pueue/wiki/Configuration and here https://github.com/Nukesor/pueue/wiki/Groups, setting the number of parallel tasks and using groups to ensure every task has a single CPU.
+
+Then run the script, which adds the task to the pueue and then runs them in parellel.
+
 ## Looking at the code
 
 Our new algorithms are located in prism-games-3.0.beta-src/prism/src/explicit/STPGModelChecker.java, namely computeReachProbsValIter (with bounded=true), computeReachProbsPolIter and computeReachProbsQuadProg.
