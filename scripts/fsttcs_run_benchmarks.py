@@ -64,9 +64,9 @@ def _parse(cmd):
 configurations = dict()
 
 configurations["VI"] = (prism_path, "")
-configurations["GVI"] = (prism_path, "-gs")
-configurations["TVI"] = (prism_path, "-topological")
-configurations["TGVI"] = (prism_path, "-gs -topological")
+#configurations["GVI"] = (prism_path, "-gs")
+#configurations["TVI"] = (prism_path, "-topological")
+#configurations["TGVI"] = (prism_path, "-gs -topological")
 
 #BVI
 configurations["BVI_1"] = (prism_path, "-ii -maxiters 1")
@@ -90,16 +90,18 @@ configurations["GSVI_100"] = (prism_path, "-svi -maxiters 100 -smg_opts 1")
 configurations["TGSVI_1"] = (prism_path, "-svi -maxiters 1 -topological -smg_opts 1")
 configurations["TGSVI_100"] = (prism_path, "-svi -maxiters 100 -topological -smg_opts 1")
 
-#OVI
+#OVI (maxiters >1 may be wrong)
 configurations["OVI_1"] = (prism_path, "-ovi -maxiters 1")
-configurations["OVI_100"] = (prism_path, "-ovi -maxiters 100")
 configurations["TOVI_1"] = (prism_path, "-ovi -maxiters 1 -topological")
-configurations["TOVI_100"] = (prism_path, "-ovi -maxiters 100 -topological")
 
-configurations["OVI_1_opt"] = (prism_path, "-ovi -maxiters 1 -smg_opts 4")
-configurations["OVI_100_opt"] = (prism_path, "-ovi -maxiters 100 -smg_opts 4")
-configurations["TOVI_1_opt"] = (prism_path, "-ovi -maxiters 1 -topological -smg_opts 4")
-configurations["TOVI_100_opt"] = (prism_path, "-ovi -maxiters 100 -topological -smg_opts 4")
+configurations["GOVI_1"] = (prism_path, "-ovi -maxiters 1 -smg_opts 1")
+configurations["TGOVI_1"] = (prism_path, "-ovi -maxiters 1 -topological -smg_opts 1")
+
+# Opt didn't make a difference in our first set of experiments, so we omit it
+#configurations["OVI_1_opt"] = (prism_path, "-ovi -maxiters 1 -smg_opts 4")
+#configurations["OVI_100_opt"] = (prism_path, "-ovi -maxiters 100 -smg_opts 4")
+#configurations["TOVI_1_opt"] = (prism_path, "-ovi -maxiters 1 -topological -smg_opts 4")
+#configurations["TOVI_100_opt"] = (prism_path, "-ovi -maxiters 100 -topological -smg_opts 4")
 
 #WP
 configurations["WP"] = (wp_path, "-ex -BVI_A")
@@ -124,28 +126,34 @@ models["AV15_15_2"]="../case-studies/AV15_15.prism ../case-studies/AV.props -pro
 models["AV15_15_3"]="../case-studies/AV15_15.prism ../case-studies/AV.props -prop 3"
 models["charlton1"]="../case-studies/charlton.prism ../case-studies/charlton.props -prop 1"
 models["charlton2"]="../case-studies/charlton.prism ../case-studies/charlton.props -prop 2"
-models["dice10"]="../case-studies/dice10.prism ../case-studies/dice.props -prop 1"
-models["dice20"]="../case-studies/dice20.prism ../case-studies/dice.props -prop 1"
+#models["dice10"]="../case-studies/dice10.prism ../case-studies/dice.props -prop 1"
+#models["dice20"]="../case-studies/dice20.prism ../case-studies/dice.props -prop 1"
 models["dice50"]="../case-studies/dice50.prism ../case-studies/dice.props -prop 1"
+models["dice100"]="../case-studies/dice100.prism ../case-studies/dice.props -prop 1"
+models["dice50MEC"]="../case-studies/dice50MEC.prism ../case-studies/dice.props -prop 1"
+models["dice100MEC"]="../case-studies/dice100MEC.prism ../case-studies/dice.props -prop 1"
 models["hallway5_5_1"]="../case-studies/hallway5_5.prism ../case-studies/hallway.props -prop 1"
 models["hallway5_5_2"]="../case-studies/hallway5_5.prism ../case-studies/hallway.props -prop 2"
-models["hallway8_8_1"]="../case-studies/hallway8_8.prism ../case-studies/hallway.props -prop 1"
-models["hallway8_8_2"]="../case-studies/hallway8_8.prism ../case-studies/hallway.props -prop 2"
+#models["hallway8_8_1"]="../case-studies/hallway8_8.prism ../case-studies/hallway.props -prop 1"
+#models["hallway8_8_2"]="../case-studies/hallway8_8.prism ../case-studies/hallway.props -prop 2"
 models["hallway10_10_1"]="../case-studies/hallway10_10.prism ../case-studies/hallway.props -prop 1"
 models["hallway10_10_2"]="../case-studies/hallway10_10.prism ../case-studies/hallway.props -prop 2"
-models["dice50MEC"]="../case-studies/dice50MEC.prism ../case-studies/dice.props -prop 1"
 models["cdmsnMEC"]="../case-studies/cdmsnMEC.prism ../case-studies/cdmsn.props"
 models["ManyMECs_1e1"] = "../case-studies/ManyMecs.prism ../case-studies/ManyMecs.props -const N=10"
 models["ManyMECs_1e2"]="../case-studies/ManyMecs.prism ../case-studies/ManyMecs.props -const N=100"
 models["ManyMECs_1e3"]="../case-studies/ManyMecs.prism ../case-studies/ManyMecs.props -const N=1000"
-models["ManyMECs_1e4"]="../case-studies/ManyMecs.prism ../case-studies/ManyMecs.props -const N=10000"
+#models["ManyMECs_1e4"]="../case-studies/ManyMecs.prism ../case-studies/ManyMecs.props -const N=10000"
 models["BigMec_1e1"] = "../case-studies/BigMec.prism ../case-studies/BigMec.props -const N=10"
 models["BigMec_1e2"] = "../case-studies/BigMec.prism ../case-studies/BigMec.props -const N=100"
 models["BigMec_1e3"] = "../case-studies/BigMec.prism ../case-studies/BigMec.props -const N=1000"
 models["BigMec_1e4"] = "../case-studies/BigMec.prism ../case-studies/BigMec.props -const N=10000"
-models["hm_30"]="../case-studies/haddad-monmege-SG.pm ../case-studies/haddad-monmege.prctl -const N=30,p=0.5"
-models["hm_100"]="../case-studies/haddad-monmege-SG.pm ../case-studies/haddad-monmege.prctl -const N=100,p=0.5"
-models["hm_200"]="../case-studies/haddad-monmege-SG.pm ../case-studies/haddad-monmege.prctl -const N=200,p=0.5"
+#models["hm_10_5"]="../case-studies/haddad-monmege-SG.pm ../case-studies/haddad-monmege.prctl -const N=10,p=0.5"
+#models["hm_10_1"]="../case-studies/haddad-monmege-SG.pm ../case-studies/haddad-monmege.prctl -const N=10,p=0.1"
+#models["hm_10_9"]="../case-studies/haddad-monmege-SG.pm ../case-studies/haddad-monmege.prctl -const N=10,p=0.9"
+models["hm_20_5"]="../case-studies/haddad-monmege-SG.pm ../case-studies/haddad-monmege.prctl -const N=20,p=0.5"
+models["hm_30_5"]="../case-studies/haddad-monmege-SG.pm ../case-studies/haddad-monmege.prctl -const N=30,p=0.5"
+#models["hm_20_1"]="../case-studies/haddad-monmege-SG.pm ../case-studies/haddad-monmege.prctl -const N=20,p=0.1"
+#models["hm_20_9"]="../case-studies/haddad-monmege-SG.pm ../case-studies/haddad-monmege.prctl -const N=20,p=0.9"
 models["adt"]="../case-studies/adt-infect.prism ../case-studies/adt-infect.props -prop 2"
 models["two_investors"]="../case-studies/two_investors.prism ../case-studies/two_investors.props -prop 4"
 models["coins"]="../case-studies/coins.prism ../case-studies/coins.props -prop 1"
@@ -167,17 +175,18 @@ elif sys.argv[1] == "run":
         print(conf)
         os.system("mkdir -p " + output_dir + "/" + conf)
         for model in sorted(models.keys()):
-            print("\t"+model)
+            #print("\t"+model)
             for i in range(1, reps+1):
-                print("\t\t"+str(i))
+                #print("\t\t"+str(i))
                 rep_string = "" if reps == 1 else "_rep" + str(i)
                 if exists(output_dir + "/" + conf + "/" + model + rep_string + ".log"):
                     print("\t\tAlready there, skipping")
                     continue
-                prismParams = "" # "-javamaxmem 32g -javastack 16g"  # Change this appropriately
-                command = "timeout 15m " + configurations[conf][0] + " " + \
+                prismParams = "-javamaxmem 10g" # "-javamaxmem 32g -javastack 16g"  # Change this appropriately
+                command = "pueue add -- \"timeout 30m " + configurations[conf][0] + " " + \
                     models[model] + " " + configurations[conf][1] + " " + prismParams + \
-                    " > " + output_dir + "/" + conf + "/" + model + rep_string + ".log"
+                    " > " + output_dir + "/" + conf + "/" + model + rep_string + ".log\""
+                print(command)
                 try:
                     os.system(command)
                 except:
@@ -225,9 +234,14 @@ elif (sys.argv[1] == "read"):
                             s1 = "grep 'Result:' " + infile
                             s2 = "cut -d ' ' -f 2"
                             resSol = pipeline(s1, s2)
-                            s1 = "grep 'Value iteration variant' " + infile
+                            s1 = "grep '^Value iteration .* took .* iterations and' " + infile
                             s2 = "cut -d ' ' -f 6"
                             resIter = pipeline(s1, s2)
+                            # For WP, the number is the 5th field of cut. For all new ones, it is the 6th.
+                            if resIter == "iterations":
+                                s2 = "cut -d ' ' -f 5"
+                                resIter = pipeline(s1, s2)
+
 
 
                         else:
