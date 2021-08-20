@@ -2,6 +2,9 @@ import argparse
 import os, os.path
 import glob
 from graphGenerator import GeneratedGraph
+from treeGraphGenerator import TreeGraphGenerator
+from graphGenParams import GraphGenerationParameters
+from randomStateGetter import *
 
 output_dir = "generatedModels"
 
@@ -12,8 +15,14 @@ parser.add_argument(
 parser.add_argument(
     '-numModels', type=int, default=1, help='How many models should be created at once'
 )
+parser.add_argument(
+    '-numMinActions', type=int, default=2, help='How many actions should (almost) all states have at least'
+)
 
 arguments = parser.parse_args()
+num_states = arguments.size
+num_models = arguments.numModels
+num_min_actions = arguments.numMinActions
 
 # Constants
 EMPTY_LINE = "\n\n"
@@ -35,20 +44,27 @@ def addActionsToActionsHeader(player, num_actions):
     return actions
 
 # Parameters
-num_states = arguments.size
 max_num_actions_player1 = 3
 max_num_actions_player2 = 3
 
-for _ in range(arguments.numModels):
+for modelNumber in range(num_models):
+    print("Generating Model Number: "+(str(modelNumber+1))+"...")
+
     # Generate Graph
-    graph = GeneratedGraph()
+    graph = TreeGraphGenerator()
+    generation_parameters = GraphGenerationParameters(
+            num_states,
+            minimum_incoming_edges=1,
+            maximum_incoming_edges=3,
+            probability_to_branch=0.5,
+            probability_for_backwards_action=0.2,
+            probability_to_be_maximizer_state=0.7,
+            minimum_outgoing_edges=num_min_actions,
+            choice_permutator=Permutation_AllStatesPossible()
+        )
+
     graph.generateGraph(
-        num_states,
-        minimum_incoming_edges=1,
-        maximum_incoming_edges=3,
-        probability_to_branch=0.80,
-        probability_for_backwards_action=0.2,
-        probability_to_be_maximizer_state=0.60
+        generation_parameters
     )
 
     max_num_actions_player1 = graph.max_player_1_actions

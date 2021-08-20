@@ -72,23 +72,23 @@ configurations["VI"] = (prism_path, "")
 configurations["BVI_1"] = (prism_path, "-ii -maxiters 1")
 configurations["BVI_100"] = (prism_path, "-ii -maxiters 100")
 configurations["TBVI_1"] = (prism_path, "-ii -maxiters 1 -topological")
-configurations["TBVI_100"] = (prism_path, "-ii -maxiters 100 -topological")
+#configurations["TBVI_100"] = (prism_path, "-ii -maxiters 100 -topological")
 
 configurations["GBVI_1"] = (prism_path, "-ii -maxiters 1 -smg_opts 1")
-configurations["GBVI_100"] = (prism_path, "-ii -maxiters 100 -smg_opts 1")
+#configurations["GBVI_100"] = (prism_path, "-ii -maxiters 100 -smg_opts 1")
 configurations["TGBVI_1"] = (prism_path, "-ii -maxiters 1 -topological -smg_opts 1")
-configurations["TGBVI_100"] = (prism_path, "-ii -maxiters 100 -topological -smg_opts 1")
+#configurations["TGBVI_100"] = (prism_path, "-ii -maxiters 100 -topological -smg_opts 1")
 
 #SVI
 configurations["SVI_1"] = (prism_path, "-svi -maxiters 1")
-configurations["SVI_100"] = (prism_path, "-svi -maxiters 100")
+#configurations["SVI_100"] = (prism_path, "-svi -maxiters 100")
 configurations["TSVI_1"] = (prism_path, "-svi -maxiters 1 -topological")
-configurations["TSVI_100"] = (prism_path, "-svi -maxiters 100 -topological")
+#configurations["TSVI_100"] = (prism_path, "-svi -maxiters 100 -topological")
 
 configurations["GSVI_1"] = (prism_path, "-svi -maxiters 1 -smg_opts 1")
-configurations["GSVI_100"] = (prism_path, "-svi -maxiters 100 -smg_opts 1")
+#configurations["GSVI_100"] = (prism_path, "-svi -maxiters 100 -smg_opts 1")
 configurations["TGSVI_1"] = (prism_path, "-svi -maxiters 1 -topological -smg_opts 1")
-configurations["TGSVI_100"] = (prism_path, "-svi -maxiters 100 -topological -smg_opts 1")
+#configurations["TGSVI_100"] = (prism_path, "-svi -maxiters 100 -topological -smg_opts 1")
 
 #OVI (maxiters >1 may be wrong)
 configurations["OVI_1"] = (prism_path, "-ovi -maxiters 1")
@@ -107,7 +107,6 @@ configurations["TGOVI_1"] = (prism_path, "-ovi -maxiters 1 -topological -smg_opt
 configurations["WP"] = (wp_path, "-ex -BVI_A")
 
 
-
 #Models
 models=dict()
 
@@ -121,9 +120,9 @@ models["teamform4"]="../case-studies/team-form-4.prism ../case-studies/team-form
 models["AV10_10_1"]="../case-studies/AV10_10.prism ../case-studies/AV.props -prop 1"
 models["AV10_10_2"]="../case-studies/AV10_10.prism ../case-studies/AV.props -prop 2"
 models["AV10_10_3"]="../case-studies/AV10_10.prism ../case-studies/AV.props -prop 3"
-models["AV15_15_1"]="../case-studies/AV15_15.prism ../case-studies/AV.props -prop 1"
-models["AV15_15_2"]="../case-studies/AV15_15.prism ../case-studies/AV.props -prop 2"
-models["AV15_15_3"]="../case-studies/AV15_15.prism ../case-studies/AV.props -prop 3"
+#models["AV15_15_1"]="../case-studies/AV15_15.prism ../case-studies/AV.props -prop 1"
+#models["AV15_15_2"]="../case-studies/AV15_15.prism ../case-studies/AV.props -prop 2"
+#models["AV15_15_3"]="../case-studies/AV15_15.prism ../case-studies/AV.props -prop 3"
 models["charlton1"]="../case-studies/charlton.prism ../case-studies/charlton.props -prop 1"
 models["charlton2"]="../case-studies/charlton.prism ../case-studies/charlton.props -prop 2"
 #models["dice10"]="../case-studies/dice10.prism ../case-studies/dice.props -prop 1"
@@ -144,7 +143,7 @@ models["ManyMECs_1e2"]="../case-studies/ManyMecs.prism ../case-studies/ManyMecs.
 models["ManyMECs_1e3"]="../case-studies/ManyMecs.prism ../case-studies/ManyMecs.props -const N=1000"
 #models["ManyMECs_1e4"]="../case-studies/ManyMecs.prism ../case-studies/ManyMecs.props -const N=10000"
 models["BigMec_1e1"] = "../case-studies/BigMec.prism ../case-studies/BigMec.props -const N=10"
-models["BigMec_1e2"] = "../case-studies/BigMec.prism ../case-studies/BigMec.props -const N=100"
+#models["BigMec_1e2"] = "../case-studies/BigMec.prism ../case-studies/BigMec.props -const N=100"
 models["BigMec_1e3"] = "../case-studies/BigMec.prism ../case-studies/BigMec.props -const N=1000"
 models["BigMec_1e4"] = "../case-studies/BigMec.prism ../case-studies/BigMec.props -const N=10000"
 #models["hm_10_5"]="../case-studies/haddad-monmege-SG.pm ../case-studies/haddad-monmege.prctl -const N=10,p=0.5"
@@ -166,6 +165,20 @@ for i in range(len(model_sizes)):
     for j in range(1, num_random_models_per_size[i]+1):
         modelName = "RANDOM_SIZE_"+str(model_sizes[i])+"_MODEL_"+str(j)+".prism"
         models["RND_"+str(model_sizes[i])+"_"+str(j)] = "../case-studies/"+modelName+" ../case-studies/randomModels.props -prop 1"
+
+# Model Extensions
+# Currently, apply the extension to each Model
+extension_config_folder_path = "../model-extension-configs/"
+extension_config_names = ["smallMEC", "smallProb", "bigMEC", "bigProb"]
+extension_config_models = dict()
+for extension_config in extension_config_names:
+    extension_config_path = extension_config_folder_path+extension_config+".json"
+    for model_key in models.keys():
+        new_key = model_key+"_"+extension_config
+        extension_config_models[new_key] = models[model_key]+" -smg_extend "+extension_config_path
+#Unify models with the extensions
+models = {**models, **extension_config_models}
+
 
 # Parse command line to decide whether to run benchmarks or read them
 if len(sys.argv) == 0 or str(sys.argv[1]) not in ["run", "read", "analyse"]:
@@ -310,7 +323,7 @@ elif (sys.argv[1] == "analyse"):
 
     #MEC-related
     relevantFeatures["NumMECs"] = "Number of MECs: "
-    relevantFeatures["BiggesMEC"] = "Biggest MEC has size: "
+    relevantFeatures["BiggestMEC"] = "Biggest MEC has size: "
     relevantFeatures["SmallestMEC"] = "Smallest MEC has size: "
 
     #SCC-related
