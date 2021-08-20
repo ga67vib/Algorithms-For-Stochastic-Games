@@ -2,10 +2,7 @@ package explicit;
 
 import prism.PrismException;
 
-import java.util.BitSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class STPGModelAnalyser {
     STPGModelChecker modelChecker;
@@ -41,10 +38,12 @@ public class STPGModelAnalyser {
         int maxTransitions=0;
         int choiceNum;
         double minTrans=1.0;
+        int numChoicesWithBranches = 0;
         for (int state=0; state<stpg.getNumStates(); state++) {
             choiceNum=stpg.getNumChoices(state);
             if (choiceNum>maxChoices) maxChoices=choiceNum;
             for (int choice=0; choice<choiceNum; choice++) {
+                if (stpg.getNumTransitions(state, choice) > 1) numChoicesWithBranches++;
                 if (stpg.getNumTransitions(state,choice)>maxTransitions) maxTransitions=stpg.getNumTransitions(state,choice);
                 for (Iterator<Map.Entry<Integer, Double>> it = stpg.getTransitionsIterator(state, choice); it.hasNext(); ) {
                     Map.Entry<Integer, Double> tr = it.next();
@@ -58,6 +57,7 @@ public class STPGModelAnalyser {
         log("Number of maximal choices per state: " + maxChoices);
         log("Number of maximal transitions per choice: " + maxTransitions);
         log("Smallest transition probability: " + minTrans);
+        log("Number of Choices with probability: " + numChoicesWithBranches);
 
         List<BitSet> mecs = null;
         ECComputerDefault ec =null;
@@ -70,20 +70,36 @@ public class STPGModelAnalyser {
         mecs = ec.getMECStates();
         log("Number of MECs: " + mecs.size());
 
+        Collections.sort(mecs, (Comparator.comparingInt(BitSet::cardinality)));
         long maximalCardinalityMEC=0;
         long minimalCardinalityMEC=Long.MAX_VALUE;
+        double avgMecsize = 0;
+
+        double mecSizeMedian = 0;
+        int medianIndex = mecs.size()/2;
+        if (mecs.size() % 2 == 1) {
+            mecSizeMedian = mecs.get(medianIndex).cardinality();
+        }
+        else {
+            mecSizeMedian = (mecs.get(medianIndex).cardinality() + mecs.get(medianIndex+1).cardinality())/2.0;
+        }
+
         if (mecs.size()>0) {
             for (int i=0; i<mecs.size(); i++) {
+                avgMecsize += mecs.get(i).cardinality();
                 if (mecs.get(i).cardinality()>maximalCardinalityMEC) maximalCardinalityMEC=mecs.get(i).cardinality();
                 if (mecs.get(i).cardinality()<minimalCardinalityMEC) minimalCardinalityMEC=mecs.get(i).cardinality();
             }
+            avgMecsize/=mecs.size();
             log("Biggest MEC has size: " + maximalCardinalityMEC);
             log("Smallest MEC has size: " + minimalCardinalityMEC);
+            log("MEC size on average is: " + avgMecsize);
+            log("MEC size median is: " + mecSizeMedian);
         }
         else {
             //Currently only there to make writing and reading csv easier
-            log("Biggest MEC has size: " + "-");
-            log("Smallest MEC has size: " + "-");
+            log("Biggest MEC has size: " + "");
+            log("Smallest MEC has size: " + "");
         }
         System.out.println(("I could also tell you the size of each MEC or more about it. Controlled MEC? SEC?"));
 
