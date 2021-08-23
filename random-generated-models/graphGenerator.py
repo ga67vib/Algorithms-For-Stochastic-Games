@@ -92,6 +92,7 @@ class GeneratedGraph:
 
     def _generateChoice(self, source_state, target_state, probability_to_branch):
         distribution = dict()
+        counter = 0
         if (self._meetsThreshhold(probability_to_branch)):
             distribution = self._getProbabilityDistributionForBranchingAction(target_state)
         else:

@@ -1,0 +1,115 @@
+smg
+
+global state: [0..99];
+
+player P1 player1 endplayer
+player P2 player2 endplayer
+
+module player1
+	[] state=0 -> 1/2 : (state'=1) + 1/2 : (state'=99);
+	[] state=2 -> 1 : (state'=3);
+	[] state=3 -> 1/2 : (state'=4) + 1/2 : (state'=90);
+	[] state=6 -> 1 : (state'=7);
+	[] state=7 -> 1/2 : (state'=8) + 1/2 : (state'=82);
+	[] state=9 -> 1 : (state'=10);
+	[] state=12 -> 1 : (state'=13);
+	[] state=13 -> 1 : (state'=14);
+	[] state=14 -> 1 : (state'=15);
+	[] state=15 -> 1 : (state'=16);
+	[] state=17 -> 1 : (state'=18);
+	[] state=19 -> 1 : (state'=20);
+	[] state=20 -> 1 : (state'=21);
+	[] state=21 -> 1 : (state'=22);
+	[] state=22 -> 1 : (state'=23);
+	[] state=23 -> 1/2 : (state'=24) + 1/2 : (state'=98);
+	[] state=24 -> 1 : (state'=25);
+	[] state=25 -> 1/2 : (state'=26) + 1/2 : (state'=88);
+	[] state=26 -> 1/2 : (state'=27) + 1/2 : (state'=83);
+	[] state=28 -> 1 : (state'=29);
+	[] state=31 -> 1/2 : (state'=32) + 1/2 : (state'=85);
+	[] state=33 -> 1 : (state'=34);
+	[] state=34 -> 1 : (state'=35);
+	[] state=35 -> 1/2 : (state'=36) + 1/2 : (state'=81);
+	[] state=37 -> 1/2 : (state'=38) + 1/2 : (state'=87);
+	[] state=38 -> 1/2 : (state'=39) + 1/2 : (state'=88);
+	[] state=39 -> 1 : (state'=40);
+	[] state=41 -> 1 : (state'=42);
+	[] state=43 -> 1 : (state'=44);
+	[] state=44 -> 1 : (state'=45);
+	[] state=45 -> 1/2 : (state'=46) + 1/2 : (state'=92);
+	[] state=46 -> 1/2 : (state'=47) + 1/2 : (state'=94);
+	[] state=47 -> 1/2 : (state'=48) + 1/2 : (state'=98);
+	[] state=48 -> 1/2 : (state'=49) + 1/2 : (state'=96);
+	[] state=49 -> 1/2 : (state'=50) + 1/2 : (state'=99);
+	[] state=50 -> 1/2 : (state'=51) + 1/2 : (state'=90);
+	[] state=51 -> 1/2 : (state'=52) + 1/2 : (state'=80);
+	[] state=52 -> 1 : (state'=53);
+	[] state=54 -> 1 : (state'=55);
+	[] state=55 -> 1 : (state'=56);
+	[] state=56 -> 1 : (state'=57);
+	[] state=57 -> 1 : (state'=58);
+	[] state=59 -> 1 : (state'=60);
+	[] state=61 -> 1 : (state'=62);
+	[] state=63 -> 1 : (state'=64);
+	[] state=68 -> 1/2 : (state'=69) + 1/2 : (state'=86);
+	[] state=70 -> 1 : (state'=71);
+	[] state=71 -> 1 : (state'=72);
+	[] state=72 -> 1 : (state'=73);
+	[] state=73 -> 1 : (state'=74);
+	[] state=74 -> 1 : (state'=75);
+	[] state=77 -> 1 : (state'=78);
+	[] state=78 -> 1 : (state'=79);
+	[] state=80 -> 1 : (state'=81);
+	[] state=83 -> 1/2 : (state'=84) + 1/2 : (state'=89);
+	[] state=84 -> 1 : (state'=85);
+	[] state=85 -> 1/2 : (state'=86) + 1/2 : (state'=85);
+	[] state=88 -> 1 : (state'=89);
+	[] state=91 -> 1 : (state'=92);
+	[] state=92 -> 1/2 : (state'=93) + 1/2 : (state'=92);
+	[] state=93 -> 1 : (state'=94);
+	[] state=97 -> 1 : (state'=98);
+endmodule
+
+module player2
+	[] state=1 -> 1 : (state'=2);
+	[] state=4 -> 1/2 : (state'=5) + 1/2 : (state'=97);
+	[] state=5 -> 1 : (state'=6);
+	[] state=8 -> 1/2 : (state'=9) + 1/2 : (state'=91);
+	[] state=10 -> 1/2 : (state'=11) + 1/2 : (state'=86);
+	[] state=11 -> 1 : (state'=12);
+	[] state=16 -> 1/2 : (state'=17) + 1/2 : (state'=93);
+	[] state=18 -> 1/2 : (state'=19) + 1/2 : (state'=92);
+	[] state=27 -> 1/2 : (state'=28) + 1/2 : (state'=80);
+	[] state=29 -> 1 : (state'=30);
+	[] state=30 -> 1/2 : (state'=31) + 1/2 : (state'=89);
+	[] state=32 -> 1/2 : (state'=33) + 1/2 : (state'=84);
+	[] state=36 -> 1/2 : (state'=37) + 1/2 : (state'=95);
+	[] state=40 -> 1 : (state'=41);
+	[] state=42 -> 1/2 : (state'=43) + 1/2 : (state'=83);
+	[] state=53 -> 1/2 : (state'=54) + 1/2 : (state'=93);
+	[] state=58 -> 1 : (state'=59);
+	[] state=60 -> 1 : (state'=61);
+	[] state=62 -> 1 : (state'=63);
+	[] state=64 -> 1/2 : (state'=65) + 1/2 : (state'=95);
+	[] state=65 -> 1/2 : (state'=66) + 1/2 : (state'=91);
+	[] state=66 -> 1/2 : (state'=67) + 1/2 : (state'=97);
+	[] state=67 -> 1 : (state'=68);
+	[] state=69 -> 1/2 : (state'=70) + 1/2 : (state'=87);
+	[] state=75 -> 1/2 : (state'=76) + 1/2 : (state'=84);
+	[] state=76 -> 1/2 : (state'=77) + 1/2 : (state'=81);
+	[] state=79 -> 1/2 : (state'=80) + 1/2 : (state'=82);
+	[] state=81 -> 1 : (state'=82);
+	[] state=82 -> 1/2 : (state'=83) + 1/2 : (state'=85);
+	[] state=86 -> 1 : (state'=87);
+	[] state=87 -> 1/2 : (state'=88) + 1/2 : (state'=84);
+	[] state=89 -> 1/2 : (state'=90) + 1/2 : (state'=94);
+	[] state=90 -> 1 : (state'=91);
+	[] state=94 -> 1/2 : (state'=95) + 1/2 : (state'=87);
+	[] state=95 -> 1 : (state'=96);
+	[] state=96 -> 1 : (state'=97);
+	[] state=98 -> 1 : (state'=99);
+	[] state=99 -> 1 : (state'=99);
+endmodule
+
+//Labels
+label "p1win" = state=99;

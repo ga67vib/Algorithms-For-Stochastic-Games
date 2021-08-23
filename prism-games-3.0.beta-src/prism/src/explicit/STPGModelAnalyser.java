@@ -77,12 +77,6 @@ public class STPGModelAnalyser {
 
         double mecSizeMedian = 0;
         int medianIndex = mecs.size()/2;
-        if (mecs.size() % 2 == 1) {
-            mecSizeMedian = mecs.get(medianIndex).cardinality();
-        }
-        else {
-            mecSizeMedian = (mecs.get(medianIndex).cardinality() + mecs.get(medianIndex+1).cardinality())/2.0;
-        }
 
         if (mecs.size()>0) {
             for (int i=0; i<mecs.size(); i++) {
@@ -91,6 +85,12 @@ public class STPGModelAnalyser {
                 if (mecs.get(i).cardinality()<minimalCardinalityMEC) minimalCardinalityMEC=mecs.get(i).cardinality();
             }
             avgMecsize/=mecs.size();
+            if (mecs.size() % 2 == 1) {
+                mecSizeMedian = mecs.get(medianIndex).cardinality();
+            }
+            else {
+                mecSizeMedian = (mecs.get(medianIndex).cardinality() + mecs.get(medianIndex+1).cardinality())/2.0;
+            }
             log("Biggest MEC has size: " + maximalCardinalityMEC);
             log("Smallest MEC has size: " + minimalCardinalityMEC);
             log("MEC size on average is: " + avgMecsize);
@@ -100,6 +100,8 @@ public class STPGModelAnalyser {
             //Currently only there to make writing and reading csv easier
             log("Biggest MEC has size: " + "");
             log("Smallest MEC has size: " + "");
+            log("MEC size on average is: " + "");
+            log("MEC size median is: " + "");
         }
         System.out.println(("I could also tell you the size of each MEC or more about it. Controlled MEC? SEC?"));
 
