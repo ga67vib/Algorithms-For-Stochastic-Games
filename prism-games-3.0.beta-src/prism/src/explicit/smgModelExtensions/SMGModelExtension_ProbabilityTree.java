@@ -67,11 +67,22 @@ public class SMGModelExtension_ProbabilityTree extends SMGModelExtension{
         Random random = new Random();
         random.setSeed(100); //Set deterministic Seed because we do want deterministic models but don't care about who the states belong
 
-        int numNewStatesPerComponent = 1;
+        long numNewStatesPerComponentLong = 1;
         for (int depth = 1; depth <= treeDepth; depth++) {
-            numNewStatesPerComponent += Math.pow(treeBranchingFactor, depth);
+            numNewStatesPerComponentLong += Math.pow(treeBranchingFactor, depth);
+            if (numNewStatesPerComponentLong < 0 || numNewStatesPerComponentLong > Integer.MAX_VALUE) {
+                throw new IllegalArgumentException("[Model Extension]: The Tree Depth is too high. The amount of states per component exceeds Integer.MAX_VALUE");
+            }
         }
+
+        if (numNewStatesPerComponentLong * numComponents > Integer.MAX_VALUE || numNewStatesPerComponentLong * numComponents < 0) {
+            throw new IllegalArgumentException("[Model Extension]: The number of new states is too big. You exceed Integer.MAX_VALUE. Try reducing tree depth or the number of copmonents");
+        }
+
+        int numNewStatesPerComponent = (int) numNewStatesPerComponentLong;
         int numNewStates = numNewStatesPerComponent*numComponents;
+
+
         int addedSTPGInitialState = stpg.getNumStates();
         int currentInitialState = addedSTPGInitialState;
         int nextInitialState;

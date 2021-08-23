@@ -18,6 +18,7 @@
       <root url="jar://$PROJECT_DIR$/ext/lp_solve_5.5_java/lib/lpsolve55j.jar!/" />
       <root url="jar://$PROJECT_DIR$/ext/ppl_java/ppl_java.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib/ampl-2.0.3.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/json-simple-1.1.1.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

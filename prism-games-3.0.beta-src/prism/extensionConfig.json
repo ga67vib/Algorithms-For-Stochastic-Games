@@ -1,6 +1,6 @@
 {
 	"MECModel": {
-		"use": true,
+		"use": false,
 		"numMECs": 2,
 		"chainLength": 2,
 		"probabilityLeadingToSink": 0.2,
@@ -9,10 +9,10 @@
 	},
 	"ProbabilisticModel": {
 		"use": true,
-		"numComponents": 2,
-		"componentBranchingFactor": 3,
-		"componentTreeDepth": 1,
+		"numComponents": 100,
+		"componentBranchingFactor": 2,
+		"componentTreeDepth": 21,
 		"probabilityLeadingToSink": 0.2,
-		"probabilityToGoBackToInitialState": 0.5
+		"probabilityToGoBackToInitialState": 0.01
 	}
 }
