@@ -77,7 +77,8 @@ class GeneratedGraph:
 
                 #Add choice
                 already_included_states.append(outgoing_state)
-                distribution = self._generateChoice(outgoing_state, state, self.params.probability_to_branch)
+                #Try to force MECs by setting branching probability low
+                distribution = self._generateChoice(outgoing_state, state, 0.1)
                 self.actions_map[outgoing_state].append(distribution)
 
         #Same procedure backwards to add MECs:
@@ -92,7 +93,6 @@ class GeneratedGraph:
 
     def _generateChoice(self, source_state, target_state, probability_to_branch):
         distribution = dict()
-        counter = 0
         if (self._meetsThreshhold(probability_to_branch)):
             distribution = self._getProbabilityDistributionForBranchingAction(target_state)
         else:
@@ -101,15 +101,39 @@ class GeneratedGraph:
                 
 
     def _getProbabilityDistributionForBranchingAction(self, target_state):
-        """TODO"""
+        counter = 1
         transition_targets_permutation = self.params.transition_permutator
         distribution = dict()
-        other_state = transition_targets_permutation.next(target_state)
-        if (target_state != other_state):
-            distribution[target_state] = self._probabilityToFractionString(1,2)
-            distribution[other_state] = self._probabilityToFractionString(1,2)
+        intDistribution = dict()
+
+        denominator = self.params.denominator_range
+        maximal_branch_count = 10
+
+        #Assign a sure branch to the target state
+        probability = random.randint(1, denominator)
+        intDistribution[target_state] = probability
+        totalProbability = probability
+
+        while (counter < maximal_branch_count and self._meetsThreshhold(self.params.probability_to_branch) and totalProbability < denominator):
+            other_state = transition_targets_permutation.next(target_state)
+            probability = random.randint(1, denominator-totalProbability)
+            if not other_state in intDistribution.keys():
+                intDistribution[other_state] = probability
+            else:
+                intDistribution[other_state] += probability
+
+            counter+=1
+            totalProbability += probability
+
+        #If probabilities don't add up to one, increase target probability
+        if totalProbability != denominator:
+            intDistribution[target_state] += denominator-totalProbability
+
+        if (len(intDistribution) == 1):
+            distribution[target_state] = self._probabilityToFractionString(1,1) 
         else:
-            distribution[target_state] = self._probabilityToFractionString(1,1)
+            for state in intDistribution.keys():
+                distribution[state] = self._probabilityToFractionString(intDistribution[state], denominator)
         return distribution
 
     def _meetsThreshhold(self, probability):

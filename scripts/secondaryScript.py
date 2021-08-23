@@ -29,7 +29,10 @@ from functools import reduce
 prism_path="../prism-games-3.0.beta-src/prism/bin/prism"
 wp_path="../../CAV20Impl/mycode/WP/bin/prism"
 reps=1 #Repetitions. If set to 1, it will not appear in filename of log.
-output_dir="fixedActions"
+if (len(sys.argv) > 1):
+    output_dir = sys.argv[2]
+else:
+    output_dir="fixedActions"
 proc_output = namedtuple('proc_output', 'stdout stderr') #Is needed for the pipeline (i suppose)
 
 #Had to add in these extra commands since subrocess.output seems to make trouble with "|"
@@ -152,12 +155,11 @@ models["coins"]="../case-studies/coins.prism ../case-studies/coins.props -prop 1
 models["prison_dil"]="../case-studies/prisoners_dilemma.prism ../case-studies/prisoners_dilemma.props -prop 9"
 """
 # Random Models
-model_sizes = [40000]
-num_random_models_per_size = [20]
-for i in range(len(model_sizes)):
-    for j in range(1, num_random_models_per_size[i]+1):
-        modelName = "RANDOM_SIZE_"+str(model_sizes[i])+"_MODEL_"+str(j)+".prism"
-        models["RND_"+str(model_sizes[i])+"_"+str(j)] = "../case-studies/randomModels/"+modelName+" ../case-studies/randomModels.props -prop 1"
+random_model_files_dir = "../case-studies/random-models/"
+for random_model_file in os.listdir(random_model_files_dir):
+    if random_model_file.startswith("RANDOM") and random_model_file.endswith(".prism"):
+        model_name = random_model_file.replace(".prism", "")
+        models[model_name] = random_model_files_dir+random_model_file+" ../case-studies/randomModels.props -prop 1"
 
 """
 # Model Extensions
@@ -178,11 +180,12 @@ models = {**models, **extension_config_models}
 if len(sys.argv) == 0 or str(sys.argv[1]) not in ["run", "read", "analyse"]:
     print("This script can only run in three modes: run, read or analyse. Call it with one of these three as command line parameter")
 elif sys.argv[1] == "run":
-    for conf in sorted(configurations.keys()):
+    for conf_count, conf in enumerate(sorted(configurations.keys())):
         print(conf)
         os.system("mkdir -p " + output_dir + "/" + conf)
-        for model in sorted(models.keys()):
-            print("\t"+model)
+        for model_count, model in enumerate(sorted(models.keys())):
+            counting_str = ("Conf: [%d/%d], Model: [%d/%d] - " %(conf_count, len(configurations), model_count, len(models)))
+            print("\t"+counting_str + model)
             for i in range(1, reps+1):
                 print("\t\t"+str(i))
                 rep_string = "" if reps == 1 else "_rep" + str(i)
@@ -319,7 +322,8 @@ elif (sys.argv[1] == "analyse"):
 
 
     #Run
-    for model in sorted(models.keys()):
+    for model_count, model in enumerate(sorted(models.keys())):
+        counting_str = "Model: [%d/%d] - " % (model_count, len(models))
         print("\t"+model)
         for i in range(1, reps+1):
             print("\t\t"+str(i))

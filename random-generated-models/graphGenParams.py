@@ -12,6 +12,7 @@ class GraphGenerationParameters:
     minimum_outgoing_edges : int = 1,
     transition_permutator : Permutation = Permutation(),
     choice_permutator : Permutation = Permutation(),
+    denominator_range : int = 2,
     ) -> None:
         self.num_states = num_states
         self.minimum_incoming_edges = minimum_incoming_edges 
@@ -23,3 +24,4 @@ class GraphGenerationParameters:
         self.minimum_outgoing_edges = minimum_outgoing_edges
         self.transition_permutator = transition_permutator
         self.choice_permutator = choice_permutator
+        self.denominator_range = denominator_range

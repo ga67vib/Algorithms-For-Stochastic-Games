@@ -48,14 +48,3 @@ class TreeGraphGenerator(graphGenerator.GeneratedGraph):
             distribution = self._generateChoice(state, randomState, 0)
             if (distribution not in self.actions_map[state]):
                 self.actions_map[state].append(distribution)
-
-    def _getProbabilityDistributionForBranchingAction(self, target_state):
-        transition_targets_permutation = self.params.transition_permutator
-        distribution = dict()
-        other_state = transition_targets_permutation.next(self.params.num_states, [target_state])
-        if (target_state != other_state):
-            distribution[target_state] = self._probabilityToFractionString(1,2)
-            distribution[other_state] = self._probabilityToFractionString(1,2)
-        else:
-            distribution[target_state] = self._probabilityToFractionString(1,1)
-        return distribution
