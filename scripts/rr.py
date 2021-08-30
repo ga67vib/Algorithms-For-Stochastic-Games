@@ -216,86 +216,104 @@ else:  # sys.argv[0] == "read"
     with open(output_dir+"/times.csv", "w") as timefile:
         with open(output_dir+"/values.csv", "w") as valuefile:
             with open(output_dir+"/iters.csv", "w") as iterfile:
-                timefile.write("Model,#States")
-                valuefile.write("Model,#States")
-                iterfile.write("Model,#States")
-                # Get this here to make sure it has same order for header and rows
-                confs = sorted(configurations.keys())
-                for conf in confs:
-                    timefile.write("," + conf)
-                    valuefile.write("," + conf)
-                    iterfile.write("," + conf)
-                timefile.write("\n")
-                valuefile.write("\n")
-                iterfile.write("\n")
-
-                for model in sorted(models.keys()):
-                    # First print model name and #states. Use first conf and first rep to get #states
-                    infile = output_dir + "/" + \
-                        confs[0] + "/" + model + \
-                        ("" if reps == 1 else "_rep1") + ".log"
-                    s1 = "grep 'States' " + infile
-                    s2 = "cut -d ' ' -f 7"
-                    states = pipeline(s1, s2)
-                    timefile.write(str(model) + "," + str(states))
-                    valuefile.write(str(model) + "," + str(states))
-                    iterfile.write(str(model) + "," + str(states))
-
+                with open(output_dir+"/mem.csv", "w") as memfile:
+                    timefile.write("Model,#States")
+                    valuefile.write("Model,#States")
+                    iterfile.write("Model,#States")
+                    memfile.write("Model,#States")
+                    # Get this here to make sure it has same order for header and rows
+                    confs = sorted(configurations.keys())
                     for conf in confs:
-                        if reps == 1:
-                            infile = output_dir + "/" + conf + "/" + model + ".log"
-                            s1 = "grep 'Time for model checking:' " + infile
-                            s2 = "cut -d ' ' -f 5"
-                            # s1 = "grep 'Probabilistic reachability took' " + infile
-                            # s2 = "cut -d ' ' -f 4"
-                            resTime = pipeline(s1,s2)
-                            s1 = "grep 'Result:' " + infile
-                            s2 = "cut -d ' ' -f 2"
-                            resSol = pipeline(s1, s2)
-                            s1 = "grep 'Value iteration variant' " + infile
-                            s2 = "cut -d ' ' -f 6"
-                            resIter = pipeline(s1, s2)
-
-
-                        else:
-                            times = []
-                            for i in range(1, reps+1):
-                                infile = output_dir + "/" + conf + "/" + \
-                                    model + "_rep" + str(i) + ".log"
-                                s1 = "grep 'Time for model checking:' " + infile
-                                s2 = "cut -d ' ' -f 5"
-                                time = pipeline(s1,s2)
-
-                                s1 = "grep 'Result:' " + infile
-                                s2 = "cut -d ' ' -f 2"
-                                sol = pipeline(s1, s2)
-
-                                # Doesn't work with SI and QP, so omitted for now
-                                #s1 = "grep 'Value iteration variant' " + infile
-                                #s2 = "cut -d ' ' -f 5"
-                                #iter = pipeline(s1, s2)
-
-                                try:
-                                    time = int(time)
-                                    sol = float(sol)
-                                    #iter = int(iter)
-                                    iter = -1
-                                except (ValueError):
-                                    res = "X"
-                                    sol = "X"
-                                    iter = "X"
-                                    break
-                                times += [time]
-                                sols += [sol]
-                                iters += [iter]
-                            resTime = min(times) + "/" + statistics.mean(times) + "/" + max(times)
-                            resSol = min(sols) + "/" + statistics.mean(sols) + "/" + max(sols)
-                            resIter = min(iters) + "/" + statistics.mean(iters) + "/" + max(iters)
-
-                        timefile.write("," + str(resTime))
-                        valuefile.write("," + str(resSol))
-                        iterfile.write("," + str(resIter))
-
+                        timefile.write("," + conf)
+                        valuefile.write("," + conf)
+                        iterfile.write("," + conf)
+                        memfile.write("," + conf)
                     timefile.write("\n")
                     valuefile.write("\n")
                     iterfile.write("\n")
+                    memfile.write("\n")
+
+                    for model in sorted(models.keys()):
+                        # First print model name and #states. Use first conf and first rep to get #states
+                        infile = output_dir + "/" + \
+                            confs[0] + "/" + model + \
+                            ("" if reps == 1 else "_rep1") + ".log"
+                        s1 = "grep 'States' " + infile
+                        s2 = "cut -d ' ' -f 7"
+                        states = pipeline(s1, s2)
+                        timefile.write(str(model) + "," + str(states))
+                        valuefile.write(str(model) + "," + str(states))
+                        iterfile.write(str(model) + "," + str(states))
+                        memfile.write(str(model) + "," + str(states))
+
+                        for conf in confs:
+                            if reps == 1:
+                                logfile = output_dir + "/" + conf + "/" + model + ".log"
+                                timefile = output_dir + "/" + conf + "/" + model + ".time"
+                                s1 = "grep 'Time for model checking:' " + infile
+                                s2 = "cut -d ' ' -f 5"
+                                # s1 = "grep 'Probabilistic reachability took' " + logfile
+                                # s2 = "cut -d ' ' -f 4"
+                                resTime = pipeline(s1,s2)
+                                s1 = "grep 'Result:' " + logfile
+                                s2 = "cut -d ' ' -f 2"
+                                resSol = pipeline(s1, s2)
+                                s1 = "grep 'Value iteration variant' " + logfile
+                                s2 = "cut -d ' ' -f 6"
+                                resIter = pipeline(s1, s2)
+                                s1 = "grep 'Maximum resident set size (kbytes)' " + timefile
+                                s2 = "cut -d ' ' -f 6"
+                                resMem = pipeline(s1, s2)
+
+
+                            else:
+                                print("Reading multiple reps currently not supported anymore.")
+                                exit
+#                                times = []
+#                                for i in range(1, reps+1):
+#                                    infile = output_dir + "/" + conf + "/" + \
+#                                        model + "_rep" + str(i) + ".log"
+#                                    s1 = "grep 'Time for model checking:' " + infile
+#                                    s2 = "cut -d ' ' -f 5"
+#                                    time = pipeline(s1,s2)
+#
+#                                    s1 = "grep 'Result:' " + infile
+#                                    s2 = "cut -d ' ' -f 2"
+#                                    sol = pipeline(s1, s2)
+#
+#                                    # Doesn't work with SI and QP, so omitted for now
+#                                    #s1 = "grep 'Value iteration variant' " + infile
+#                                    #s2 = "cut -d ' ' -f 5"
+#                                    #iter = pipeline(s1, s2)
+#                                                                        
+#                                    s1 = "grep 'Maximum resident set size (kbytes)' " + timefile
+#                                    s2 = "cut -d ' ' -f 6"
+#                                    resMem = pipeline(s1, s2)
+#
+#                                    try:
+#                                        time = int(time)
+#                                        sol = float(sol)
+#                                        #iters don't make sense for SI and QP right now. Will have to think about it.
+#                                        #iter = int(iter)
+#                                        iter = -1
+#                                    except (ValueError):
+#                                        res = "X"
+#                                        sol = "X"
+#                                        iter = "X"
+#                                        break
+#                                    times += [time]
+#                                    sols += [sol]
+#                                    iters += [iter]
+#                                resTime = min(times) + "/" + statistics.mean(times) + "/" + max(times)
+#                                resSol = min(sols) + "/" + statistics.mean(sols) + "/" + max(sols)
+#                                resIter = min(iters) + "/" + statistics.mean(iters) + "/" + max(iters)
+
+                            timefile.write("," + str(resTime))
+                            valuefile.write("," + str(resSol))
+                            iterfile.write("," + str(resIter))
+                            memfile.write("," + str(resMem))
+
+                        timefile.write("\n")
+                        valuefile.write("\n")
+                        iterfile.write("\n")
+                        memfile.write("\n")
