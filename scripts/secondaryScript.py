@@ -332,6 +332,10 @@ elif (sys.argv[1] == "analyse"):
 
     #SCC-related
     relevantFeatures["NumSCCs"] = "Number of SCCs: "
+    relevantFeatures["NearestTarget"] = "Nearest Target from any Initial State: "
+    relevantFeatures["FurthestTarget"] = "Furthest Target from any Initial State: "
+    relevantFeatures["TargetDistanceAverage"] = "Target-distance Average: "
+    relevantFeatures["TargetDistanceMedian"] = "Target-distance Median: "
 
 
     #Run
