@@ -218,19 +218,19 @@ public class STPGValueIterationUtils {
         mdpModelChecker.maxIters = 10000;
 
 
-        //ModelCheckerResult maxFixedResult = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(maxFixedLocalMDP.mdp, maxFixedLocalMDP.sinks, maxFixedLocalMDP.targets, true, null);
-        //ModelCheckerResult minFixedResult = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(minFixedLocalMDP.mdp, minFixedLocalMDP.sinks, minFixedLocalMDP.targets, false, null);
+        ModelCheckerResult maxFixedResult = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(maxFixedLocalMDP.mdp, maxFixedLocalMDP.sinks, maxFixedLocalMDP.targets, true, null);
+        ModelCheckerResult minFixedResult = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(minFixedLocalMDP.mdp, minFixedLocalMDP.sinks, minFixedLocalMDP.targets, false, null);
 
-        ModelCheckerResult maxFixedResult = mdpModelChecker.computeReachProbsPolIter(maxFixedLocalMDP.mdp, maxFixedLocalMDP.sinks, maxFixedLocalMDP.targets, true, null);
-        ModelCheckerResult minFixedResult = mdpModelChecker.computeReachProbsPolIter(minFixedLocalMDP.mdp, minFixedLocalMDP.sinks, minFixedLocalMDP.targets, false, null);
+        //ModelCheckerResult maxFixedResult = mdpModelChecker.computeReachProbsPolIter(maxFixedLocalMDP.mdp, maxFixedLocalMDP.sinks, maxFixedLocalMDP.targets, true, null);
+        //ModelCheckerResult minFixedResult = mdpModelChecker.computeReachProbsPolIter(minFixedLocalMDP.mdp, minFixedLocalMDP.sinks, minFixedLocalMDP.targets, false, null);
 
 
         for (int state = relevantStates.nextSetBit(0); state >= 0; state = relevantStates.nextSetBit(state + 1)) {
             double maxFixedStateValue = maxFixedResult.soln[maxFixedLocalMDP.stpgStatesToMdpStates.get(state)];
             double minFixedStateValue = minFixedResult.soln[minFixedLocalMDP.stpgStatesToMdpStates.get(state)];
             if (!PrismUtils.doublesAreClose(maxFixedStateValue, minFixedStateValue, precision, true)) {
-                throw new PrismException("If Maximizer is fixed state "+state+" gets value "+maxFixedStateValue+
-                        " but if Minimizer is fixed states gets value "+minFixedStateValue+
+                throw new PrismException("If Minimizer has free choice "+state+" gets value "+maxFixedStateValue+
+                        " but if Maximizer has free choice states gets value "+minFixedStateValue+
                         " ==> Topological value iteration failed");
             }
             fixedValues[state] = maxFixedStateValue;
@@ -310,8 +310,7 @@ public class STPGValueIterationUtils {
                     }
                     //Moving to a already fixed state -> Should already have a fixed value and thus can be replaced
                     else if (alreadyComputedStates.get(nextState)) {
-                        distribution.add(target, fixedValues[nextState]);
-                        if (fixedValues[nextState] < 1.0) distribution.add(sink, 1.0 - fixedValues[nextState]);
+                        distribution.add(target, fixedValues[nextState] * tr.getValue());
                     }
                     //
                     else {
