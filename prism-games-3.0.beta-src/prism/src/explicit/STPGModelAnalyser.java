@@ -110,7 +110,9 @@ public class STPGModelAnalyser {
         sccs = SCCComputer.computeTopologicalOrdering(this.modelChecker, stpg, true, unknown::get);
         System.out.println("Number of SCCs: " + sccs.getNumSCCs());
 
-        System.out.println("I also want to tell you about the min/avg/max length of a path from init to a target.");
+
+        cycleFreeAnalysis(stpg, yes, no);
+
         System.out.println("Also about the number of probabilistic loops? For each SCC? The occurring probabilities?");
 
         // Return result that makes clear that it is not valid
@@ -137,11 +139,87 @@ public class STPGModelAnalyser {
          *
          */
     }
-    /**
-     * Simple test program.
-     */
 
     protected void log(String s) {
         System.out.println(s);
+    }
+
+    protected void cycleFreeAnalysis(STPG stpg, BitSet yes, BitSet no) {
+        System.out.println("I also want to tell you about the min/avg/max length of a path from init to a target.");
+        int[] distanceWithoutCycles = getDistanceFromInitialState(stpg, yes, no);
+        ArrayList<Integer> sortedTargetCyclefreeDistances = new ArrayList<>();
+        long nearestTarget = Integer.MAX_VALUE;
+        long furthestTarget = 0;
+        double avgCyclefreeDistance = 0.0;
+        double medianCyclefreeDistance = 0.0;
+
+        for (int target = yes.nextSetBit(0); target >= 0; target = yes.nextSetBit(target + 1)) {
+            nearestTarget = Math.min(nearestTarget, distanceWithoutCycles[target]);
+            furthestTarget = Math.max(nearestTarget, distanceWithoutCycles[target]);
+
+            avgCyclefreeDistance += distanceWithoutCycles[target];
+            sortedTargetCyclefreeDistances.add(distanceWithoutCycles[target]);
+        }
+
+        // Get Median
+        int medianCyclefreeDistanceIndex = sortedTargetCyclefreeDistances.size()/2;
+        Collections.sort(sortedTargetCyclefreeDistances);
+        if (sortedTargetCyclefreeDistances.size() % 2 == 1) {
+            medianCyclefreeDistance = sortedTargetCyclefreeDistances.get(medianCyclefreeDistanceIndex);
+        }
+        else {
+            medianCyclefreeDistance = (sortedTargetCyclefreeDistances.get(medianCyclefreeDistanceIndex) + sortedTargetCyclefreeDistances.get(medianCyclefreeDistanceIndex+1))/2.0;
+        }
+
+        log("Nearest Target from any Initial State: "+nearestTarget);
+        log("Furthest Target from any Initial State: "+furthestTarget);
+        log("Target-distance Average: "+avgCyclefreeDistance);
+        log("Target-distance Median: "+medianCyclefreeDistance);
+    }
+
+    /**
+     * Since Edge lengths are only 1, we can use BFS instead of Dijkstra
+     * Note that this may be very incorrect since here we a assume that a minimizer would take an action leading straight to a target
+     * @param stpg
+     * @return
+     */
+    protected int[] getDistanceFromInitialState(STPG stpg, BitSet yes, BitSet no) {
+        int[] distances = new int[stpg.getNumStates()];
+        int[] predecessor = new int[stpg.getNumStates()];
+
+        BitSet done = new BitSet();
+        // Queue of arrays with two entries [state, distance]
+        LinkedList<int[]> queue = new LinkedList<>();
+        for (Integer initialState : stpg.getInitialStates()) {
+            queue.addLast(new int[]{initialState, 0});
+            predecessor[initialState] = -1;
+        }
+
+        while(!queue.isEmpty() || done.cardinality() < stpg.getNumStates()) {
+            int[] currentState = queue.poll();
+
+            // If visited, no need to visit again
+            if (done.get(currentState[0])) {
+                continue;
+            }
+            distances[currentState[0]] = currentState[1];
+            done.set(currentState[0]);
+
+            // No need to go on from here
+            if (yes.get(currentState[0]) || no.get(currentState[0])) {
+                continue;
+            }
+
+            for (int choice = 0; choice < stpg.getNumChoices(currentState[0]); choice++) {
+                for (Iterator<Map.Entry<Integer, Double>> it = stpg.getTransitionsIterator(currentState[0], choice); it.hasNext(); ) {
+                    Map.Entry<Integer, Double> tr = it.next();
+                    //Since edges have only length 1, the done question
+                    if (tr.getValue() > 0 && !done.get(tr.getKey())) queue.addLast(new int[]{tr.getKey(), currentState[1] + 1});
+                }
+            }
+        }
+
+
+        return distances;
     }
 }

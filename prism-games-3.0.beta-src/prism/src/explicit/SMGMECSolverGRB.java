@@ -15,6 +15,7 @@ public class SMGMECSolverGRB extends SMGMECSolver {
     private GRBVar[] stateVars;
     private HashMap<Integer, Integer> map;
 
+
     public SMGMECSolverGRB(GRBModel qp, GRBVar[] stateVars, List<BitSet> mecs, STPG stpg, BitSet known, double[] knownValues) {
         super(mecs, stpg, known, knownValues);
         this.qp=qp;
