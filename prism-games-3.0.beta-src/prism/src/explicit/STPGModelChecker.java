@@ -749,7 +749,7 @@ public class STPGModelChecker extends ProbModelChecker
 					int[] sigma = startegyComputationResult[0];
 					int[] tau = startegyComputationResult[1];
 
-					double[] values = STPGValueIterationUtils.getValueFromStrategies(this, stpg, sigma, tau, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds);
+					double[] values = STPGValueIterationUtils.getValueFromStrategies(this, stpg, sigma, tau, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam);
 					// Fix value of states
 					lowerBounds[state] = values[state];
 					lowerBounds2[state] = values[state];
@@ -780,7 +780,7 @@ public class STPGModelChecker extends ProbModelChecker
 					int[] sigma = startegyComputationResult[0];
 					int[] tau = startegyComputationResult[1];
 
-					double[] values = STPGValueIterationUtils.getValueFromStrategies(this, stpg, sigma, tau, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds);
+					double[] values = STPGValueIterationUtils.getValueFromStrategies(this, stpg, sigma, tau, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam);
 					// Fix value of states
 					for (int state = statesForSCC.nextSetBit(0); state >= 0; state = statesForSCC.nextSetBit(state + 1)) {
 						lowerBounds[state] = values[state];

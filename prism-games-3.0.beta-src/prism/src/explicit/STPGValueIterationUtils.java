@@ -2,6 +2,7 @@ package explicit;
 
 import prism.PrismComponent;
 import prism.PrismException;
+import prism.PrismUtils;
 
 import java.util.*;
 
@@ -43,6 +44,8 @@ public class STPGValueIterationUtils {
                 referenceBound = upperBounds;
             }
 
+            double bestChoiceValueMaximizer = 0;
+            double bestChoiceValueMinimizer = 1.0;
             for (int choice = 0; choice < stpg.getNumChoices(state); choice++) {
                 double choiceValue = 0;
 
@@ -51,16 +54,21 @@ public class STPGValueIterationUtils {
                     choiceValue += tr.getValue() * referenceBound[tr.getKey()];
                 }
 
-                // If this is an allowed state
-                if (choiceValue == referenceBound[state]) {
-                    // If Minimizer, take it (no attractor necessary)
-                    if (!isMaximizerState) {
-                        tau[state] = choice;
-                        break;
-                    }
-                    else {
-                        allowedMaximizerActions[state].add(choice);
-                    }
+                //Minimizer may take any optimal action
+                if (!isMaximizerState && bestChoiceValueMinimizer > choiceValue) {
+                    bestChoiceValueMinimizer = choiceValue;
+                    tau[state] = choice;
+                }
+
+                //If this action is better than the last ones, start considerations from here
+                else if (isMaximizerState && bestChoiceValueMaximizer < choiceValue) {
+                    bestChoiceValueMaximizer = choiceValue;
+                    allowedMaximizerActions[state].clear();
+                    allowedMaximizerActions[state].add(choice);
+                }
+                //If it is equally good as your current actions, add it to your considerations
+                else if (isMaximizerState && bestChoiceValueMaximizer == choiceValue) {
+                    allowedMaximizerActions[state].add(choice);
                 }
             }
         }
@@ -190,7 +198,7 @@ public class STPGValueIterationUtils {
         return attractorDistances;
     }
 
-    public static double[] getValueFromStrategies(PrismComponent prismComponent, STPG stpg, int[] sigma, int[] tau, BitSet yes, BitSet no, BitSet relevantStates, BitSet alreadyComputedStates, double[] fixedValues) throws PrismException {
+    public static double[] getValueFromStrategies(PrismComponent prismComponent, STPG stpg, int[] sigma, int[] tau, BitSet yes, BitSet no, BitSet relevantStates, BitSet alreadyComputedStates, double[] fixedValues, double precision) throws PrismException {
         /* This creates an whole MDP, but I suppose it's not necessary since we can create Local MDPs
         MDP maxFixedMDP = createMDPFromSTPG(stpg, sigma, true, yes, no, relevantStates, alreadyComputedStates, fixedValues);
         BitSet maxFixedNoBitSet = extendNoSet(no, maxFixedMDP, yes, relevantStates, alreadyComputedStates);
@@ -207,13 +215,20 @@ public class STPGValueIterationUtils {
 
 
         MDPModelChecker mdpModelChecker = new MDPModelChecker(prismComponent);
-        ModelCheckerResult maxFixedResult = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(maxFixedLocalMDP.mdp, maxFixedLocalMDP.sinks, maxFixedLocalMDP.targets, true, null);
-        ModelCheckerResult minFixedResult = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(minFixedLocalMDP.mdp, minFixedLocalMDP.sinks, minFixedLocalMDP.targets, false, null);
+        mdpModelChecker.maxIters = 10000;
+
+
+        //ModelCheckerResult maxFixedResult = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(maxFixedLocalMDP.mdp, maxFixedLocalMDP.sinks, maxFixedLocalMDP.targets, true, null);
+        //ModelCheckerResult minFixedResult = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(minFixedLocalMDP.mdp, minFixedLocalMDP.sinks, minFixedLocalMDP.targets, false, null);
+
+        ModelCheckerResult maxFixedResult = mdpModelChecker.computeReachProbsPolIter(maxFixedLocalMDP.mdp, maxFixedLocalMDP.sinks, maxFixedLocalMDP.targets, true, null);
+        ModelCheckerResult minFixedResult = mdpModelChecker.computeReachProbsPolIter(minFixedLocalMDP.mdp, minFixedLocalMDP.sinks, minFixedLocalMDP.targets, false, null);
+
 
         for (int state = relevantStates.nextSetBit(0); state >= 0; state = relevantStates.nextSetBit(state + 1)) {
             double maxFixedStateValue = maxFixedResult.soln[maxFixedLocalMDP.stpgStatesToMdpStates.get(state)];
             double minFixedStateValue = minFixedResult.soln[minFixedLocalMDP.stpgStatesToMdpStates.get(state)];
-            if (maxFixedStateValue != minFixedStateValue) {
+            if (!PrismUtils.doublesAreClose(maxFixedStateValue, minFixedStateValue, precision, true)) {
                 throw new PrismException("If Maximizer is fixed state "+state+" gets value "+maxFixedStateValue+
                         " but if Minimizer is fixed states gets value "+minFixedStateValue+
                         " ==> Topological value iteration failed");
