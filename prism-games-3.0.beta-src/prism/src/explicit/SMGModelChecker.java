@@ -2633,6 +2633,17 @@ public class SMGModelChecker extends ProbModelChecker
 
 		ModelCheckerResult res = createSTPGModelChecker().computeUntilProbs(smg, remain, target, min1, min2, -1);
 		smg.setCoalition(null);
+
+		if (modelExtensionConfigFilePath != null && modelExtensionConfigFilePath != "") {
+			//Initial state is usually not zero state
+			int firstInitialState = -1;
+			for (Integer init : smg.getInitialStates()) {
+				firstInitialState = init;
+				break;
+			}
+			res.soln[0] = res.soln[firstInitialState];
+		}
+
 		return res;
 	}
 

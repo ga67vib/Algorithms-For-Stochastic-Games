@@ -722,7 +722,17 @@ public class STPGModelChecker extends ProbModelChecker
 
 
 		// Start iterations
-		if (getDoTopologicalValueIteration()){
+		if (getDoTopologicalValueIteration()) {
+
+			BitSet haveAlreadyFixedValues = new BitSet();
+			haveAlreadyFixedValues.or(yes);
+			// [Small optimization:] We don't care for sinks for the attractors so we won't set them
+			int[] alreadyComputedAttractorDistances = new int[stpg.getNumStates()];
+			Arrays.fill(alreadyComputedAttractorDistances, Integer.MAX_VALUE -10);
+			for (int target = yes.nextSetBit(0); target >= 0; target = yes.nextSetBit(target + 1)) {
+				alreadyComputedAttractorDistances[target] = 0;
+			}
+
 			for (int scc = 0; scc < sccs.getNumSCCs(); scc++) {
 				if (sccs.isSingletonSCC(scc)) {
 					// get the single state in this SCC and finish it. Trivial.
@@ -732,8 +742,25 @@ public class STPGModelChecker extends ProbModelChecker
 					upperBounds[state] = stpg.mvMultJacMinMaxSingle(state, upperBounds, min1, min2);
 					lowerBounds2[state] = stpg.mvMultJacMinMaxSingle(state, lowerBounds2, min1, min2);
 					upperBounds2[state] = stpg.mvMultJacMinMaxSingle(state, upperBounds2, min1, min2);
+
+					BitSet statesForSCC = new BitSet();
+					statesForSCC.set(state);
+					int[][] startegyComputationResult = STPGValueIterationUtils.computeStrategyFromBounds(stpg, yes, lowerBounds, upperBounds, statesForSCC, haveAlreadyFixedValues, alreadyComputedAttractorDistances);
+					int[] sigma = startegyComputationResult[0];
+					int[] tau = startegyComputationResult[1];
+
+					double[] values = STPGValueIterationUtils.getValueFromStrategies(this, stpg, sigma, tau, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds);
+					// Fix value of states
+					lowerBounds[state] = values[state];
+					lowerBounds2[state] = values[state];
+					upperBounds[state] = values[state];
+					upperBounds2[state] = values[state];
+
 					iters++;
 					IterationMethod.intervalIterationCheckForProblems(lowerBounds, upperBounds, IntSet.asIntSet(state).iterator());
+
+					alreadyComputedAttractorDistances = startegyComputationResult[2];
+					haveAlreadyFixedValues.set(state);
 				} else {
 					// complex SCC: do VI
 					int itersInSCC = 0;
@@ -749,9 +776,25 @@ public class STPGModelChecker extends ProbModelChecker
 					lowerBounds = subres[0];
 					upperBounds = subres[1];
 
+					int[][] startegyComputationResult = STPGValueIterationUtils.computeStrategyFromBounds(stpg, yes, lowerBounds, upperBounds, statesForSCC, haveAlreadyFixedValues, alreadyComputedAttractorDistances);
+					int[] sigma = startegyComputationResult[0];
+					int[] tau = startegyComputationResult[1];
+
+					double[] values = STPGValueIterationUtils.getValueFromStrategies(this, stpg, sigma, tau, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds);
+					// Fix value of states
+					for (int state = statesForSCC.nextSetBit(0); state >= 0; state = statesForSCC.nextSetBit(state + 1)) {
+						lowerBounds[state] = values[state];
+						lowerBounds2[state] = values[state];
+						upperBounds[state] = values[state];
+						upperBounds2[state] = values[state];
+					}
+
 					IterationMethod.intervalIterationCheckForProblems(lowerBounds, upperBounds, statesForSCCIntSet.iterator());
 //					mainLog.println("Non-trivial SCC done in " + itersInSCC + " many iterations");
 					iters+=itersInSCC;
+
+					alreadyComputedAttractorDistances = startegyComputationResult[2];
+					haveAlreadyFixedValues.or(statesForSCC);
 				}
 //				mainLog.println("SCC done. Precision: [" + lowerBounds[sccs.getStatesForSCC(scc).iterator().nextInt()] + "," + upperBounds[sccs.getStatesForSCC(scc).iterator().nextInt()] + "]. \nIters: " + iters);
 			}
@@ -783,6 +826,7 @@ public class STPGModelChecker extends ProbModelChecker
 		res.soln = lowerBounds;
 		res.numIters = iters;
 		res.timeTaken = timer / 1000.0;
+
 		if (generateStrategy) {
 			/* Old version, has some bugs
 			 * doesn't work for:
@@ -847,6 +891,15 @@ public class STPGModelChecker extends ProbModelChecker
 		boolean done = false;
 		double tmpsoln[];
 
+		System.out.println("Started");
+		double[] upperBoundsBackup = new double[upperBounds.length];
+		for (int i = 0; i<upperBounds.length; i++) {
+			upperBoundsBackup[i] = upperBounds[i];
+		}
+		double[] lowerBoundsBackup = new double[upperBounds.length];
+		for (int i = 0; i<upperBounds.length; i++) {
+			lowerBoundsBackup[i] = lowerBounds[i];
+		}
 		// Helper variables needed for SVI
 		double decisionValueMin, decisionValueMax, lowerBound, lowerBoundNew, upperBound, upperBoundNew;
 		lowerBound = lowerBoundNew = 0;
@@ -866,6 +919,7 @@ public class STPGModelChecker extends ProbModelChecker
 		if (doGS){mainLog.println("Doing Gauss Seidel variant");}
 
 		while (!done) {
+			//System.out.println("Changed? "+java.util.Arrays.equals(lowerBoundsBackup, lowerBounds)+", "+java.util.Arrays.equals(upperBoundsBackup, upperBounds));
 			iters++;
 			//Debug output:
 //			if(iters % 10000 == 0){
@@ -1145,6 +1199,7 @@ public class STPGModelChecker extends ProbModelChecker
 		if(initialState!=-1)
 			mainLog.println("Resulting interval: ["+lowerBounds[initialState]+","+((upperBounds!=null) ? upperBounds[initialState] : "none")+"]");
 
+		System.out.println("Finished iTerateOnSubset");
 		return new double[][]{lowerBounds,upperBounds,{iters}};
 	}
 

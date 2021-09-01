@@ -1232,6 +1232,11 @@ public class MDPModelChecker extends ProbModelChecker
 		return res;
 	}
 
+	public ModelCheckerResult computeReachProbsLinearProgrammingGurobi (MDP mdp, BitSet no, BitSet yes, boolean min, int strat[]) throws PrismException {
+		MDPLinearProgramSolverGurobi solver = new MDPLinearProgramSolverGurobi(this, mdp, no, yes, min, null, null, this.settings);
+		return solver.solve();
+	}
+
 	/**
 	 * Construct strategy information for min/max reachability probabilities.
 	 * (More precisely, list of indices of choices resulting in min/max.)
