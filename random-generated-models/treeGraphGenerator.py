@@ -25,6 +25,8 @@ class TreeGraphGenerator(graphGenerator.GeneratedGraph):
 
         self._generateChoices()
 
+        self._reduceTrivialStates()
+
         self._ensureDeadlockFreedom()
 
         self._computeMaxActionsPerPlayer()
