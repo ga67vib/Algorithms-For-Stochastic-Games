@@ -1,4 +1,5 @@
 import argparse
+from genericpath import isdir
 import os, os.path
 import glob
 from graphGenerator import GeneratedGraph
@@ -71,8 +72,12 @@ def main():
     max_num_actions_player1 = 3
     max_num_actions_player2 = 3
 
+    num_states_before_iters = num_states #num_states could be overriden to add extra sinks/targets. Need to reset after every modelIteration
+
     for modelNumber in range(num_models):
         print("Generating Model Number: "+(str(modelNumber+1))+"...")
+
+        num_states = num_states_before_iters
 
         # Generate Graph
         graph = graph_model
@@ -82,7 +87,7 @@ def main():
                 maximum_incoming_edges=3,
                 probability_to_branch=branching_probability,
                 probability_for_backwards_action=backwards_probability,
-                probability_to_be_maximizer_state=0.7,
+                probability_to_be_maximizer_state=0.5,
                 minimum_outgoing_edges=num_min_actions,
                 choice_permutator=choice_permutator,
                 transition_permutator=transition_permutator,
@@ -92,6 +97,9 @@ def main():
         graph.generateGraph(
             generation_parameters
         )
+
+        # Could have changed to subvert trivial targets
+        num_states = generation_parameters.num_states
 
         max_num_actions_player1 = graph.max_player_1_actions
         max_num_actions_player2 = graph.max_player_2_actions
@@ -180,6 +188,8 @@ def main():
 
 
         # Write to file
+        if (not os.path.isdir(output_dir)):
+            os.mkdir(output_dir)
         file = open(os.path.join(output_dir,output_file_name), "w")
         file.write(file_string)
         file.close()

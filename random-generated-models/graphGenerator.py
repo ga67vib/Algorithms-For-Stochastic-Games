@@ -1,4 +1,6 @@
 import random
+
+from seaborn import distributions
 from graphGenParams import GraphGenerationParameters
 class GeneratedGraph:
     def generateGraph(
@@ -26,6 +28,8 @@ class GeneratedGraph:
 
         self._generateChoices()
 
+        self._reduceTrivialStates()
+
         self._ensureDeadlockFreedom()
 
         self._computeMaxActionsPerPlayer()
@@ -46,6 +50,26 @@ class GeneratedGraph:
                 self.max_player_1_actions = max(len(self.actions_map[state]),self.max_player_1_actions)
             else:
                 self.max_player_2_actions = max(len(self.actions_map[state]),self.max_player_2_actions)
+
+    def _reduceTrivialStates(self):
+        """ Add after the old target a new target with 90% chance to go to a sink """
+        newSink = self.params.num_states
+        newTarget = self.params.num_states+1
+        oldTarget = self.params.num_states-1
+
+        self.params.num_states = self.params.num_states + 2
+        self.states_of_player1.append(newTarget)
+        self.states_of_player2.append(newSink)
+
+        self.actions_map[newSink] = []
+        self.actions_map[newTarget] = []
+
+        distribution = dict()
+        distribution[newTarget] = self._probabilityToFractionString(9,10)
+        distribution[newSink] = self._probabilityToFractionString(1,10)
+
+        self.actions_map[oldTarget].append(distribution)
+
 
     def _generateStates(self):
         for state in range(self.params.num_states):
