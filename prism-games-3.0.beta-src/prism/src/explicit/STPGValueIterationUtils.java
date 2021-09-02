@@ -19,7 +19,7 @@ public class STPGValueIterationUtils {
      * @param alreadyComputedAttractorDistances If you want to use topological features: What are the states distances to any target in attractor. If not, leave empty
      * @return array [sigma, tau, distancesToAnyTargetInAttractor], where sigma and tau are of int[] and contain store at index i the strategy for state i. The distancesToAnyTargetInAttractor are useful for topological computations
      */
-    public static int[][] computeStrategyFromBounds(STPG stpg, BitSet yes, double[] lowerBounds, double[] upperBounds, BitSet relevantStates, BitSet alreadyComputedValues, int[] alreadyComputedAttractorDistances) {
+    public static int[][] computeStrategyFromBounds(STPG stpg, BitSet yes, double[] lowerBounds, double[] upperBounds, double precision, BitSet relevantStates, BitSet alreadyComputedValues, int[] alreadyComputedAttractorDistances) {
         int[] sigma = new int[stpg.getNumStates()];
         int[] tau = new int[stpg.getNumStates()];
 
@@ -31,6 +31,9 @@ public class STPGValueIterationUtils {
 
         // Find allowd actions for maximizer and strategy for minimizer
         for (int state = relevantStates.nextSetBit(0); state >= 0; state = relevantStates.nextSetBit(state+1)) {
+            if (state == 20 || state == 103) {
+                System.out.println("state: "+state);
+            }
             boolean isMaximizerState = stpg.getPlayer(state) == 1;
 
             double[] referenceBound;
@@ -67,7 +70,7 @@ public class STPGValueIterationUtils {
                     allowedMaximizerActions[state].add(choice);
                 }
                 //If it is equally good as your current actions, add it to your considerations
-                else if (isMaximizerState && bestChoiceValueMaximizer == choiceValue) {
+                else if (isMaximizerState && PrismUtils.doublesAreClose(bestChoiceValueMaximizer, choiceValue, precision, true)) {
                     allowedMaximizerActions[state].add(choice);
                 }
             }

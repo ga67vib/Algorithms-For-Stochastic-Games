@@ -745,7 +745,7 @@ public class STPGModelChecker extends ProbModelChecker
 
 					BitSet statesForSCC = new BitSet();
 					statesForSCC.set(state);
-					int[][] startegyComputationResult = STPGValueIterationUtils.computeStrategyFromBounds(stpg, yes, lowerBounds, upperBounds, statesForSCC, haveAlreadyFixedValues, alreadyComputedAttractorDistances);
+					int[][] startegyComputationResult = STPGValueIterationUtils.computeStrategyFromBounds(stpg, yes, lowerBounds, upperBounds, this.termCritParam, statesForSCC, haveAlreadyFixedValues, alreadyComputedAttractorDistances);
 					int[] sigma = startegyComputationResult[0];
 					int[] tau = startegyComputationResult[1];
 
@@ -776,7 +776,7 @@ public class STPGModelChecker extends ProbModelChecker
 					lowerBounds = subres[0];
 					upperBounds = subres[1];
 
-					int[][] startegyComputationResult = STPGValueIterationUtils.computeStrategyFromBounds(stpg, yes, lowerBounds, upperBounds, statesForSCC, haveAlreadyFixedValues, alreadyComputedAttractorDistances);
+					int[][] startegyComputationResult = STPGValueIterationUtils.computeStrategyFromBounds(stpg, yes, lowerBounds, upperBounds, this.termCritParam, statesForSCC, haveAlreadyFixedValues, alreadyComputedAttractorDistances);
 					int[] sigma = startegyComputationResult[0];
 					int[] tau = startegyComputationResult[1];
 

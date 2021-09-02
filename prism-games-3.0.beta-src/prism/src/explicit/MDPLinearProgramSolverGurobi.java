@@ -229,6 +229,17 @@ public class MDPLinearProgramSolverGurobi {
 
         linearProgram.setObjective(objExpr, min ? GRB.MAXIMIZE : GRB.MINIMIZE);
 
+        linearProgram.set(GRB.DoubleParam.FeasibilityTol, 1e-9);
+        linearProgram.set(GRB.DoubleParam.IntFeasTol, 1e-9);
+        linearProgram.set(GRB.DoubleParam.OptimalityTol, 1e-9);
+
+        linearProgram.set(GRB.DoubleParam.BarQCPConvTol, 0);
+        linearProgram.set(GRB.DoubleParam.BarConvTol, 0);
+        linearProgram.set(GRB.DoubleParam.MarkowitzTol, 1e-4);
+        linearProgram.set(GRB.DoubleParam.MIPGap, 0);
+        linearProgram.set(GRB.DoubleParam.MIPGapAbs, 0);
+        linearProgram.set(GRB.DoubleParam.PSDTol, 0);
+
         linearProgram.optimize();
 
         int optimstatus = linearProgram.get(GRB.IntAttr.Status);
