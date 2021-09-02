@@ -19,6 +19,7 @@ def main():
     smallest_transition_probability_default = 0.5
     backwards_probability_default = 0.5
     branching_probability_default = 0.8
+    force_unknown_default = False
 
     parser = argparse.ArgumentParser(description = 'Generate PRISM models randomly')
     parser.add_argument(
@@ -45,6 +46,9 @@ def main():
     parser.add_argument(
         '-branchingProb', type = float, default = branching_probability_default, help="probability to add a branch in an action. There can be maximal 10 transitions per action"
     )
+    parser.add_argument(
+        '-forceUnknown', type = bool, default = force_unknown_default, help='Try to minimize the number of yes- and no-states. This can lead to every state having a small probability of reaching the target.'
+    )
 
     arguments = parser.parse_args()
     output_dir = arguments.outputDir
@@ -55,6 +59,7 @@ def main():
     smallest_transition_probability = arguments.smallestProb
     backwards_probability = arguments.backwardsProb
     branching_probability = arguments.branchingProb
+    force_unknown = arguments.forceUnknown
 
 
     choice_permutator=Permutation_AllStatesPossible()
@@ -91,7 +96,8 @@ def main():
                 minimum_outgoing_edges=num_min_actions,
                 choice_permutator=choice_permutator,
                 transition_permutator=transition_permutator,
-                denominator_range=int(1/smallest_transition_probability)
+                denominator_range=int(1/smallest_transition_probability),
+                force_unknown=force_unknown
             )
 
         graph.generateGraph(
