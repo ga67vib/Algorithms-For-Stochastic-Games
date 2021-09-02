@@ -28,9 +28,13 @@ class GeneratedGraph:
 
         self._generateChoices()
 
-        self._reduceTrivialStates()
+        if (params.force_unknown):
+            self._reduceTrivialStates()
 
         self._ensureDeadlockFreedom()
+
+        if (params.force_unknown):
+            self._reduceNoStates()
 
         self._computeMaxActionsPerPlayer()
 
@@ -70,6 +74,8 @@ class GeneratedGraph:
 
         self.actions_map[oldTarget].append(distribution)
 
+    def _reduceNoStates(self):
+        pass
 
     def _generateStates(self):
         for state in range(self.params.num_states):
