@@ -195,7 +195,7 @@ public class STPGModelAnalyser {
             predecessor[initialState] = -1;
         }
 
-        while(!queue.isEmpty() || done.cardinality() < stpg.getNumStates()) {
+        while(!queue.isEmpty() && done.cardinality() < stpg.getNumStates()) {
             int[] currentState = queue.poll();
 
             // If visited, no need to visit again

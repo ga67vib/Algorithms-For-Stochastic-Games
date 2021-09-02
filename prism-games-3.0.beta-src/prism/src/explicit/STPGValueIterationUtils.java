@@ -229,7 +229,7 @@ public class STPGValueIterationUtils {
             double maxFixedStateValue = maxFixedResult.soln[maxFixedLocalMDP.stpgStatesToMdpStates.get(state)];
             double minFixedStateValue = minFixedResult.soln[minFixedLocalMDP.stpgStatesToMdpStates.get(state)];
             if (!PrismUtils.doublesAreClose(maxFixedStateValue, minFixedStateValue, precision, true)) {
-                throw new PrismException("If Minimizer has free choice "+state+" gets value "+maxFixedStateValue+
+                throw new PrismException("If Minimizer has free choice then state "+state+" gets value "+maxFixedStateValue+
                         " but if Maximizer has free choice states gets value "+minFixedStateValue+
                         " ==> Topological value iteration failed");
             }
