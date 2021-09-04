@@ -314,6 +314,9 @@ public class STPGValueIterationUtils {
                     //Moving to a already fixed state -> Should already have a fixed value and thus can be replaced
                     else if (alreadyComputedStates.get(nextState)) {
                         distribution.add(target, fixedValues[nextState] * tr.getValue());
+                        if (fixedValues[nextState] * tr.getValue() < 1) {
+                            distribution.add(sink, fixedValues[nextState] * tr.getValue());
+                        }
                     }
                     //
                     else {
