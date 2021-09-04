@@ -891,15 +891,6 @@ public class STPGModelChecker extends ProbModelChecker
 		boolean done = false;
 		double tmpsoln[];
 
-		System.out.println("Started");
-		double[] upperBoundsBackup = new double[upperBounds.length];
-		for (int i = 0; i<upperBounds.length; i++) {
-			upperBoundsBackup[i] = upperBounds[i];
-		}
-		double[] lowerBoundsBackup = new double[upperBounds.length];
-		for (int i = 0; i<upperBounds.length; i++) {
-			lowerBoundsBackup[i] = lowerBounds[i];
-		}
 		// Helper variables needed for SVI
 		double decisionValueMin, decisionValueMax, lowerBound, lowerBoundNew, upperBound, upperBoundNew;
 		lowerBound = lowerBoundNew = 0;
@@ -1199,7 +1190,6 @@ public class STPGModelChecker extends ProbModelChecker
 		if(initialState!=-1)
 			mainLog.println("Resulting interval: ["+lowerBounds[initialState]+","+((upperBounds!=null) ? upperBounds[initialState] : "none")+"]");
 
-		System.out.println("Finished iTerateOnSubset");
 		return new double[][]{lowerBounds,upperBounds,{iters}};
 	}
 
