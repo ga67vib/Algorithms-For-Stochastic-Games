@@ -10,6 +10,7 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class SMGPolyProgSolverAMPL extends SMGPolyProgSolver{
 
@@ -18,8 +19,8 @@ public class SMGPolyProgSolverAMPL extends SMGPolyProgSolver{
     final static String AMPL_PATH = "";
     final static String AMPL_PATH_FROM_SCRIPT= "../prism-games-3.0.beta-src/prism";
     final static String MODEL_NAME = "model.mod";
-    final static String MODEL_DIR = "";
-    final static String MODEL_PATH = MODEL_DIR+MODEL_NAME;
+    final static String MODEL_DIR = "AmplModels/";
+    String MODEL_PATH = MODEL_DIR+MODEL_NAME;
     String solver;
 
     Environment env;
@@ -28,6 +29,9 @@ public class SMGPolyProgSolverAMPL extends SMGPolyProgSolver{
     public SMGPolyProgSolverAMPL(STPGModelChecker modelChecker, STPG stpg, BitSet no, BitSet yes, boolean min1,
                                    boolean min2, double[] init, BitSet known, PrismSettings settings, int verbosity) {
         super(modelChecker, stpg, no, yes, min1, min2, init, known, settings, verbosity);
+        //Create unique stamp to enable parallelizing
+        MODEL_PATH = MODEL_DIR+System.nanoTime()+"_"+ ThreadLocalRandom.current().nextInt(0, 1000 + 1)+MODEL_NAME;
+
         try {
             env = new Environment(AMPL_PATH);
             ampl = new AMPL(env);
