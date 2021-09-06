@@ -118,10 +118,12 @@ public class SMGMECSolverAMPL extends SMGMECSolver {
                 break;
             }
             stateName = stateNames[state];
-            //constraint = "subject to const_"+"BestExit_"+stateName+": "+stateName+" =";
-            constraint = "redeclare param ";
+            constraint = "subject to const_"+"BestExit_"+stateName+": "+stateName+" =";
+            //constraint = "redeclare param ";
 
-            rhs = constructMinMax((String[]) tmpVarNames.toArray(), true);
+            String[] stringArray = new String[0];
+            stringArray = tmpVarNames.toArray(stringArray);
+            rhs = constructMinMax(stringArray, true);
             constraint += " " + rhs + ";\n";
 
             append(constraint);

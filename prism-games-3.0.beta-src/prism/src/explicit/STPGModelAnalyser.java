@@ -105,15 +105,15 @@ public class STPGModelAnalyser {
             log("MEC size median is: " + "");
         }
         System.out.println(("I could also tell you the size of each MEC or more about it. Controlled MEC? SEC?"));
-    }
-    catch (Exception e) {
-        System.out.println("MEC computation failed");
-        log("Number of MECs: " + "?");
-        log("Biggest MEC has size: " + "?");
-        log("Smallest MEC has size: " + "?");
-        log("MEC size on average is: " + "?");
-        log("MEC size median is: " + "?");
-    }
+        }
+        catch (Exception e) {
+            System.out.println("MEC computation failed");
+            log("Number of MECs: " + "?");
+            log("Biggest MEC has size: " + "?");
+            log("Smallest MEC has size: " + "?");
+            log("MEC size on average is: " + "?");
+            log("MEC size median is: " + "?");
+        }
 
         SCCInfo sccs = null;
         System.out.println("Getting topologically ordered SCCs...");
