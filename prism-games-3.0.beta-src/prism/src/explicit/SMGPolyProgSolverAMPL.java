@@ -7,6 +7,7 @@ import prism.PrismException;
 import prism.PrismSettings;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
@@ -30,6 +31,8 @@ public class SMGPolyProgSolverAMPL extends SMGPolyProgSolver{
                                    boolean min2, double[] init, BitSet known, PrismSettings settings, int verbosity) {
         super(modelChecker, stpg, no, yes, min1, min2, init, known, settings, verbosity);
         //Create unique stamp to enable parallelizing
+        File amplDir = new File(MODEL_DIR);
+        if (!amplDir.exists()) amplDir.mkdir();
         MODEL_PATH = MODEL_DIR+System.nanoTime()+"_"+ ThreadLocalRandom.current().nextInt(0, 1000 + 1)+MODEL_NAME;
 
         try {
