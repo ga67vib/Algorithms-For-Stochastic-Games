@@ -201,7 +201,7 @@ public class STPGValueIterationUtils {
         return attractorDistances;
     }
 
-    public static double[] getValueFromStrategies(PrismComponent prismComponent, STPG stpg, int[] sigma, int[] tau, BitSet yes, BitSet no, BitSet relevantStates, BitSet alreadyComputedStates, double[] fixedValues, double precision) throws PrismException {
+    public static double[] getValueFromStrategies(PrismComponent prismComponent, STPG stpg, int[] sigma, int[] tau, BitSet yes, BitSet no, BitSet relevantStates, BitSet alreadyComputedStates, double[] fixedValues, double precision, double[] lowerbound, double[] upperBound) throws PrismException {
         /* This creates an whole MDP, but I suppose it's not necessary since we can create Local MDPs
         MDP maxFixedMDP = createMDPFromSTPG(stpg, sigma, true, yes, no, relevantStates, alreadyComputedStates, fixedValues);
         BitSet maxFixedNoBitSet = extendNoSet(no, maxFixedMDP, yes, relevantStates, alreadyComputedStates);
@@ -212,17 +212,16 @@ public class STPGValueIterationUtils {
         if (fixedValues == null) {
             fixedValues = new double[stpg.getNumStates()];
         }
-        LocalMDPResult maxFixedLocalMDP = createLocalMDPFromSTPG(stpg, sigma, true, yes, no, relevantStates, alreadyComputedStates, fixedValues);
-        LocalMDPResult minFixedLocalMDP = createLocalMDPFromSTPG(stpg, tau, false, yes, no, relevantStates, alreadyComputedStates, fixedValues);
+        LocalMDPResult maxFixedLocalMDP = createLocalMDPFromSTPG(stpg, sigma, true, yes, no, relevantStates, alreadyComputedStates, fixedValues, lowerbound);
+        LocalMDPResult minFixedLocalMDP = createLocalMDPFromSTPG(stpg, tau, false, yes, no, relevantStates, alreadyComputedStates, fixedValues, upperBound);
 
 
 
         MDPModelChecker mdpModelChecker = new MDPModelChecker(prismComponent);
         mdpModelChecker.maxIters = 10000;
 
-
-        ModelCheckerResult maxFixedResult = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(maxFixedLocalMDP.mdp, maxFixedLocalMDP.sinks, maxFixedLocalMDP.targets, true, null);
-        ModelCheckerResult minFixedResult = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(minFixedLocalMDP.mdp, minFixedLocalMDP.sinks, minFixedLocalMDP.targets, false, null);
+        ModelCheckerResult maxFixedResult = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(maxFixedLocalMDP.mdp, maxFixedLocalMDP.sinks, maxFixedLocalMDP.targets, true, null, maxFixedLocalMDP.initVector);
+        ModelCheckerResult minFixedResult = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(minFixedLocalMDP.mdp, minFixedLocalMDP.sinks, minFixedLocalMDP.targets, false, null, minFixedLocalMDP.initVector);
 
         //ModelCheckerResult maxFixedResult = mdpModelChecker.computeReachProbsPolIter(maxFixedLocalMDP.mdp, maxFixedLocalMDP.sinks, maxFixedLocalMDP.targets, true, null);
         //ModelCheckerResult minFixedResult = mdpModelChecker.computeReachProbsPolIter(minFixedLocalMDP.mdp, minFixedLocalMDP.sinks, minFixedLocalMDP.targets, false, null);
@@ -259,7 +258,7 @@ public class STPGValueIterationUtils {
      * @return
      * @throws PrismException
      */
-    private static LocalMDPResult createLocalMDPFromSTPG(STPG stpg, int[] strategy, boolean maxIsFixed, BitSet yes, BitSet no, BitSet relevantStates, BitSet alreadyComputedStates, double[] fixedValues) throws PrismException{
+    private static LocalMDPResult createLocalMDPFromSTPG(STPG stpg, int[] strategy, boolean maxIsFixed, BitSet yes, BitSet no, BitSet relevantStates, BitSet alreadyComputedStates, double[] fixedValues, double[] bound) throws PrismException{
         MDPSimple mdp = new MDPSimple();
         HashMap<Integer, Integer> stpgToMdp = new HashMap<>();
         HashMap<Integer, Integer> mdpToStpg = new HashMap<>();
@@ -278,6 +277,11 @@ public class STPGValueIterationUtils {
         int sink = mdp.addState();
         int target = mdp.addState();
 
+        double[] initVector = new double[mdp.getNumStates()];
+        initVector[sink] = 0;
+        initVector[target] = 1;
+
+
         //Set self-loops for sink and target
         Distribution d = new Distribution();
         d.add(sink, 1.0);
@@ -289,6 +293,7 @@ public class STPGValueIterationUtils {
 
         //Copy actions and fix those that have to be fixed
         for (int state = relevantStates.nextSetBit(0); state >= 0; state = relevantStates.nextSetBit(state + 1)) {
+            initVector[stpgToMdp.get(state)] = bound[state];
             boolean isMaximizerState = stpg.getPlayer(state) == 1;
             for (int choice = 0; choice < stpg.getNumChoices(state); choice++) {
                 if ((isMaximizerState && maxIsFixed) || (!isMaximizerState && !maxIsFixed)) {
@@ -471,5 +476,6 @@ public class STPGValueIterationUtils {
         BitSet targets;
         BitSet sinks;
         HashMap<Integer, Integer> stpgStatesToMdpStates;
+        double[] initVector;
     }
 }

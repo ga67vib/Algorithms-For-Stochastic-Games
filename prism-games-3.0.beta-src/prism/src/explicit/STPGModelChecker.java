@@ -326,6 +326,8 @@ public class STPGModelChecker extends ProbModelChecker
 		res.timeProb0 = timerProb0 / 1000.0;
 		res.timePre = (timerProb0 + timerProb1) / 1000.0;
 
+		mainLog.println("Intial-State "+stpg.getFirstInitialState()+" Value: "+res.soln[stpg.getFirstInitialState()]);
+
 		return res;
 	}
 	
@@ -749,7 +751,7 @@ public class STPGModelChecker extends ProbModelChecker
 					int[] sigma = startegyComputationResult[0];
 					int[] tau = startegyComputationResult[1];
 
-					double[] values = STPGValueIterationUtils.getValueFromStrategies(this, stpg, sigma, tau, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam);
+					double[] values = STPGValueIterationUtils.getValueFromStrategies(this, stpg, sigma, tau, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam, lowerBounds, upperBounds);
 					// Fix value of states
 					lowerBounds[state] = values[state];
 					lowerBounds2[state] = values[state];
@@ -780,7 +782,7 @@ public class STPGModelChecker extends ProbModelChecker
 					int[] sigma = startegyComputationResult[0];
 					int[] tau = startegyComputationResult[1];
 
-					double[] values = STPGValueIterationUtils.getValueFromStrategies(this, stpg, sigma, tau, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam);
+					double[] values = STPGValueIterationUtils.getValueFromStrategies(this, stpg, sigma, tau, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam, lowerBounds, upperBounds);
 					// Fix value of states
 					for (int state = statesForSCC.nextSetBit(0); state >= 0; state = statesForSCC.nextSetBit(state + 1)) {
 						lowerBounds[state] = values[state];

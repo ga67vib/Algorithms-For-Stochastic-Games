@@ -40,7 +40,7 @@ public class MDPLinearProgramSolverGurobi {
     public ModelCheckerResult solve() throws PrismException{
         ModelCheckerResult res = new ModelCheckerResult();
         try {
-            res = this.computeReachProbsLinearProgrammingGurobi(mdp, no, yes, this.min, null);
+            res = this.computeReachProbsLinearProgrammingGurobi(mdp, no, yes, this.min, null, init);
         }
         catch (GRBException e) {
             e.printStackTrace();
@@ -109,7 +109,7 @@ public class MDPLinearProgramSolverGurobi {
         }
     }
 
-    public ModelCheckerResult computeReachProbsLinearProgrammingGurobi (MDP mdp, BitSet no, BitSet yes, boolean min, int strat[]) throws GRBException, PrismException {
+    public ModelCheckerResult computeReachProbsLinearProgrammingGurobi (MDP mdp, BitSet no, BitSet yes, boolean min, int strat[], double[] preRes) throws GRBException, PrismException {
         int numStates = mdp.getNumStates();
         GRBEnv grbEnv = new GRBEnv();
         GRBModel linearProgram = new GRBModel(grbEnv);
@@ -125,6 +125,26 @@ public class MDPLinearProgramSolverGurobi {
 
         // Create state variables, type = null implies all variables are of continuous type
         GRBVar[] stateVars = linearProgram.addVars(lb, ub, null, null, null);
+        //==================ADDING WARM STARTS FOR GUROBI==========================
+        if (preRes != null) {
+            double[] preResArr = preRes;
+            if (preResArr.length > stateVars.length) {
+                throw new PrismException("More states in initial solution than in states");
+            }
+            else {
+                if (preResArr.length < stateVars.length) {
+                    //System.out.println("Initial solution has less states than QP model. Additional states won't have initial value");
+                }
+                for (int state = 0; state< mdp.getNumStates(); state++) {
+                    if (state < preRes.length) {
+                        stateVars[state].set(GRB.DoubleAttr.Start, preResArr[state]);
+                    }
+                    else {
+                        break; //most likely 2Act was applied and states is bigger now. Since 2Act appends after all existing states
+                    }
+                }
+            }
+        }
 
         //======================CREATE CONSTRAINTS=======================
         int numChoices = mdp.getNumChoices();

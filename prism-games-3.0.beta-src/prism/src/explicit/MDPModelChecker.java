@@ -1232,8 +1232,8 @@ public class MDPModelChecker extends ProbModelChecker
 		return res;
 	}
 
-	public ModelCheckerResult computeReachProbsLinearProgrammingGurobi (MDP mdp, BitSet no, BitSet yes, boolean min, int strat[]) throws PrismException {
-		MDPLinearProgramSolverGurobi solver = new MDPLinearProgramSolverGurobi(this, mdp, no, yes, min, null, null, this.settings);
+	public ModelCheckerResult computeReachProbsLinearProgrammingGurobi (MDP mdp, BitSet no, BitSet yes, boolean min, int strat[], double init[]) throws PrismException {
+		MDPLinearProgramSolverGurobi solver = new MDPLinearProgramSolverGurobi(this, mdp, no, yes, min, init, null, this.settings);
 		return solver.solve();
 	}
 
