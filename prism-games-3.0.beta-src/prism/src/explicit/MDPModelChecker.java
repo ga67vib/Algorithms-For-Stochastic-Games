@@ -1031,108 +1031,6 @@ public class MDPModelChecker extends ProbModelChecker
 	}
 
 	/**
-	 * Compute reachability probabilities using policy iteration.
-	 * Optionally, store optimal (memoryless) strategy info. 
-	 * @param mdp: The MDP
-	 * @param no: Probability 0 states
-	 * @param yes: Probability 1 states
-	 * @param min: Min or max probabilities (true=min, false=max)
-	 * @param strat Storage for (memoryless) strategy choice indices (ignored if null)
-	 */
-	protected ModelCheckerResult computeReachProbsPolIter(MDP mdp, BitSet no, BitSet yes, boolean min, int strat[]) throws PrismException
-	{
-		ModelCheckerResult res;
-		int i, n, iters, totalIters;
-		double soln[], soln2[];
-		boolean done;
-		long timer;
-		DTMCModelChecker mcDTMC;
-		DTMC dtmc;
-
-		// Re-use solution to solve each new policy (strategy)?
-		boolean reUseSoln = true;
-
-		// Start policy iteration
-		timer = System.currentTimeMillis();
-//		mainLog.println("Starting MDP policy iteration (" + (min ? "min" : "max") + ")...");
-
-		// Create a DTMC model checker (for solving policies)
-		mcDTMC = new DTMCModelChecker(this);
-		mcDTMC.inheritSettings(this);
-		mcDTMC.setLog(new PrismDevNullLog());
-
-		// Store num states
-		n = mdp.getNumStates();
-
-		// Create solution vectors
-		soln = new double[n];
-		soln2 = new double[n];
-
-		// Initialise solution vectors.
-		for (i = 0; i < n; i++)
-			soln[i] = soln2[i] = yes.get(i) ? 1.0 : 0.0;
-
-		// If not passed in, create new storage for strategy and initialise
-		// Initial strategy just picks first choice (0) everywhere
-		if (strat == null) {
-			strat = new int[n];
-			for (i = 0; i < n; i++)
-				strat[i] = 0;
-		}
-		// Otherwise, just initialise for states not in yes/no
-		// (Optimal choices for yes/no should already be known)
-		else {
-			for (i = 0; i < n; i++)
-				if (!(no.get(i) || yes.get(i)))
-					strat[i] = 0;
-		}
-
-		boolean backwardsGS = (linEqMethod == LinEqMethod.BACKWARDS_GAUSS_SEIDEL);
-
-		// Start iterations
-		iters = totalIters = 0;
-		done = false;
-		while (!done) {
-			iters++;
-			// Solve induced DTMC for strategy
-			dtmc = new DTMCFromMDPMemorylessAdversary(mdp, strat);
-			res = mcDTMC.computeReachProbsGaussSeidel(dtmc, no, yes, reUseSoln ? soln : null, null, backwardsGS);
-			soln = res.soln;
-			totalIters += res.numIters;
-			// Check if optimal, improve non-optimal choices
-			mdp.mvMultMinMax(soln, min, soln2, null, false, null);
-			done = true;
-			for (i = 0; i < n; i++) {
-				// Don't look at no/yes states - we may not have strategy info for them,
-				// so they might appear non-optimal
-				if (no.get(i) || yes.get(i))
-					continue;
-				if (!PrismUtils.doublesAreClose(soln[i], soln2[i], termCritParam, termCrit == TermCrit.ABSOLUTE)) {
-					done = false;
-					List<Integer> opt = mdp.mvMultMinMaxSingleChoices(i, soln, min, soln2[i]);
-					// Only update strategy if strictly better
-					if (!opt.contains(strat[i]))
-						strat[i] = opt.get(0);
-				}
-			}
-		}
-
-		// Finished policy iteration
-		timer = System.currentTimeMillis() - timer;
-//		mainLog.print("Policy iteration");
-//		mainLog.println(" took " + iters + " cycles (" + totalIters + " iterations in total) and " + timer / 1000.0 + " seconds.");
-
-		// Return results
-		// (Note we don't add the strategy - the one passed in is already there
-		// and might have some existing choices stored for other states).
-		res = new ModelCheckerResult();
-		res.soln = soln;
-		res.numIters = totalIters;
-		res.timeTaken = timer / 1000.0;
-		return res;
-	}
-
-	/**
 	 * Compute reachability probabilities using modified policy iteration.
 	 * @param mdp: The MDP
 	 * @param no: Probability 0 states
@@ -1221,6 +1119,126 @@ public class MDPModelChecker extends ProbModelChecker
 		timer = System.currentTimeMillis() - timer;
 		mainLog.print("Modified policy iteration");
 		mainLog.println(" took " + iters + " cycles (" + totalIters + " iterations in total) and " + timer / 1000.0 + " seconds.");
+
+		// Return results
+		// (Note we don't add the strategy - the one passed in is already there
+		// and might have some existing choices stored for other states).
+		res = new ModelCheckerResult();
+		res.soln = soln;
+		res.numIters = totalIters;
+		res.timeTaken = timer / 1000.0;
+		return res;
+	}
+
+	/**
+	 * Compute reachability probabilities using policy iteration.
+	 * Optionally, store optimal (memoryless) strategy info.
+	 * @param mdp: The MDP
+	 * @param no: Probability 0 states
+	 * @param yes: Probability 1 states
+	 * @param min: Min or max probabilities (true=min, false=max)
+	 * @param strat Storage for (memoryless) strategy choice indices (ignored if null)
+	 */
+	protected ModelCheckerResult computeReachProbsPolIter(MDP mdp, BitSet no, BitSet yes, boolean min, int strat[]) throws PrismException
+	{
+		return computeReachProbsPolIter(mdp, no, yes, min, strat, false);
+	}
+
+	/**
+	 * Compute reachability probabilities using policy iteration.
+	 * Optionally, store optimal (memoryless) strategy info.
+	 * @param mdp: The MDP
+	 * @param no: Probability 0 states
+	 * @param yes: Probability 1 states
+	 * @param min: Min or max probabilities (true=min, false=max)
+	 * @param strat Storage for (memoryless) strategy choice indices (ignored if null)
+	 */
+	protected ModelCheckerResult computeReachProbsPolIter(MDP mdp, BitSet no, BitSet yes, boolean min, int strat[], boolean iterativeSolution) throws PrismException
+	{
+		DTMCNonIterativeSolutionMethods dtmcNonIterativeSolutionMethods = new DTMCNonIterativeSolutionMethods();
+		ModelCheckerResult res;
+		int i, n, iters, totalIters;
+		double soln[], soln2[];
+		boolean done;
+		long timer;
+		DTMCModelChecker mcDTMC;
+		DTMC dtmc;
+
+		// Re-use solution to solve each new policy (strategy)?
+		boolean reUseSoln = true;
+
+		// Start policy iteration
+		timer = System.currentTimeMillis();
+//		mainLog.println("Starting MDP policy iteration (" + (min ? "min" : "max") + ")...");
+
+		// Create a DTMC model checker (for solving policies)
+		mcDTMC = new DTMCModelChecker(this);
+		mcDTMC.inheritSettings(this);
+		mcDTMC.setLog(new PrismDevNullLog());
+
+		// Store num states
+		n = mdp.getNumStates();
+
+		// Create solution vectors
+		soln = new double[n];
+		soln2 = new double[n];
+
+		// Initialise solution vectors.
+		for (i = 0; i < n; i++)
+			soln[i] = soln2[i] = yes.get(i) ? 1.0 : 0.0;
+
+		// If not passed in, create new storage for strategy and initialise
+		// Initial strategy just picks first choice (0) everywhere
+		if (strat == null) {
+			strat = new int[n];
+			for (i = 0; i < n; i++)
+				strat[i] = 0;
+		}
+		// Otherwise, just initialise for states not in yes/no
+		// (Optimal choices for yes/no should already be known)
+		else {
+			for (i = 0; i < n; i++)
+				if (!(no.get(i) || yes.get(i)))
+					strat[i] = 0;
+		}
+
+		boolean backwardsGS = (linEqMethod == LinEqMethod.BACKWARDS_GAUSS_SEIDEL);
+
+		// Start iterations
+		iters = totalIters = 0;
+		done = false;
+		while (!done) {
+			iters++;
+			// Solve induced DTMC for strategy
+			dtmc = new DTMCFromMDPMemorylessAdversary(mdp, strat);
+			if (iterativeSolution)
+				res = mcDTMC.computeReachProbsGaussSeidel(dtmc, no, yes, reUseSoln ? soln : null, null, backwardsGS);
+			else
+				res = dtmcNonIterativeSolutionMethods.solveMarkovChain(dtmc, yes);
+			soln = res.soln;
+			totalIters += res.numIters;
+			// Check if optimal, improve non-optimal choices
+			mdp.mvMultMinMax(soln, min, soln2, null, false, null);
+			done = true;
+			for (i = 0; i < n; i++) {
+				// Don't look at no/yes states - we may not have strategy info for them,
+				// so they might appear non-optimal
+				if (no.get(i) || yes.get(i))
+					continue;
+				if (!PrismUtils.doublesAreClose(soln[i], soln2[i], termCritParam, termCrit == TermCrit.ABSOLUTE)) {
+					done = false;
+					List<Integer> opt = mdp.mvMultMinMaxSingleChoices(i, soln, min, soln2[i]);
+					// Only update strategy if strictly better
+					if (!opt.contains(strat[i]))
+						strat[i] = opt.get(0);
+				}
+			}
+		}
+
+		// Finished policy iteration
+		timer = System.currentTimeMillis() - timer;
+//		mainLog.print("Policy iteration");
+//		mainLog.println(" took " + iters + " cycles (" + totalIters + " iterations in total) and " + timer / 1000.0 + " seconds.");
 
 		// Return results
 		// (Note we don't add the strategy - the one passed in is already there

@@ -216,16 +216,36 @@ public class STPGValueIterationUtils {
         LocalMDPResult minFixedLocalMDP = createLocalMDPFromSTPG(stpg, tau, false, yes, no, relevantStates, alreadyComputedStates, fixedValues, upperBound);
 
 
-
         MDPModelChecker mdpModelChecker = new MDPModelChecker(prismComponent);
         mdpModelChecker.maxIters = 10000;
 
-        ModelCheckerResult maxFixedResult = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(maxFixedLocalMDP.mdp, maxFixedLocalMDP.sinks, maxFixedLocalMDP.targets, true, null, maxFixedLocalMDP.initVector);
-        ModelCheckerResult minFixedResult = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(minFixedLocalMDP.mdp, minFixedLocalMDP.sinks, minFixedLocalMDP.targets, false, null, minFixedLocalMDP.initVector);
+        boolean useLP = true;
 
-        //ModelCheckerResult maxFixedResult = mdpModelChecker.computeReachProbsPolIter(maxFixedLocalMDP.mdp, maxFixedLocalMDP.sinks, maxFixedLocalMDP.targets, true, null);
-        //ModelCheckerResult minFixedResult = mdpModelChecker.computeReachProbsPolIter(minFixedLocalMDP.mdp, minFixedLocalMDP.sinks, minFixedLocalMDP.targets, false, null);
+        ModelCheckerResult maxFixedResult;
+        ModelCheckerResult minFixedResult;
 
+        if (useLP) {
+            maxFixedResult = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(maxFixedLocalMDP.mdp, maxFixedLocalMDP.sinks, maxFixedLocalMDP.targets, true, null, maxFixedLocalMDP.initVector);
+            minFixedResult = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(minFixedLocalMDP.mdp, minFixedLocalMDP.sinks, minFixedLocalMDP.targets, false, null, minFixedLocalMDP.initVector);
+
+        }
+        else {
+            int[] sigmaMDPRecommendation = new int[minFixedLocalMDP.mdp.getNumStates()];
+            int[] tauMDPRecommendation = new int[maxFixedLocalMDP.mdp.getNumStates()];
+
+            for (int state = relevantStates.nextSetBit(0); state >= 0; state = relevantStates.nextSetBit(state + 1)) {
+                // Max player
+                if (stpg.getPlayer(state) == 1) {
+                    sigmaMDPRecommendation[minFixedLocalMDP.stpgStatesToMdpStates.get(state)] = sigma[state];
+                }
+                else {
+                    tauMDPRecommendation[maxFixedLocalMDP.stpgStatesToMdpStates.get(state)] = sigma[state];
+                }
+            }
+
+            maxFixedResult = mdpModelChecker.computeReachProbsPolIter(maxFixedLocalMDP.mdp, maxFixedLocalMDP.sinks, maxFixedLocalMDP.targets, true, tauMDPRecommendation, false);
+            minFixedResult = mdpModelChecker.computeReachProbsPolIter(minFixedLocalMDP.mdp, minFixedLocalMDP.sinks, minFixedLocalMDP.targets, false, sigmaMDPRecommendation, false);
+        }
 
         for (int state = relevantStates.nextSetBit(0); state >= 0; state = relevantStates.nextSetBit(state + 1)) {
             double maxFixedStateValue = maxFixedResult.soln[maxFixedLocalMDP.stpgStatesToMdpStates.get(state)];
@@ -338,6 +358,7 @@ public class STPGValueIterationUtils {
         LocalMDPResult mdpResult = new LocalMDPResult();
         mdpResult.mdp = mdp;
         mdpResult.stpgStatesToMdpStates = stpgToMdp;
+        mdpResult.mdpStatesToStpgStates = mdpToStpg;
         mdpResult.targets = new BitSet();
         mdpResult.targets.set(target);
         mdpResult.sinks = new BitSet();
@@ -476,6 +497,7 @@ public class STPGValueIterationUtils {
         BitSet targets;
         BitSet sinks;
         HashMap<Integer, Integer> stpgStatesToMdpStates;
+        HashMap<Integer, Integer> mdpStatesToStpgStates;
         double[] initVector;
     }
 }
