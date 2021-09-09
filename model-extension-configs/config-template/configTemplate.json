@@ -14,5 +14,13 @@
 		"componentTreeDepth": 1,
 		"probabilityLeadingToSink": 0.2,
 		"probabilityToGoBackToInitialState": 0.5
+	},
+	"ActionTreeModel": {
+		"use": true, 
+		"numComponents": 25, 
+		"componentBranchingFactor": 2, 
+		"componentNumberOfStates": 4, 
+		"probabilityLeadingToSink": 0.01, 
+		"probabilityToGoBackToInitialState": 0.0
 	}
 }
