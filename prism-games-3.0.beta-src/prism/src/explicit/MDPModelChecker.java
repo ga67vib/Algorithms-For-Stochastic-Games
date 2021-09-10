@@ -1141,7 +1141,7 @@ public class MDPModelChecker extends ProbModelChecker
 	 */
 	protected ModelCheckerResult computeReachProbsPolIter(MDP mdp, BitSet no, BitSet yes, boolean min, int strat[]) throws PrismException
 	{
-		return computeReachProbsPolIter(mdp, no, yes, min, strat, false);
+		return computeReachProbsPolIter(mdp, no, yes, min, strat, true);
 	}
 
 	/**
