@@ -219,7 +219,7 @@ public class STPGValueIterationUtils {
         MDPModelChecker mdpModelChecker = new MDPModelChecker(prismComponent);
         mdpModelChecker.maxIters = 10000;
 
-        boolean useLP = true;
+        boolean useLP = false;
 
         ModelCheckerResult maxFixedResult;
         ModelCheckerResult minFixedResult;
