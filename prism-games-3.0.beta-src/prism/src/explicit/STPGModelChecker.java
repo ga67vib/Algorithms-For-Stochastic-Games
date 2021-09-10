@@ -2051,6 +2051,9 @@ public class STPGModelChecker extends ProbModelChecker
 						mdp.clearState(s);
 						mdp.addChoice(s, makeTransition(stpg.getTransitionsIterator(m2g.get(s), sigma[s]), subset, known, knownValues, target, sink,g2m));
 					}
+					else{
+                        knownValues[m2g.get(s)] = sigmaReturn; //TODO: Maxi added this on 10.09.21, hoping to fix a bug. Someone should refactor the whole SI, it is horrible right now.
+                    }
 				}
 
 			}
