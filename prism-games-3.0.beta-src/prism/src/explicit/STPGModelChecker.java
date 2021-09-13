@@ -302,7 +302,7 @@ public class STPGModelChecker extends ProbModelChecker
 				res = computeReachProbsValIter(stpg, no, yes, min1, min2, init, known, solnMethod);
 				break;
 			case ANALYSE_MODEL:
-				res = analyse_model(stpg, no, yes, min1, min2, init, known);
+				res = analyse_model(stpg, no, yes, min1, min2, init, known, target);
 				break;
 			default:
 				throw new PrismException("Unknown STPG solution method " + solnMethod);
@@ -3407,10 +3407,10 @@ public class STPGModelChecker extends ProbModelChecker
 	}
 
 
-	protected ModelCheckerResult analyse_model(STPG stpg, BitSet no, BitSet yes, boolean min1, boolean min2, double init[], BitSet known)
+	protected ModelCheckerResult analyse_model(STPG stpg, BitSet no, BitSet yes, boolean min1, boolean min2, double init[], BitSet known, BitSet target)
 			throws PrismException {
 		STPGModelAnalyser analyser = new STPGModelAnalyser(this);
-		return analyser.analyse_model(stpg, no, yes, min1, min2, init, known);
+		return analyser.analyse_model(stpg, no, yes, min1, min2, init, known, target);
 	}
 	/**
 	 * Simple test program.
