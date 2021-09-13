@@ -180,7 +180,7 @@ public class STPGModelAnalyser {
 
         for (int target = yes.nextSetBit(0); target >= 0; target = yes.nextSetBit(target + 1)) {
             nearestTarget = Math.min(nearestTarget, distanceWithoutCycles[target]);
-            furthestTarget = Math.max(nearestTarget, distanceWithoutCycles[target]);
+            furthestTarget = Math.max(furthestTarget, distanceWithoutCycles[target]);
 
             avgCyclefreeDistance += distanceWithoutCycles[target];
             sortedTargetCyclefreeDistances.add(distanceWithoutCycles[target]);
