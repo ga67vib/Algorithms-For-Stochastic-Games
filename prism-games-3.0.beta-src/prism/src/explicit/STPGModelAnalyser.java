@@ -1,5 +1,6 @@
 package explicit;
 
+import common.IntSet;
 import prism.PrismException;
 
 import java.util.*;
@@ -119,6 +120,20 @@ public class STPGModelAnalyser {
         System.out.println("Getting topologically ordered SCCs...");
         sccs = SCCComputer.computeTopologicalOrdering(this.modelChecker, stpg, true, unknown::get);
         System.out.println("Number of SCCs: " + sccs.getNumSCCs());
+        long maximalCardinalitySCC=0;
+        long minimalCardinalitySCC=Long.MAX_VALUE;
+        double avgSCCsize = 0.0;
+        for (int i = 0; i<sccs.getNumSCCs(); i++) {
+            IntSet scc = sccs.getStatesForSCC(i);
+            maximalCardinalitySCC = Math.max(scc.cardinality(), maximalCardinalitySCC);
+            minimalCardinalitySCC = Math.min(scc.cardinality(), minimalCardinalitySCC);
+            avgSCCsize+= scc.cardinality();
+        }
+        avgSCCsize/=sccs.getNumSCCs();
+
+        log("Biggest SCC has size: "+maximalCardinalitySCC);
+        log("Smallest SCC has size: "+minimalCardinalitySCC);
+        log("Average SCC has size: "+avgSCCsize);
 
 
         cycleFreeAnalysis(stpg, yes, no);
