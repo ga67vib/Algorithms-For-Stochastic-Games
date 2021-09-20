@@ -31,11 +31,7 @@ public class STPGValueIterationUtils {
 
         // Find allowd actions for maximizer and strategy for minimizer
         for (int state = relevantStates.nextSetBit(0); state >= 0; state = relevantStates.nextSetBit(state+1)) {
-            if (state == 20 || state == 103) {
-                System.out.println("state: "+state);
-            }
             boolean isMaximizerState = stpg.getPlayer(state) == 1;
-
             double[] referenceBound;
 
             // Play conservative
@@ -62,15 +58,14 @@ public class STPGValueIterationUtils {
                     bestChoiceValueMinimizer = choiceValue;
                     tau[state] = choice;
                 }
-
+                //If it is equally good as your current actions, add it to your considerations
+                else if (isMaximizerState && PrismUtils.doublesAreClose(bestChoiceValueMaximizer, choiceValue, precision, true)) {
+                    allowedMaximizerActions[state].add(choice);
+                }
                 //If this action is better than the last ones, start considerations from here
                 else if (isMaximizerState && bestChoiceValueMaximizer < choiceValue) {
                     bestChoiceValueMaximizer = choiceValue;
                     allowedMaximizerActions[state].clear();
-                    allowedMaximizerActions[state].add(choice);
-                }
-                //If it is equally good as your current actions, add it to your considerations
-                else if (isMaximizerState && PrismUtils.doublesAreClose(bestChoiceValueMaximizer, choiceValue, precision, true)) {
                     allowedMaximizerActions[state].add(choice);
                 }
             }
@@ -201,6 +196,118 @@ public class STPGValueIterationUtils {
         return attractorDistances;
     }
 
+    public static double[] getValueFromStrategiesWithoutAttractor(PrismComponent prismComponent, STPG stpg, BitSet yes, BitSet no, BitSet relevantStates, BitSet alreadyComputedStates, double[] fixedValues, double precision, double[] lowerBounds, double[] upperBounds) throws PrismException {
+        // Compute all Action Possibilities
+        if (relevantStates == null) {
+            relevantStates = new BitSet();
+            relevantStates.set(0, stpg.getNumStates()-1);
+        }
+        ArrayList<Integer>[] allowedMaximizerActions = new ArrayList[stpg.getNumStates()];
+        ArrayList<Integer>[] allowedMinimizerActions = new ArrayList[stpg.getNumStates()];
+
+        // Find allowd actions for maximizer and strategy for minimizer
+        for (int state = relevantStates.nextSetBit(0); state >= 0; state = relevantStates.nextSetBit(state+1)) {
+            if (state == 55) {
+                System.out.println("State 55 here!");
+            }
+            boolean isMaximizerState = stpg.getPlayer(state) == 1;
+            double[] referenceBound;
+
+            // Play conservative
+            if (isMaximizerState) {
+                referenceBound = lowerBounds;
+                allowedMaximizerActions[state] = new ArrayList<>();
+            }
+            else {
+                referenceBound = upperBounds;
+                allowedMinimizerActions[state] = new ArrayList<>();
+            }
+
+            double bestChoiceValueMaximizer = 0;
+            double bestChoiceValueMinimizer = 1.0;
+            for (int choice = 0; choice < stpg.getNumChoices(state); choice++) {
+                double choiceValue = 0;
+
+                for (Iterator<Map.Entry<Integer, Double>> it = stpg.getTransitionsIterator(state, choice); it.hasNext(); ) {
+                    Map.Entry<Integer, Double> tr = it.next();
+                    choiceValue += tr.getValue() * referenceBound[tr.getKey()];
+                }
+
+                //Minimizer may take any optimal action
+                if (!isMaximizerState && bestChoiceValueMinimizer > choiceValue) {
+                    bestChoiceValueMinimizer = choiceValue;
+
+                    allowedMinimizerActions[state].clear();
+                    allowedMinimizerActions[state].add(choice);
+                }
+                //If it is equally good as your current actions, add it to your considerations
+                else if (isMaximizerState && PrismUtils.doublesAreClose(bestChoiceValueMaximizer, choiceValue, precision, true)) {
+                    allowedMaximizerActions[state].add(choice);
+                }
+                //If this action is better than the last ones, start considerations from here
+                else if (isMaximizerState && bestChoiceValueMaximizer < choiceValue) {
+                    bestChoiceValueMaximizer = choiceValue;
+                    allowedMaximizerActions[state].clear();
+                    allowedMaximizerActions[state].add(choice);
+                }
+            }
+        }
+
+        if (fixedValues == null) {
+            fixedValues = new double[stpg.getNumStates()];
+        }
+        LocalMDPResult maxFixedLocalMDP = createLocalMDPFromSTPG(stpg, allowedMaximizerActions, true, yes, no, relevantStates, alreadyComputedStates, fixedValues, lowerBounds);
+        LocalMDPResult minFixedLocalMDP = createLocalMDPFromSTPG(stpg, allowedMinimizerActions, false, yes, no, relevantStates, alreadyComputedStates, fixedValues, upperBounds);
+
+        MDPModelChecker mdpModelChecker = new MDPModelChecker(prismComponent);
+        mdpModelChecker.termCritParam = precision;
+        mdpModelChecker.maxIters = 10000;
+
+        boolean useLP = false;
+
+        ModelCheckerResult maxFixedResult;
+        ModelCheckerResult minFixedResult;
+
+        if (useLP) {
+            maxFixedResult = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(maxFixedLocalMDP.mdp, maxFixedLocalMDP.sinks, maxFixedLocalMDP.targets, true, null, maxFixedLocalMDP.initVector);
+            minFixedResult = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(minFixedLocalMDP.mdp, minFixedLocalMDP.sinks, minFixedLocalMDP.targets, false, null, minFixedLocalMDP.initVector);
+
+        }
+        else {
+            int[] sigmaMDPRecommendation = new int[minFixedLocalMDP.mdp.getNumStates()];
+            int[] tauMDPRecommendation = new int[maxFixedLocalMDP.mdp.getNumStates()];
+
+            for (int state = relevantStates.nextSetBit(0); state >= 0; state = relevantStates.nextSetBit(state + 1)) {
+                // Max player
+                if (stpg.getPlayer(state) == 1) {
+                    // Always assign first allowed action since by copying and merging actions there may be less now, but the one at index 0
+                    // will also have the same index in the reduced MDP
+                    sigmaMDPRecommendation[minFixedLocalMDP.stpgStatesToMdpStates.get(state)] = allowedMaximizerActions[state].get(0);
+                }
+                else {
+                    tauMDPRecommendation[maxFixedLocalMDP.stpgStatesToMdpStates.get(state)] = allowedMinimizerActions[state].get(0);
+                }
+            }
+
+            maxFixedResult = mdpModelChecker.computeReachProbsPolIter(maxFixedLocalMDP.mdp, maxFixedLocalMDP.sinks, maxFixedLocalMDP.targets, true, tauMDPRecommendation, false, maxFixedLocalMDP.initVector);
+            minFixedResult = mdpModelChecker.computeReachProbsPolIter(minFixedLocalMDP.mdp, minFixedLocalMDP.sinks, minFixedLocalMDP.targets, false, sigmaMDPRecommendation, false, minFixedLocalMDP.initVector);
+        }
+
+        for (int state = relevantStates.nextSetBit(0); state >= 0; state = relevantStates.nextSetBit(state + 1)) {
+            double maxFixedStateValue = maxFixedResult.soln[maxFixedLocalMDP.stpgStatesToMdpStates.get(state)];
+            double minFixedStateValue = minFixedResult.soln[minFixedLocalMDP.stpgStatesToMdpStates.get(state)];
+            if (!PrismUtils.doublesAreClose(maxFixedStateValue, minFixedStateValue, precision, true)) {
+                throw new PrismException("If Minimizer has free choice then state "+state+" gets value "+maxFixedStateValue+
+                        " but if Maximizer has free choice states gets value "+minFixedStateValue+
+                        " ==> Topological value iteration failed");
+            }
+            fixedValues[state] = maxFixedStateValue;
+        }
+
+
+        return fixedValues;
+    }
+
     public static double[] getValueFromStrategies(PrismComponent prismComponent, STPG stpg, int[] sigma, int[] tau, BitSet yes, BitSet no, BitSet relevantStates, BitSet alreadyComputedStates, double[] fixedValues, double precision, double[] lowerbound, double[] upperBound) throws PrismException {
         /* This creates an whole MDP, but I suppose it's not necessary since we can create Local MDPs
         MDP maxFixedMDP = createMDPFromSTPG(stpg, sigma, true, yes, no, relevantStates, alreadyComputedStates, fixedValues);
@@ -239,12 +346,12 @@ public class STPGValueIterationUtils {
                     sigmaMDPRecommendation[minFixedLocalMDP.stpgStatesToMdpStates.get(state)] = sigma[state];
                 }
                 else {
-                    tauMDPRecommendation[maxFixedLocalMDP.stpgStatesToMdpStates.get(state)] = sigma[state];
+                    tauMDPRecommendation[maxFixedLocalMDP.stpgStatesToMdpStates.get(state)] = tau[state];
                 }
             }
 
-            maxFixedResult = mdpModelChecker.computeReachProbsPolIter(maxFixedLocalMDP.mdp, maxFixedLocalMDP.sinks, maxFixedLocalMDP.targets, true, tauMDPRecommendation, false);
-            minFixedResult = mdpModelChecker.computeReachProbsPolIter(minFixedLocalMDP.mdp, minFixedLocalMDP.sinks, minFixedLocalMDP.targets, false, sigmaMDPRecommendation, false);
+            maxFixedResult = mdpModelChecker.computeReachProbsPolIter(maxFixedLocalMDP.mdp, maxFixedLocalMDP.sinks, maxFixedLocalMDP.targets, true, tauMDPRecommendation, false, maxFixedLocalMDP.initVector);
+            minFixedResult = mdpModelChecker.computeReachProbsPolIter(minFixedLocalMDP.mdp, minFixedLocalMDP.sinks, minFixedLocalMDP.targets, false, sigmaMDPRecommendation, false, minFixedLocalMDP.initVector);
         }
 
         for (int state = relevantStates.nextSetBit(0); state >= 0; state = relevantStates.nextSetBit(state + 1)) {
@@ -260,6 +367,123 @@ public class STPGValueIterationUtils {
 
 
         return fixedValues;
+    }
+
+    /**
+     * Creates a MDP that contains only the relevant states, a target and a sink.
+     * MUST FULFILL FOLLOWING REQUIREMENT:
+     * If a state s in relevantStates has a transition to another state s' then s' must be either in yes, no, relevantStates or alreadyComputedStates
+     *
+     * @param stpg
+     * @param strategy
+     * @param maxIsFixed
+     * @param yes
+     * @param no
+     * @param relevantStates
+     * @param alreadyComputedStates
+     * @param fixedValues
+     * @return
+     * @throws PrismException
+     */
+    private static LocalMDPResult createLocalMDPFromSTPG(STPG stpg, ArrayList<Integer>[] allowedActions, boolean maxIsFixed, BitSet yes, BitSet no, BitSet relevantStates, BitSet alreadyComputedStates, double[] fixedValues, double[] bound) throws PrismException{
+        MDPSimple mdp = new MDPSimple();
+        HashMap<Integer, Integer> stpgToMdp = new HashMap<>();
+        HashMap<Integer, Integer> mdpToStpg = new HashMap<>();
+
+        if (relevantStates == null) {
+            relevantStates = new BitSet();
+            relevantStates.set(0, stpg.getNumStates()-1);
+        }
+
+        for (int state = relevantStates.nextSetBit(0); state >= 0; state = relevantStates.nextSetBit(state + 1)) {
+            int mdpState = mdp.addState();
+            stpgToMdp.put(state, mdpState);
+            mdpToStpg.put(mdpState, state);
+        }
+
+        int sink = mdp.addState();
+        int target = mdp.addState();
+
+        double[] initVector = new double[mdp.getNumStates()];
+        initVector[sink] = 0;
+        initVector[target] = 1;
+
+
+        //Set self-loops for sink and target
+        Distribution d = new Distribution();
+        d.add(sink, 1.0);
+        mdp.addChoice(sink, d);
+
+        d = new Distribution();
+        d.add(target, 1.0);
+        mdp.addChoice(target, d);
+
+        //Copy actions and fix those that have to be fixed
+        for (int state = relevantStates.nextSetBit(0); state >= 0; state = relevantStates.nextSetBit(state + 1)) {
+            initVector[stpgToMdp.get(state)] = bound[state];
+            boolean isMaximizerState = stpg.getPlayer(state) == 1;
+            double probabilityScaling = 1.0;
+
+            // One Distribution for all actions that will be contracted into one
+            Distribution allowedActionDistribution = new Distribution();
+            for (int choice = 0; choice < stpg.getNumChoices(state); choice++) {
+                Distribution distribution;
+                if ((isMaximizerState && maxIsFixed) || (!isMaximizerState && !maxIsFixed)) {
+                    if (!allowedActions[state].contains(choice)) continue;
+
+                    distribution = allowedActionDistribution;
+                    probabilityScaling = 1.0/allowedActions[state].size();
+                }
+                else {
+                    //Take the Distribution of this action alone, since it is not contracted
+                    distribution = new Distribution();
+                }
+
+                for (Iterator<Map.Entry<Integer, Double>> it = stpg.getTransitionsIterator(state, choice); it.hasNext(); ) {
+                    Map.Entry<Integer, Double> tr = it.next();
+
+                    int nextState = tr.getKey();
+                    //Redirect action to new target
+                    if (yes.get(nextState)) {
+                        distribution.add(target, tr.getValue() * probabilityScaling);
+                    }
+                    //Redirect action to new sink
+                    else if (no.get(nextState)) {
+                        distribution.add(sink, tr.getValue() * probabilityScaling);
+                    }
+                    //Stay inside SCC
+                    else if (relevantStates.get(nextState)) {
+                        distribution.add(stpgToMdp.get(nextState), tr.getValue() * probabilityScaling);
+                    }
+                    //Moving to a already fixed state -> Should already have a fixed value and thus can be replaced
+                    else if (alreadyComputedStates.get(nextState)) {
+                        distribution.add(target, fixedValues[nextState] * tr.getValue() * probabilityScaling);
+                        if (fixedValues[nextState] * tr.getValue() < 1) {
+                            distribution.add(sink, fixedValues[nextState] * tr.getValue() * probabilityScaling);
+                        }
+                    }
+                    //
+                    else {
+                        throw new PrismException("State " + state + " has in action " + choice + " a transition to state " + nextState + ", which is not already computed. This method is only suited for topological cases, in which this case should never arrise.");
+                    }
+                }
+                mdp.addChoice(stpgToMdp.get(state), distribution);
+            }
+        }
+
+        // Take any Initial State, since it does not matter
+        mdp.addInitialState(0);
+
+        LocalMDPResult mdpResult = new LocalMDPResult();
+        mdpResult.mdp = mdp;
+        mdpResult.stpgStatesToMdpStates = stpgToMdp;
+        mdpResult.mdpStatesToStpgStates = mdpToStpg;
+        mdpResult.targets = new BitSet();
+        mdpResult.targets.set(target);
+        mdpResult.sinks = new BitSet();
+        mdpResult.sinks.set(sink);
+        mdpResult.initVector = initVector;
+        return mdpResult;
     }
 
     /**
@@ -363,6 +587,7 @@ public class STPGValueIterationUtils {
         mdpResult.targets.set(target);
         mdpResult.sinks = new BitSet();
         mdpResult.sinks.set(sink);
+        mdpResult.initVector = initVector;
         return mdpResult;
     }
 
