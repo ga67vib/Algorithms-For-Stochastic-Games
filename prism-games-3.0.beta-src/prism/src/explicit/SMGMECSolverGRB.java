@@ -183,7 +183,7 @@ public class SMGMECSolverGRB extends SMGMECSolver {
         int state=mec.nextSetBit(0);
         for (int i=0; i<numECStates; i++) {
             lhs[i] = new GRBLinExpr();
-            lhs[i].addTerm(1.0, stateVars[state]);
+            lhs[i].addTerm(1.0, stateVars[getStateIndex(state)]);
             state=mec.nextSetBit(state+1);
         }
         qp.addConstrs(lhs, senses, rhs, null);
@@ -230,7 +230,7 @@ public class SMGMECSolverGRB extends SMGMECSolver {
                         lhs[i].addConstant(-1.0*tr.getValue()/divisor * knownValues[tr.getKey()]);
                     }
                     else {
-                        lhs[i].addTerm(-1.0*tr.getValue()/divisor, stateVars[tr.getKey()]);
+                        lhs[i].addTerm(-1.0*tr.getValue()/divisor, stateVars[getStateIndex(tr.getKey())]);
                     }
                 }
             }
@@ -246,7 +246,7 @@ public class SMGMECSolverGRB extends SMGMECSolver {
                 break;
             }
             //qp.addGenConstrMax(stateVars[state], extraVars, 0.0, ""); //Creates Max constraint
-            vars[i]=stateVars[state];
+            vars[i]=stateVars[getStateIndex(state)];
             i++;
         }
         createMinMaxConstraint(vars, extraVars, true);
@@ -270,13 +270,12 @@ public class SMGMECSolverGRB extends SMGMECSolver {
         return transpose;
     }
 
+    private int getStateIndex(int index) {
+        return (map != null) ? map.get(index) : index;
+    }
+
     private GRBVar getStateVar(int i) {
-        if (map == null) {
-            return stateVars[i];
-        }
-        else {
-            return stateVars[map.get(i)];
-        }
+        return stateVars[getStateIndex(i)];
     }
 
     private void createMinMaxConstraint(GRBVar[] baseVars, GRBVar[] vars, boolean max) throws GRBException{

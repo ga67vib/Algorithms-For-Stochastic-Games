@@ -16,7 +16,12 @@ public class DTMCNonIterativeSolutionMethods {
      *
      * This is interpreted in a ModelCheckerResult and the transition probs are returned
      */
-    protected ModelCheckerResult solveMarkovChain(DTMC dtmc, BitSet targets) {
+    protected ModelCheckerResult solveMarkovChain(DTMC dtmc, BitSet targets, double[] upperbounds, double precision) {
+
+        if (upperbounds == null) {
+            upperbounds = new double[dtmc.getNumStates()];
+            Arrays.fill(upperbounds, 1.0);
+        }
 
         ModelCheckerResult result = new ModelCheckerResult();
         result.soln = new double[dtmc.getNumStates()];
@@ -102,7 +107,9 @@ public class DTMCNonIterativeSolutionMethods {
         //System.out.println("Matrix P:\n"+matrixToString(P));
 
 
-        ArrayList<Integer> delete=getRemovableRows(A, P);
+        ArrayList<Integer> delete =
+                //getRemovableRowsFast(normalStateToMatrixColumnIndex, upperbounds, precision);
+                getRemovableRows(A, P);
         Matrix Ashort=shortenMatrix(A, delete);
         Matrix M = Matrix.identity(Ashort.getRowDimension(), Ashort.getColumnDimension()).minus(Ashort);
         Matrix MInverse=M.inverse();
@@ -135,8 +142,21 @@ public class DTMCNonIterativeSolutionMethods {
      * Note that due to Floating Point Arithmetics, this is also not 100% exact.
      * @return
      */
-    public ModelCheckerResult computeReachProbsExact(DTMC dtmc, MCRewards mcRewards, BitSet target, BitSet inf, double init[], BitSet known) throws PrismException {
-        return solveMarkovChain(dtmc, target);
+    public ModelCheckerResult computeReachProbsExact(DTMC dtmc, MCRewards mcRewards, BitSet target, BitSet inf, double init[], BitSet known, double roundFrom) throws PrismException {
+        return solveMarkovChain(dtmc, target, init, roundFrom);
+    }
+
+    protected ArrayList<Integer> getRemovableRowsFast(HashMap<Integer, Integer> normalStateToMatrixColumnIndex, double[] upperBounds, double roundFrom) {
+        // Assume that every
+        ArrayList<Integer> delete=new ArrayList<>();
+        for (int state = 0; state < upperBounds.length; state++) {
+            // This number may be set up a little higher due to imprecision
+            if (upperBounds[state] <= roundFrom) {
+                if (normalStateToMatrixColumnIndex.containsKey(state)) delete.add(normalStateToMatrixColumnIndex.get(state));
+            }
+        }
+
+        return delete;
     }
 
     protected ArrayList<Integer> getRemovableRows(Matrix A, Matrix P) {

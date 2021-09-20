@@ -726,6 +726,8 @@ public class STPGModelChecker extends ProbModelChecker
 		// Start iterations
 		if (getDoTopologicalValueIteration()) {
 
+			boolean useAttractorToGetDTMC = false;
+
 			BitSet haveAlreadyFixedValues = new BitSet();
 			haveAlreadyFixedValues.or(yes);
 			// [Small optimization:] We don't care for sinks for the attractors so we won't set them
@@ -747,11 +749,19 @@ public class STPGModelChecker extends ProbModelChecker
 
 					BitSet statesForSCC = new BitSet();
 					statesForSCC.set(state);
-					int[][] startegyComputationResult = STPGValueIterationUtils.computeStrategyFromBounds(stpg, yes, lowerBounds, upperBounds, this.termCritParam, statesForSCC, haveAlreadyFixedValues, alreadyComputedAttractorDistances);
-					int[] sigma = startegyComputationResult[0];
-					int[] tau = startegyComputationResult[1];
+					double[] values;
+					if (useAttractorToGetDTMC) {
+						int[][] startegyComputationResult = STPGValueIterationUtils.computeStrategyFromBounds(stpg, yes, lowerBounds, upperBounds, this.termCritParam, statesForSCC, haveAlreadyFixedValues, alreadyComputedAttractorDistances);
+						int[] sigma = startegyComputationResult[0];
+						int[] tau = startegyComputationResult[1];
 
-					double[] values = STPGValueIterationUtils.getValueFromStrategies(this, stpg, sigma, tau, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam, lowerBounds, upperBounds);
+						values = STPGValueIterationUtils.getValueFromStrategies(this, stpg, sigma, tau, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam, lowerBounds, upperBounds);
+						alreadyComputedAttractorDistances = startegyComputationResult[2];
+					}
+					else {
+						values = STPGValueIterationUtils.getValueFromStrategiesWithoutAttractor(this, stpg, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam, lowerBounds, upperBounds);
+					}
+
 					// Fix value of states
 					lowerBounds[state] = values[state];
 					lowerBounds2[state] = values[state];
@@ -761,7 +771,6 @@ public class STPGModelChecker extends ProbModelChecker
 					iters++;
 					IterationMethod.intervalIterationCheckForProblems(lowerBounds, upperBounds, IntSet.asIntSet(state).iterator());
 
-					alreadyComputedAttractorDistances = startegyComputationResult[2];
 					haveAlreadyFixedValues.set(state);
 				} else {
 					// complex SCC: do VI
@@ -778,11 +787,18 @@ public class STPGModelChecker extends ProbModelChecker
 					lowerBounds = subres[0];
 					upperBounds = subres[1];
 
-					int[][] startegyComputationResult = STPGValueIterationUtils.computeStrategyFromBounds(stpg, yes, lowerBounds, upperBounds, this.termCritParam, statesForSCC, haveAlreadyFixedValues, alreadyComputedAttractorDistances);
-					int[] sigma = startegyComputationResult[0];
-					int[] tau = startegyComputationResult[1];
+					double[] values;
+					if (useAttractorToGetDTMC) {
+						int[][] startegyComputationResult = STPGValueIterationUtils.computeStrategyFromBounds(stpg, yes, lowerBounds, upperBounds, this.termCritParam, statesForSCC, haveAlreadyFixedValues, alreadyComputedAttractorDistances);
+						int[] sigma = startegyComputationResult[0];
+						int[] tau = startegyComputationResult[1];
 
-					double[] values = STPGValueIterationUtils.getValueFromStrategies(this, stpg, sigma, tau, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam, lowerBounds, upperBounds);
+						values = STPGValueIterationUtils.getValueFromStrategies(this, stpg, sigma, tau, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam, lowerBounds, upperBounds);
+						alreadyComputedAttractorDistances = startegyComputationResult[2];
+					}
+					else {
+						values = STPGValueIterationUtils.getValueFromStrategiesWithoutAttractor(this, stpg, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam, lowerBounds, upperBounds);
+					}
 					// Fix value of states
 					for (int state = statesForSCC.nextSetBit(0); state >= 0; state = statesForSCC.nextSetBit(state + 1)) {
 						lowerBounds[state] = values[state];
@@ -795,7 +811,6 @@ public class STPGModelChecker extends ProbModelChecker
 //					mainLog.println("Non-trivial SCC done in " + itersInSCC + " many iterations");
 					iters+=itersInSCC;
 
-					alreadyComputedAttractorDistances = startegyComputationResult[2];
 					haveAlreadyFixedValues.or(statesForSCC);
 				}
 //				mainLog.println("SCC done. Precision: [" + lowerBounds[sccs.getStatesForSCC(scc).iterator().nextInt()] + "," + upperBounds[sccs.getStatesForSCC(scc).iterator().nextInt()] + "]. \nIters: " + iters);
