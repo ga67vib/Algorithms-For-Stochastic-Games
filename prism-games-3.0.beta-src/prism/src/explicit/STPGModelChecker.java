@@ -1787,7 +1787,17 @@ public class STPGModelChecker extends ProbModelChecker
 				for (int i = 0; i < stpg.getNumChoices(s); i++)
 					mdp.addChoice(s, new Distribution(stpg.getTransitionsIterator(s, i)));
 			MDPModelChecker mdpModelChecker = new MDPModelChecker(this);
-			ModelCheckerResult simpleCaseResult = mdpModelChecker.computeReachProbsPolIter(mdp, no, yes, min2, null);
+			//Solve SI exactly
+			ModelCheckerResult simpleCaseResult;
+			if (solnMethodOptions == 9 || solnMethodOptions == 10) {
+				simpleCaseResult = mdpModelChecker.computeReachProbsPolIter(mdp, no, yes, min2, null, false, null);
+			}
+			else if (solnMethodOptions == 13 || solnMethodOptions == 14) {
+				simpleCaseResult = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(mdp, no, yes, min2, null, null);
+			}
+			else {
+				simpleCaseResult = mdpModelChecker.computeReachProbsPolIter(mdp, no, yes, min2, null);
+			}
 			simpleCaseResult.timeTaken = System.currentTimeMillis() - timer;
 			return simpleCaseResult;
 		}
@@ -2033,7 +2043,13 @@ public class STPGModelChecker extends ProbModelChecker
 			changeOccured=false;
 			// Solve MDP, where no and yes are only target and sink; init should be transferred values of init (as those are updated during SI) //TODO: Latter thing currently not done
 			ModelCheckerResult counter;
-			if((this.solnMethodOptions / 4) % 4 == 1)
+			if (this.solnMethodOptions == 9 || this.solnMethodOptions == 10) {
+				counter = mdpModelChecker.computeReachProbsPolIter(mdp, no, yes, min2, tau, false, null);
+			}
+			else if (this.solnMethodOptions == 13 || this.solnMethodOptions == 14) {
+				counter = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(mdp, no, yes, min2, tau, null);
+			}
+			else if((this.solnMethodOptions / 4) % 4 == 1)
 				counter = mdpModelChecker.doIntervalIterationReachProbs(mdp, no, yes, min2, null, null, new IterationMethodGS(true, 0.001, false), false, tau);
 			else if((this.solnMethodOptions / 4) % 4 == 2)
 				counter = mdpModelChecker.computeReachProbsValIter(mdp, no, yes, min2, null, null, tau);
