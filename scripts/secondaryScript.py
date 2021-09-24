@@ -332,6 +332,12 @@ elif (sys.argv[1] == "analyse"):
 
     #SCC-related
     relevantFeatures["NumSCCs"] = "Number of SCCs: "
+    relevantFeatures["BiggestSCC"] = "Biggest SCC has size: "
+    relevantFeatures["SmallestSCC"] = "Smallest SCC has size: "
+    relevantFeatures["AvgSCC"] = "Average SCC has size: "
+
+
+    #Cyclefree-Checks
     relevantFeatures["NearestTarget"] = "Nearest Target from any Initial State: "
     relevantFeatures["FurthestTarget"] = "Furthest Target from any Initial State: "
     relevantFeatures["TargetDistanceAverage"] = "Target-distance Average: "
