@@ -105,6 +105,16 @@ configurations["OVI_100_opt"] = (prism_path, "-ovi -maxiters 100 -smg_opts 4")
 configurations["TOVI_1_opt"] = (prism_path, "-ovi -maxiters 1 -topological -smg_opts 4")
 configurations["TOVI_100_opt"] = (prism_path, "-ovi -maxiters 100 -topological -smg_opts 4")
 
+#SI
+configurations["SI"] =  (prism_path, "-politer -smg_opts 0") # Normal Strategy Iteration - SI Opponent, i.e. MDP Solver is SI
+configurations["SI_PR"] =  (prism_path, "-politer -smg_opts 1") # Value Iteration Precomputation, 20 steps
+configurations["SI_T"] =  (prism_path, "-politer -smg_opts 2") # MEC decomposition
+configurations["SI_PR_T"] =  (prism_path, "-politer -smg_opts 3") # Value Iteration Precomputation & MEC decomposition
+configurations["SI_BV"] =  (prism_path, "-politer -smg_opts 4") # BVI Opponent, i.e. MDP Solver is BVI (Parameters may need adjusti>
+configurations["SI_PR_BV"] =  (prism_path, "-politer -smg_opts 5") # Value Iteration Precomputation & BVI Opponent (Parameters may >
+configurations["SI_T_BV"] =  (prism_path, "-politer -smg_opts 6") # MEC decomposition & BVI Opponent (Parameters may need adjusting)
+configurations["SI_PR_T_BV"] =  (prism_path, "-politer -smg_opts 7") # Value Iteration Precomputation & MEC decomposition & BVI Opp>
+
 #WP
 configurations["WP"] = (wp_path, "-ex -BVI_A")
 
