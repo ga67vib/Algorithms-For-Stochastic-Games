@@ -587,6 +587,144 @@ public class STPGModelChecker extends ProbModelChecker
 //    }
 //    return res;
 //  }
+	/**
+	 * Compute reachability probabilities using value iteration.
+	 * @param stpg The STPG
+	 * @param no Probability 0 states
+	 * @param yes Probability 1 states
+	 * @param min1 Min or max probabilities for player 1 (true=min, false=max)
+	 * @param min2 Min or max probabilities for player 2 (true=min, false=max)
+	 * @param init Optionally, an initial solution vector (will be overwritten)
+	 * @param known Optionally, a set of states for which the exact answer is known
+	 * Note: if 'known' is specified (i.e. is non-null, 'init' must also be given and is used for the exact values.
+	 */
+	protected ModelCheckerResult computeReachProbsValIterVanilla(STPG stpg, BitSet no, BitSet yes, boolean min1, boolean min2, double init[], BitSet known)
+			throws PrismException
+	{
+		ModelCheckerResult res = null;
+		BitSet unknown;
+		int i, n, iters;
+		double soln[], soln2[], tmpsoln[], initVal;
+		int adv[] = null;
+		boolean genAdv, done;
+		long timer;
+
+		// Are we generating an optimal adversary?
+		genAdv = exportAdv || generateStrategy;
+
+		// Start value iteration
+		timer = System.currentTimeMillis();
+		if (verbosity >= 1)
+			mainLog.println("Starting value iteration (" + (min1 ? "min" : "max") + (min2 ? "min" : "max") + ")...");
+
+		// Store num states
+		n = stpg.getNumStates();
+
+		// Create solution vector(s)
+		soln = new double[n];
+		soln2 = (init == null) ? new double[n] : init;
+
+		// Initialise solution vectors. Use (where available) the following in order of preference:
+		// (1) exact answer, if already known; (2) 1.0/0.0 if in yes/no; (3) passed in initial value; (4) initVal
+		// where initVal is 0.0 or 1.0, depending on whether we converge from below/above.
+		initVal = (valIterDir == ValIterDir.BELOW) ? 0.0 : 1.0;
+		if (init != null) {
+			if (known != null) {
+				for (i = 0; i < n; i++)
+					soln[i] = soln2[i] = known.get(i) ? init[i] : yes.get(i) ? 1.0 : no.get(i) ? 0.0 : init[i];
+			} else {
+				for (i = 0; i < n; i++)
+					soln[i] = soln2[i] = yes.get(i) ? 1.0 : no.get(i) ? 0.0 : init[i];
+			}
+		} else {
+			for (i = 0; i < n; i++)
+				soln[i] = soln2[i] = yes.get(i) ? 1.0 : no.get(i) ? 0.0 : initVal;
+		}
+
+		// Determine set of states actually need to compute values for
+		unknown = new BitSet();
+		unknown.set(0, n);
+		unknown.andNot(yes);
+		unknown.andNot(no);
+		if (known != null)
+			unknown.andNot(known);
+
+		// Create/initialise adversary storage
+		if (genAdv) {
+			adv = new int[n];
+			for (i = 0; i < n; i++) {
+				adv[i] = -1;
+			}
+
+			int s;
+			for (i = 0; i < no.length(); i++) {
+				s = no.nextSetBit(i);
+				for (int c = 0; c < stpg.getNumChoices(s); c++) {
+					if (stpg.allSuccessorsInSet(s, c, no)) {
+						adv[i] = c;
+						break;
+					}
+				}
+			}
+		}
+
+		// Start iterations
+		iters = 0;
+		done = false;
+		while (!done && iters < maxIters) {
+			iters++;
+			// Matrix-vector multiply and min/max ops
+			stpg.mvMultMinMax(soln, min1, min2, soln2, unknown, false, genAdv ? adv : null);
+			// Check termination
+			done = PrismUtils.doublesAreClose(soln, soln2, termCritParam, termCrit == TermCrit.ABSOLUTE);
+			// Swap vectors for next iter
+			tmpsoln = soln;
+			soln = soln2;
+			soln2 = tmpsoln;
+		}
+
+		// Finished value iteration
+		timer = System.currentTimeMillis() - timer;
+		if (verbosity >= 1) {
+			mainLog.print("Value iteration (" + (min1 ? "min" : "max") + (min2 ? "min" : "max") + ")");
+			mainLog.println(" took " + iters + " iterations and " + timer / 1000.0 + " seconds.");
+		}
+
+		// Non-convergence is an error (usually)
+		if (!done && errorOnNonConverge) {
+			String msg = "Iterative method did not converge within " + iters + " iterations.";
+			msg += "\nConsider using a different numerical method or increasing the maximum number of iterations";
+			throw new PrismException(msg);
+		}
+
+		// Store results/strategy
+		res = new ModelCheckerResult();
+		res.soln = soln;
+		double maxDiff = PrismUtils.measureSupNorm(soln, soln2, termCrit == TermCrit.ABSOLUTE);
+		//res.accuracy = AccuracyFactory.valueIteration(termCritParam, maxDiff, termCrit == TermCrit.ABSOLUTE);
+		res.numIters = iters;
+		res.timeTaken = timer / 1000.0;
+		if (generateStrategy) {
+			res.strat = new MemorylessDeterministicStrategy(adv);
+		}
+
+		// Print adversary
+		genAdv = false;
+		if (genAdv) {
+			PrismLog out = new PrismFileLog(exportAdvFilename);
+			if (exportAdvFilename.lastIndexOf('.') != -1 && exportAdvFilename.substring(exportAdvFilename.lastIndexOf('.') + 1).equals("dot")) {
+				stpg.exportToDotFileWithStrat(out, null, adv);
+			} else {
+				for (i = 0; i < n; i++) {
+					out.println(i + " " + (adv[i] != -1 ? stpg.getAction(i, adv[i]) : "-"));
+				}
+				out.println();
+			}
+			out.close();
+		}
+
+		return res;
+	}
 
 	/**
 	 * Compute reachability probabilities using value iteration.
@@ -1790,7 +1928,7 @@ public class STPGModelChecker extends ProbModelChecker
 			//Solve SI exactly
 			ModelCheckerResult simpleCaseResult;
 			if (solnMethodOptions == 9 || solnMethodOptions == 10) {
-				simpleCaseResult = mdpModelChecker.computeReachProbsPolIter(mdp, no, yes, min2, null, false, null);
+				simpleCaseResult = mdpModelChecker.computeReachProbsPolIter(mdp, no, yes, min2, null, false, null, null);
 			}
 			else if (solnMethodOptions == 13 || solnMethodOptions == 14) {
 				simpleCaseResult = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(mdp, no, yes, min2, null, null);
@@ -2044,7 +2182,7 @@ public class STPGModelChecker extends ProbModelChecker
 			// Solve MDP, where no and yes are only target and sink; init should be transferred values of init (as those are updated during SI) //TODO: Latter thing currently not done
 			ModelCheckerResult counter;
 			if (this.solnMethodOptions == 9 || this.solnMethodOptions == 10) {
-				counter = mdpModelChecker.computeReachProbsPolIter(mdp, no, yes, min2, tau, false, null);
+				counter = mdpModelChecker.computeReachProbsPolIter(mdp, no, yes, min2, tau, false, null, null);
 			}
 			else if (this.solnMethodOptions == 13 || this.solnMethodOptions == 14) {
 				counter = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(mdp, no, yes, min2, tau, null);

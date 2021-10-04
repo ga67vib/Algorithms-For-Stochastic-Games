@@ -5,6 +5,7 @@ import explicit.rewards.MCRewards;
 import prism.Pair;
 import prism.PrismException;
 
+import java.lang.reflect.Array;
 import java.util.*;
 
 public class DTMCNonIterativeSolutionMethods {
@@ -98,19 +99,30 @@ public class DTMCNonIterativeSolutionMethods {
             return result;
         }
 
-        //System.out.println("---------------------------------");
-        //System.out.println(maxStatesNames + "" + minStatesNames);
-        //System.out.println(maxStatesActions + "" + minStatesActions);
-        //System.out.println("---------------------------------");
-
-        //System.out.println("Matrix A:\n"+matrixToString(A));
-        //System.out.println("Matrix P:\n"+matrixToString(P));
-
-
-        ArrayList<Integer> delete =
-                //getRemovableRowsFast(normalStateToMatrixColumnIndex, upperbounds, precision);
-                getRemovableRows(A, P);
+        ArrayList<Integer> delete;
+        if (upperbounds != null) {
+            delete = getRemovableRowsFast(normalStateToMatrixColumnIndex, upperbounds, precision);
+        }
+        else {
+            delete = getRemovableRows(A, P);
+        }
         Matrix Ashort=shortenMatrix(A, delete);
+
+        /*
+        ArrayList<Integer> delete1 = getRemovableRowsFast(normalStateToMatrixColumnIndex, upperbounds, precision);
+        ArrayList<Integer> delete2 = getRemovableRows(A, P);
+
+        System.out.println("Equal? "+(delete1.equals(delete2)));
+        if (!delete1.equals(delete2)) {
+            System.out.println("Delete 1: "+Arrays.toString(delete1.toArray()));
+            System.out.println("Delete 2: "+Arrays.toString(delete2.toArray()));
+            System.out.println("Reach Target: "+getReaching(targets.nextSetBit(0), dtmc));
+            delete2 = getRemovableRows(A, P);
+            getProbabilities(0, dtmc);
+            whereLeads(0, dtmc);
+        }
+        */
+
         Matrix M = Matrix.identity(Ashort.getRowDimension(), Ashort.getColumnDimension()).minus(Ashort);
         Matrix MInverse=M.inverse();
         MInverse=extendMatrix(MInverse, delete);
@@ -315,5 +327,81 @@ public class DTMCNonIterativeSolutionMethods {
         }
 
         return a;
+    }
+
+    public ArrayList<Integer> getPredecessor(int state, DTMC dtmc) {
+        ArrayList<Integer> pred = new ArrayList<>();
+        for (int s = 0; s < dtmc.getNumStates(); s++) {
+            for (Iterator<Map.Entry<Integer, Double>> it = dtmc.getTransitionsIterator(s); it.hasNext(); ) {
+                Map.Entry<Integer, Double> t = it.next();
+                if (t.getKey() == state && t.getValue() > 0) {
+                    pred.add(s);
+                }
+            }
+        }
+        return pred;
+    }
+
+    public void whereLeads(int state, DTMC dtmc) {
+        int currentState = state;
+        LinkedList<Integer> nextStates = new LinkedList<>();
+        nextStates.add(state);
+        BitSet seen = new BitSet();
+        seen.set(state);
+        while (seen.cardinality() < dtmc.getNumStates() && !nextStates.isEmpty()) {
+            currentState = nextStates.poll();
+            System.out.println("See state: "+currentState);
+            seen.set(currentState);
+
+            for (Iterator<Map.Entry<Integer, Double>> it = dtmc.getTransitionsIterator(currentState); it.hasNext(); ) {
+                Map.Entry<Integer, Double> t = it.next();
+                if (t.getValue() > 0 && !nextStates.contains(t.getKey()) && !seen.get(t.getKey())) {
+                    nextStates.addLast(t.getKey());
+                }
+            }
+        }
+    }
+
+    public HashMap<Integer, Double> getProbabilities(int state, DTMC dtmc) {
+        HashMap<Integer, Double> probs = new HashMap<Integer, Double>();
+        for (Iterator<Map.Entry<Integer, Double>> it = dtmc.getTransitionsIterator(state); it.hasNext(); ) {
+            Map.Entry<Integer, Double> t = it.next();
+            if (!probs.containsKey(t.getKey())) {
+                probs.put(t.getKey(), t.getValue());
+            }
+            else {
+                probs.put(t.getKey(), probs.get(t.getKey()) + t.getValue());
+            }
+        }
+        for (Map.Entry<Integer, Double> pair : probs.entrySet()) {
+            System.out.println("Key: "+pair.getKey()+", Value: "+pair.getValue());
+        }
+        return probs;
+    }
+
+    public List<Integer> getReaching(int state, DTMC dtmc) {
+        ArrayList<Integer> pred = new ArrayList<>();
+        ArrayList<Integer> nextIter = new ArrayList<>();
+        pred.add(state);
+        while (true) {
+            for (int s : pred) {
+                ArrayList<Integer> sPreds = getPredecessor(s, dtmc);
+                for (int x : sPreds) {
+                    if (!nextIter.contains(x)) {
+                        nextIter.add(x);
+                    }
+                }
+            }
+            if (nextIter.equals(pred)) {
+                break;
+            }
+            else {
+                pred.clear();
+                pred.addAll(nextIter);
+                nextIter.clear();
+            }
+        }
+        Collections.sort(pred);
+        return pred;
     }
 }

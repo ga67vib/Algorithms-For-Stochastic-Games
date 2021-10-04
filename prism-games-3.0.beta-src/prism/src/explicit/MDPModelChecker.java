@@ -1141,7 +1141,7 @@ public class MDPModelChecker extends ProbModelChecker
 	 */
 	protected ModelCheckerResult computeReachProbsPolIter(MDP mdp, BitSet no, BitSet yes, boolean min, int strat[]) throws PrismException
 	{
-		return computeReachProbsPolIter(mdp, no, yes, min, strat, true, null);
+		return computeReachProbsPolIter(mdp, no, yes, min, strat, true, null, null);
 	}
 
 	/**
@@ -1153,7 +1153,7 @@ public class MDPModelChecker extends ProbModelChecker
 	 * @param min: Min or max probabilities (true=min, false=max)
 	 * @param strat Storage for (memoryless) strategy choice indices (ignored if null)
 	 */
-	protected ModelCheckerResult computeReachProbsPolIter(MDP mdp, BitSet no, BitSet yes, boolean min, int strat[], boolean iterativeSolution, double[] initVector) throws PrismException
+	protected ModelCheckerResult computeReachProbsPolIter(MDP mdp, BitSet no, BitSet yes, boolean min, int strat[], boolean iterativeSolution, double[] initVector, double[] lowerBounds) throws PrismException
 	{
 		DTMCNonIterativeSolutionMethods dtmcNonIterativeSolutionMethods = new DTMCNonIterativeSolutionMethods();
 		ModelCheckerResult res;
