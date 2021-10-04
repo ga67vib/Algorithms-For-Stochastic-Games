@@ -302,7 +302,7 @@ public class STPGModelChecker extends ProbModelChecker
 				res = computeReachProbsValIter(stpg, no, yes, min1, min2, init, known, solnMethod);
 				break;
 			case ANALYSE_MODEL:
-				res = analyse_model(stpg, no, yes, min1, min2, init, known);
+				res = analyse_model(stpg, no, yes, min1, min2, init, known, target);
 				break;
 			default:
 				throw new PrismException("Unknown STPG solution method " + solnMethod);
@@ -325,6 +325,8 @@ public class STPGModelChecker extends ProbModelChecker
 		res.timeTaken = timer / 1000.0;
 		res.timeProb0 = timerProb0 / 1000.0;
 		res.timePre = (timerProb0 + timerProb1) / 1000.0;
+
+		mainLog.println("Intial-State "+stpg.getFirstInitialState()+" Value: "+res.soln[stpg.getFirstInitialState()]);
 
 		return res;
 	}
@@ -722,7 +724,19 @@ public class STPGModelChecker extends ProbModelChecker
 
 
 		// Start iterations
-		if (getDoTopologicalValueIteration()){
+		if (getDoTopologicalValueIteration()) {
+
+			boolean useAttractorToGetDTMC = false;
+
+			BitSet haveAlreadyFixedValues = new BitSet();
+			haveAlreadyFixedValues.or(yes);
+			// [Small optimization:] We don't care for sinks for the attractors so we won't set them
+			int[] alreadyComputedAttractorDistances = new int[stpg.getNumStates()];
+			Arrays.fill(alreadyComputedAttractorDistances, Integer.MAX_VALUE -10);
+			for (int target = yes.nextSetBit(0); target >= 0; target = yes.nextSetBit(target + 1)) {
+				alreadyComputedAttractorDistances[target] = 0;
+			}
+
 			for (int scc = 0; scc < sccs.getNumSCCs(); scc++) {
 				if (sccs.isSingletonSCC(scc)) {
 					// get the single state in this SCC and finish it. Trivial.
@@ -732,8 +746,32 @@ public class STPGModelChecker extends ProbModelChecker
 					upperBounds[state] = stpg.mvMultJacMinMaxSingle(state, upperBounds, min1, min2);
 					lowerBounds2[state] = stpg.mvMultJacMinMaxSingle(state, lowerBounds2, min1, min2);
 					upperBounds2[state] = stpg.mvMultJacMinMaxSingle(state, upperBounds2, min1, min2);
+
+					BitSet statesForSCC = new BitSet();
+					statesForSCC.set(state);
+					double[] values;
+					if (useAttractorToGetDTMC) {
+						int[][] startegyComputationResult = STPGValueIterationUtils.computeStrategyFromBounds(stpg, yes, lowerBounds, upperBounds, this.termCritParam, statesForSCC, haveAlreadyFixedValues, alreadyComputedAttractorDistances);
+						int[] sigma = startegyComputationResult[0];
+						int[] tau = startegyComputationResult[1];
+
+						values = STPGValueIterationUtils.getValueFromStrategies(this, stpg, sigma, tau, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam, lowerBounds, upperBounds);
+						alreadyComputedAttractorDistances = startegyComputationResult[2];
+					}
+					else {
+						values = STPGValueIterationUtils.getValueFromStrategiesWithoutAttractor(this, stpg, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam, lowerBounds, upperBounds);
+					}
+
+					// Fix value of states
+					lowerBounds[state] = values[state];
+					lowerBounds2[state] = values[state];
+					upperBounds[state] = values[state];
+					upperBounds2[state] = values[state];
+
 					iters++;
 					IterationMethod.intervalIterationCheckForProblems(lowerBounds, upperBounds, IntSet.asIntSet(state).iterator());
+
+					haveAlreadyFixedValues.set(state);
 				} else {
 					// complex SCC: do VI
 					int itersInSCC = 0;
@@ -749,9 +787,31 @@ public class STPGModelChecker extends ProbModelChecker
 					lowerBounds = subres[0];
 					upperBounds = subres[1];
 
+					double[] values;
+					if (useAttractorToGetDTMC) {
+						int[][] startegyComputationResult = STPGValueIterationUtils.computeStrategyFromBounds(stpg, yes, lowerBounds, upperBounds, this.termCritParam, statesForSCC, haveAlreadyFixedValues, alreadyComputedAttractorDistances);
+						int[] sigma = startegyComputationResult[0];
+						int[] tau = startegyComputationResult[1];
+
+						values = STPGValueIterationUtils.getValueFromStrategies(this, stpg, sigma, tau, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam, lowerBounds, upperBounds);
+						alreadyComputedAttractorDistances = startegyComputationResult[2];
+					}
+					else {
+						values = STPGValueIterationUtils.getValueFromStrategiesWithoutAttractor(this, stpg, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam, lowerBounds, upperBounds);
+					}
+					// Fix value of states
+					for (int state = statesForSCC.nextSetBit(0); state >= 0; state = statesForSCC.nextSetBit(state + 1)) {
+						lowerBounds[state] = values[state];
+						lowerBounds2[state] = values[state];
+						upperBounds[state] = values[state];
+						upperBounds2[state] = values[state];
+					}
+
 					IterationMethod.intervalIterationCheckForProblems(lowerBounds, upperBounds, statesForSCCIntSet.iterator());
 //					mainLog.println("Non-trivial SCC done in " + itersInSCC + " many iterations");
 					iters+=itersInSCC;
+
+					haveAlreadyFixedValues.or(statesForSCC);
 				}
 //				mainLog.println("SCC done. Precision: [" + lowerBounds[sccs.getStatesForSCC(scc).iterator().nextInt()] + "," + upperBounds[sccs.getStatesForSCC(scc).iterator().nextInt()] + "]. \nIters: " + iters);
 			}
@@ -783,6 +843,7 @@ public class STPGModelChecker extends ProbModelChecker
 		res.soln = lowerBounds;
 		res.numIters = iters;
 		res.timeTaken = timer / 1000.0;
+
 		if (generateStrategy) {
 			/* Old version, has some bugs
 			 * doesn't work for:
@@ -866,6 +927,7 @@ public class STPGModelChecker extends ProbModelChecker
 		if (doGS){mainLog.println("Doing Gauss Seidel variant");}
 
 		while (!done) {
+			//System.out.println("Changed? "+java.util.Arrays.equals(lowerBoundsBackup, lowerBounds)+", "+java.util.Arrays.equals(upperBoundsBackup, upperBounds));
 			iters++;
 			//Debug output:
 //			if(iters % 10000 == 0){
@@ -1827,7 +1889,17 @@ public class STPGModelChecker extends ProbModelChecker
 				for (int i = 0; i < stpg.getNumChoices(s); i++)
 					mdp.addChoice(s, new Distribution(stpg.getTransitionsIterator(s, i)));
 			MDPModelChecker mdpModelChecker = new MDPModelChecker(this);
-			ModelCheckerResult simpleCaseResult = mdpModelChecker.computeReachProbsPolIter(mdp, no, yes, min2, null);
+			//Solve SI exactly
+			ModelCheckerResult simpleCaseResult;
+			if (solnMethodOptions == 9 || solnMethodOptions == 10) {
+				simpleCaseResult = mdpModelChecker.computeReachProbsPolIter(mdp, no, yes, min2, null, false, null);
+			}
+			else if (solnMethodOptions == 13 || solnMethodOptions == 14) {
+				simpleCaseResult = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(mdp, no, yes, min2, null, null);
+			}
+			else {
+				simpleCaseResult = mdpModelChecker.computeReachProbsPolIter(mdp, no, yes, min2, null);
+			}
 			simpleCaseResult.timeTaken = System.currentTimeMillis() - timer;
 			return simpleCaseResult;
 		}
@@ -2073,7 +2145,13 @@ public class STPGModelChecker extends ProbModelChecker
 			changeOccured=false;
 			// Solve MDP, where no and yes are only target and sink; init should be transferred values of init (as those are updated during SI) //TODO: Latter thing currently not done
 			ModelCheckerResult counter;
-			if((this.solnMethodOptions / 4) % 4 == 1)
+			if (this.solnMethodOptions == 9 || this.solnMethodOptions == 10) {
+				counter = mdpModelChecker.computeReachProbsPolIter(mdp, no, yes, min2, tau, false, null);
+			}
+			else if (this.solnMethodOptions == 13 || this.solnMethodOptions == 14) {
+				counter = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(mdp, no, yes, min2, tau, null);
+			}
+			else if((this.solnMethodOptions / 4) % 4 == 1)
 				counter = mdpModelChecker.doIntervalIterationReachProbs(mdp, no, yes, min2, null, null, new IterationMethodGS(true, 0.001, false), false, tau);
 			else if((this.solnMethodOptions / 4) % 4 == 2)
 				counter = mdpModelChecker.computeReachProbsValIter(mdp, no, yes, min2, null, null, tau);
@@ -2106,6 +2184,9 @@ public class STPGModelChecker extends ProbModelChecker
 						mdp.clearState(s);
 						mdp.addChoice(s, makeTransition(stpg.getTransitionsIterator(m2g.get(s), sigma[s]), subset, known, knownValues, target, sink,g2m));
 					}
+					else{
+                        knownValues[m2g.get(s)] = sigmaReturn; //TODO: Maxi added this on 10.09.21, hoping to fix a bug. Someone should refactor the whole SI, it is horrible right now.
+                    }
 				}
 
 			}
@@ -3459,66 +3540,10 @@ public class STPGModelChecker extends ProbModelChecker
 	}
 
 
-	protected ModelCheckerResult analyse_model(STPG stpg, BitSet no, BitSet yes, boolean min1, boolean min2, double init[], BitSet known)
+	protected ModelCheckerResult analyse_model(STPG stpg, BitSet no, BitSet yes, boolean min1, boolean min2, double init[], BitSet known, BitSet target)
 			throws PrismException {
-
-		mainLog.println("You called the model analysis method which doesn't solve the problem, but tells you more about it!");
-
-		// Store num states
-		int n = stpg.getNumStates();
-
-		// Determine set of states actually need to compute values for
-		BitSet unknown = new BitSet();
-		unknown.set(0, n);
-		unknown.andNot(yes);
-		unknown.andNot(no);
-
-		mainLog.println("NumStates, NumTargets, NumSinks, NumUnknown");
-
-
-		List<BitSet> mecs = null;
-		explicit.ECComputerDefault ec =null;
-		mainLog.println("Getting MECs...");
-		ec = (ECComputerDefault) ECComputer.createECComputer(this, stpg);
-		//need a copy of unknown, since EC computation empties the set as a side effect
-		BitSet unknownForEC = new BitSet();
-		unknownForEC.or(unknown);
-		ec.computeMECStates(unknownForEC);
-		mecs = ec.getMECStates();
-		mainLog.println("Number of MECs: " + mecs.size());
-		mainLog.println(("I could also tell you the size of each MEC or more about it. Controlled MEC? SEC?"));
-
-		SCCInfo sccs = null;
-		mainLog.println("Getting topologically ordered SCCs...");
-		sccs = SCCComputer.computeTopologicalOrdering(this, stpg, true, unknown::get);
-		mainLog.println("Done; got " + sccs.getNumSCCs() + " SCCs.");
-
-		mainLog.println("I also want to tell you about the min/avg/max length of a path from init to a target.");
-		mainLog.println("Also about the number of probabilistic loops? For each SCC? The occurring probabilities?");
-
-		// Return result that makes clear that it is not valid
-		ModelCheckerResult res = new ModelCheckerResult();
-		res.soln = new double[1];
-		res.soln[0] = -1;
-		res.numIters = -1;
-		res.timeTaken = -1;
-		return res;
-
-		//TODO:
-		/**
-		 * Remember the following ideas from discussion with Maxi, Muqsit and Tobi on 22.07.21:
-		 * - Top down: Analyse method, select method based on features
-		 * - Bottom up: Prepend some subgame/component (exhibiting certain features), check what kind of impact it has
-		 *
-		 * 	Afterwards, maybe even prove that a certain component/feature always has a certain impact.
-		 *
-		 * 	Regarding OVI: It is bad according to iters-measure, but this might be due to:
-		 * 		- Iters containing both progress and verification phase
-		 * 		- after failing a few times (once), the required precision to start verification phase is much smaller (half), which might explain why we need to work for so long. Maybe sth other than half is better? Investigate this hyperparameter. Maybe even make hyperparameter depend on features?
-		 *
-		 * 	One more idea: Detect "hard regions" for VI (lots of loops in a few states); solve hard regions by QP/SI, i.e. "inline" them, and then continue VI (or recursively look for more hard regions and inline them as well)
-		 *
-		 */
+		STPGModelAnalyser analyser = new STPGModelAnalyser(this);
+		return analyser.analyse_model(stpg, no, yes, min1, min2, init, known, target);
 	}
 	/**
 	 * Simple test program.

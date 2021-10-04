@@ -2,6 +2,6 @@
 
 <<1>> Pmax=? [ G !"damaged" ]
 
-<<1>> (P>0 [ F "saved" ] & P<0 [ F "damaged" ])
+//<<1>> (P>0 [ F "saved" ] & P<0 [ F "damaged" ])
 
 //<<1>> (P<0 [ F "damaged" ] & P>0 [ F "saved" ])

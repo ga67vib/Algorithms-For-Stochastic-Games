@@ -21,6 +21,9 @@ from functools import reduce
 # If executed in "read" mode,
 # this reads the files created by running the benchmarks and creates three csv files: One for the results (values.csv), one for the time taken (times.csv) and one for the iterations (iters.csv)
 
+# If executed in "analyse" mode,
+# this analyses all the models enabled and prints a report
+
 # Some general parameters
 #prism_path="../../qp/code/prism-games/prism/bin/prism" #Path to PRISM
 prism_path="../prism-games-3.0.beta-src/prism/bin/prism"
@@ -61,50 +64,52 @@ def _parse(cmd):
 configurations = dict()
 
 configurations["VI"] = (prism_path, "")
-configurations["GVI"] = (prism_path, "-gs")
-configurations["TVI"] = (prism_path, "-topological")
-configurations["TGVI"] = (prism_path, "-gs -topological")
+#configurations["GVI"] = (prism_path, "-gs")
+#configurations["TVI"] = (prism_path, "-topological")
+#configurations["TGVI"] = (prism_path, "-gs -topological")
 
 #BVI
 configurations["BVI_1"] = (prism_path, "-ii -maxiters 1")
 configurations["BVI_100"] = (prism_path, "-ii -maxiters 100")
 configurations["TBVI_1"] = (prism_path, "-ii -maxiters 1 -topological")
-configurations["TBVI_100"] = (prism_path, "-ii -maxiters 100 -topological")
+#configurations["TBVI_100"] = (prism_path, "-ii -maxiters 100 -topological")
 
 configurations["GBVI_1"] = (prism_path, "-ii -maxiters 1 -smg_opts 1")
-configurations["GBVI_100"] = (prism_path, "-ii -maxiters 100 -smg_opts 1")
+#configurations["GBVI_100"] = (prism_path, "-ii -maxiters 100 -smg_opts 1")
 configurations["TGBVI_1"] = (prism_path, "-ii -maxiters 1 -topological -smg_opts 1")
-configurations["TGBVI_100"] = (prism_path, "-ii -maxiters 100 -topological -smg_opts 1")
+#configurations["TGBVI_100"] = (prism_path, "-ii -maxiters 100 -topological -smg_opts 1")
 
 #SVI
 configurations["SVI_1"] = (prism_path, "-svi -maxiters 1")
-configurations["SVI_100"] = (prism_path, "-svi -maxiters 100")
+#configurations["SVI_100"] = (prism_path, "-svi -maxiters 100")
 configurations["TSVI_1"] = (prism_path, "-svi -maxiters 1 -topological")
-configurations["TSVI_100"] = (prism_path, "-svi -maxiters 100 -topological")
+#configurations["TSVI_100"] = (prism_path, "-svi -maxiters 100 -topological")
 
 configurations["GSVI_1"] = (prism_path, "-svi -maxiters 1 -smg_opts 1")
-configurations["GSVI_100"] = (prism_path, "-svi -maxiters 100 -smg_opts 1")
+#configurations["GSVI_100"] = (prism_path, "-svi -maxiters 100 -smg_opts 1")
 configurations["TGSVI_1"] = (prism_path, "-svi -maxiters 1 -topological -smg_opts 1")
-configurations["TGSVI_100"] = (prism_path, "-svi -maxiters 100 -topological -smg_opts 1")
+#configurations["TGSVI_100"] = (prism_path, "-svi -maxiters 100 -topological -smg_opts 1")
 
-#OVI
+#OVI (maxiters >1 may be wrong)
 configurations["OVI_1"] = (prism_path, "-ovi -maxiters 1")
-configurations["OVI_100"] = (prism_path, "-ovi -maxiters 100")
 configurations["TOVI_1"] = (prism_path, "-ovi -maxiters 1 -topological")
-configurations["TOVI_100"] = (prism_path, "-ovi -maxiters 100 -topological")
 
-configurations["OVI_1_opt"] = (prism_path, "-ovi -maxiters 1 -smg_opts 4")
-configurations["OVI_100_opt"] = (prism_path, "-ovi -maxiters 100 -smg_opts 4")
-configurations["TOVI_1_opt"] = (prism_path, "-ovi -maxiters 1 -topological -smg_opts 4")
-configurations["TOVI_100_opt"] = (prism_path, "-ovi -maxiters 100 -topological -smg_opts 4")
+configurations["GOVI_1"] = (prism_path, "-ovi -maxiters 1 -smg_opts 1")
+configurations["TGOVI_1"] = (prism_path, "-ovi -maxiters 1 -topological -smg_opts 1")
+
+# Opt didn't make a difference in our first set of experiments, so we omit it
+#configurations["OVI_1_opt"] = (prism_path, "-ovi -maxiters 1 -smg_opts 4")
+#configurations["OVI_100_opt"] = (prism_path, "-ovi -maxiters 100 -smg_opts 4")
+#configurations["TOVI_1_opt"] = (prism_path, "-ovi -maxiters 1 -topological -smg_opts 4")
+#configurations["TOVI_100_opt"] = (prism_path, "-ovi -maxiters 100 -topological -smg_opts 4")
 
 #WP
 configurations["WP"] = (wp_path, "-ex -BVI_A")
 
 
-
 #Models
 models=dict()
+
 models["cdmsn"]="../case-studies/cdmsn.prism ../case-studies/cdmsn.props"
 models["cloud5"]="../case-studies/cloud_5.prism ../case-studies/cloud.props"
 models["cloud6"]="../case-studies/cloud_6.prism ../case-studies/cloud.props"
@@ -115,64 +120,93 @@ models["teamform4"]="../case-studies/team-form-4.prism ../case-studies/team-form
 models["AV10_10_1"]="../case-studies/AV10_10.prism ../case-studies/AV.props -prop 1"
 models["AV10_10_2"]="../case-studies/AV10_10.prism ../case-studies/AV.props -prop 2"
 models["AV10_10_3"]="../case-studies/AV10_10.prism ../case-studies/AV.props -prop 3"
-models["AV15_15_1"]="../case-studies/AV15_15.prism ../case-studies/AV.props -prop 1"
-models["AV15_15_2"]="../case-studies/AV15_15.prism ../case-studies/AV.props -prop 2"
-models["AV15_15_3"]="../case-studies/AV15_15.prism ../case-studies/AV.props -prop 3"
+#models["AV15_15_1"]="../case-studies/AV15_15.prism ../case-studies/AV.props -prop 1"
+#models["AV15_15_2"]="../case-studies/AV15_15.prism ../case-studies/AV.props -prop 2"
+#models["AV15_15_3"]="../case-studies/AV15_15.prism ../case-studies/AV.props -prop 3"
 models["charlton1"]="../case-studies/charlton.prism ../case-studies/charlton.props -prop 1"
 models["charlton2"]="../case-studies/charlton.prism ../case-studies/charlton.props -prop 2"
-models["dice10"]="../case-studies/dice10.prism ../case-studies/dice.props -prop 1"
-models["dice20"]="../case-studies/dice20.prism ../case-studies/dice.props -prop 1"
+#models["dice10"]="../case-studies/dice10.prism ../case-studies/dice.props -prop 1"
+#models["dice20"]="../case-studies/dice20.prism ../case-studies/dice.props -prop 1"
 models["dice50"]="../case-studies/dice50.prism ../case-studies/dice.props -prop 1"
+models["dice100"]="../case-studies/dice100.prism ../case-studies/dice.props -prop 1"
+models["dice50MEC"]="../case-studies/dice50MEC.prism ../case-studies/dice.props -prop 1"
+models["dice100MEC"]="../case-studies/dice100MEC.prism ../case-studies/dice.props -prop 1"
 models["hallway5_5_1"]="../case-studies/hallway5_5.prism ../case-studies/hallway.props -prop 1"
 models["hallway5_5_2"]="../case-studies/hallway5_5.prism ../case-studies/hallway.props -prop 2"
-models["hallway8_8_1"]="../case-studies/hallway8_8.prism ../case-studies/hallway.props -prop 1"
-models["hallway8_8_2"]="../case-studies/hallway8_8.prism ../case-studies/hallway.props -prop 2"
+#models["hallway8_8_1"]="../case-studies/hallway8_8.prism ../case-studies/hallway.props -prop 1"
+#models["hallway8_8_2"]="../case-studies/hallway8_8.prism ../case-studies/hallway.props -prop 2"
 models["hallway10_10_1"]="../case-studies/hallway10_10.prism ../case-studies/hallway.props -prop 1"
 models["hallway10_10_2"]="../case-studies/hallway10_10.prism ../case-studies/hallway.props -prop 2"
-models["dice50MEC"]="../case-studies/dice50MEC.prism ../case-studies/dice.props -prop 1"
 models["cdmsnMEC"]="../case-studies/cdmsnMEC.prism ../case-studies/cdmsn.props"
 models["ManyMECs_1e1"] = "../case-studies/ManyMecs.prism ../case-studies/ManyMecs.props -const N=10"
 models["ManyMECs_1e2"]="../case-studies/ManyMecs.prism ../case-studies/ManyMecs.props -const N=100"
 models["ManyMECs_1e3"]="../case-studies/ManyMecs.prism ../case-studies/ManyMecs.props -const N=1000"
-models["ManyMECs_1e4"]="../case-studies/ManyMecs.prism ../case-studies/ManyMecs.props -const N=10000"
+#models["ManyMECs_1e4"]="../case-studies/ManyMecs.prism ../case-studies/ManyMecs.props -const N=10000"
 models["BigMec_1e1"] = "../case-studies/BigMec.prism ../case-studies/BigMec.props -const N=10"
-models["BigMec_1e2"] = "../case-studies/BigMec.prism ../case-studies/BigMec.props -const N=100"
+#models["BigMec_1e2"] = "../case-studies/BigMec.prism ../case-studies/BigMec.props -const N=100"
 models["BigMec_1e3"] = "../case-studies/BigMec.prism ../case-studies/BigMec.props -const N=1000"
 models["BigMec_1e4"] = "../case-studies/BigMec.prism ../case-studies/BigMec.props -const N=10000"
-models["hm_30"]="../case-studies/haddad-monmege-SG.pm ../case-studies/haddad-monmege.prctl -const N=30,p=0.5"
-models["hm_100"]="../case-studies/haddad-monmege-SG.pm ../case-studies/haddad-monmege.prctl -const N=100,p=0.5"
-models["hm_200"]="../case-studies/haddad-monmege-SG.pm ../case-studies/haddad-monmege.prctl -const N=200,p=0.5"
+#models["hm_10_5"]="../case-studies/haddad-monmege-SG.pm ../case-studies/haddad-monmege.prctl -const N=10,p=0.5"
+#models["hm_10_1"]="../case-studies/haddad-monmege-SG.pm ../case-studies/haddad-monmege.prctl -const N=10,p=0.1"
+#models["hm_10_9"]="../case-studies/haddad-monmege-SG.pm ../case-studies/haddad-monmege.prctl -const N=10,p=0.9"
+models["hm_20_5"]="../case-studies/haddad-monmege-SG.pm ../case-studies/haddad-monmege.prctl -const N=20,p=0.5"
+models["hm_30_5"]="../case-studies/haddad-monmege-SG.pm ../case-studies/haddad-monmege.prctl -const N=30,p=0.5"
+#models["hm_20_1"]="../case-studies/haddad-monmege-SG.pm ../case-studies/haddad-monmege.prctl -const N=20,p=0.1"
+#models["hm_20_9"]="../case-studies/haddad-monmege-SG.pm ../case-studies/haddad-monmege.prctl -const N=20,p=0.9"
 models["adt"]="../case-studies/adt-infect.prism ../case-studies/adt-infect.props -prop 2"
 models["two_investors"]="../case-studies/two_investors.prism ../case-studies/two_investors.props -prop 4"
 models["coins"]="../case-studies/coins.prism ../case-studies/coins.props -prop 1"
 models["prison_dil"]="../case-studies/prisoners_dilemma.prism ../case-studies/prisoners_dilemma.props -prop 9"
 
+# Random Models
+model_sizes = [10000]
+num_random_models_per_size = [20]
+for i in range(len(model_sizes)):
+    for j in range(1, num_random_models_per_size[i]+1):
+        modelName = "RANDOM_SIZE_"+str(model_sizes[i])+"_MODEL_"+str(j)+".prism"
+        models["RND_"+str(model_sizes[i])+"_"+str(j)] = "../case-studies/"+modelName+" ../case-studies/randomModels.props -prop 1"
+
+# Model Extensions
+# Currently, apply the extension to each Model
+extension_config_folder_path = "../model-extension-configs/"
+extension_config_names = ["smallMEC", "smallProb", "bigMEC", "bigProb"]
+extension_config_models = dict()
+for extension_config in extension_config_names:
+    extension_config_path = extension_config_folder_path+extension_config+".json"
+    for model_key in models.keys():
+        new_key = model_key+"_"+extension_config
+        extension_config_models[new_key] = models[model_key]+" -smg_extend "+extension_config_path
+#Unify models with the extensions
+models = {**models, **extension_config_models}
+
+
 # Parse command line to decide whether to run benchmarks or read them
-if len(sys.argv) == 0 or str(sys.argv[1]) not in ["run", "read"]:
-    print("This script can only run in two modes: run or read. Call it with one of these two as command line parameter")
+if len(sys.argv) == 0 or str(sys.argv[1]) not in ["run", "read", "analyse"]:
+    print("This script can only run in three modes: run, read or analyse. Call it with one of these three as command line parameter")
 elif sys.argv[1] == "run":
     for conf in sorted(configurations.keys()):
         print(conf)
         os.system("mkdir -p " + output_dir + "/" + conf)
         for model in sorted(models.keys()):
-            print("\t"+model)
+            #print("\t"+model)
             for i in range(1, reps+1):
-                print("\t\t"+str(i))
+                #print("\t\t"+str(i))
                 rep_string = "" if reps == 1 else "_rep" + str(i)
                 if exists(output_dir + "/" + conf + "/" + model + rep_string + ".log"):
                     print("\t\tAlready there, skipping")
                     continue
-                prismParams = "" # "-javamaxmem 32g -javastack 16g"  # Change this appropriately
-                command = "timeout 15m " + configurations[conf][0] + " " + \
+                prismParams = "-javamaxmem 10g" # "-javamaxmem 32g -javastack 16g"  # Change this appropriately
+                command = "pueue add -- \"timeout 30m " + configurations[conf][0] + " " + \
                     models[model] + " " + configurations[conf][1] + " " + prismParams + \
-                    " > " + output_dir + "/" + conf + "/" + model + rep_string + ".log"
+                    " > " + output_dir + "/" + conf + "/" + model + rep_string + ".log\""
+                print(command)
                 try:
                     os.system(command)
                 except:
                     e = sys.exc_info()[0]
                     print(e)
 
-else:  # sys.argv[0] == "read"
+elif (sys.argv[1] == "read"):
     # Model, #States, [min/mean/max runtime for each solver]
     with open(output_dir+"/times.csv", "w") as timefile:
         with open(output_dir+"/values.csv", "w") as valuefile:
@@ -213,9 +247,14 @@ else:  # sys.argv[0] == "read"
                             s1 = "grep 'Result:' " + infile
                             s2 = "cut -d ' ' -f 2"
                             resSol = pipeline(s1, s2)
-                            s1 = "grep 'Value iteration variant' " + infile
+                            s1 = "grep '^Value iteration .* took .* iterations and' " + infile
                             s2 = "cut -d ' ' -f 6"
                             resIter = pipeline(s1, s2)
+                            # For WP, the number is the 5th field of cut. For all new ones, it is the 6th.
+                            if resIter == "iterations":
+                                s2 = "cut -d ' ' -f 5"
+                                resIter = pipeline(s1, s2)
+
 
 
                         else:
@@ -258,3 +297,77 @@ else:  # sys.argv[0] == "read"
                     timefile.write("\n")
                     valuefile.write("\n")
                     iterfile.write("\n")
+
+elif (sys.argv[1] == "analyse"):
+    conf_params = (prism_path, "-analyse")
+    conf_name = "ANALYSIS"
+    print(conf_name)
+    os.system("mkdir -p " + output_dir + "/" + conf_name)
+    
+    #RULES FOR FEATURES: 
+    #The key is the name of the column in the resulting .csv file
+    #The value contain exactly the string as it is printed in the java-file to avoid errors
+    relevantFeatures = dict()
+
+    #Basics
+    relevantFeatures["NumStates"] = "Number of States: "
+    relevantFeatures["NumActions"] = "Number of Choices: "
+    relevantFeatures["NumTargets"] = "Number of Targets (States with trivial value 1): "
+    relevantFeatures["NumSinks"] = "Number of Sinks (States with trivial value 0): "
+    relevantFeatures["NumUnknown"] = "Number of Unknown States: "
+    
+    #Actions-related
+    relevantFeatures["NumMaxActions"] = "Number of maximal choices per state: "
+    relevantFeatures["NumMaxTransitions"] = "Number of maximal transitions per choice: "
+    relevantFeatures["SmallestTransProb"] = "Smallest transition probability: "
+
+    #MEC-related
+    relevantFeatures["NumMECs"] = "Number of MECs: "
+    relevantFeatures["BiggestMEC"] = "Biggest MEC has size: "
+    relevantFeatures["SmallestMEC"] = "Smallest MEC has size: "
+
+    #SCC-related
+    relevantFeatures["NumSCCs"] = "Number of SCCs: "
+
+
+    #Run
+    for model in sorted(models.keys()):
+        print("\t"+model)
+        for i in range(1, reps+1):
+            print("\t\t"+str(i))
+            rep_string = "" if reps == 1 else "_rep" + str(i)
+            if exists(output_dir + "/" + conf_name + "/" + model + rep_string + ".log"):
+                print("\t\tAlready there, skipping")
+                continue
+            prismParams = "" # "-javamaxmem 32g -javastack 16g"  # Change this appropriately
+            command = "timeout 15m " + conf_params[0] + " " + \
+                models[model] + " " + conf_params[1] + " " + prismParams + \
+                " > " + output_dir + "/" + conf_name + "/" + model + rep_string + ".log"
+            try:
+                os.system(command)
+            except:
+                e = sys.exc_info()[0]
+                print(e)
+
+    #Read
+    with open(output_dir+"/analysis.csv", "w") as statisticsfile:
+        header = "Model"
+        for feature in relevantFeatures.keys():
+            header += ","+feature
+        statisticsfile.write(header+"\n")
+
+        for model in sorted(models.keys()):
+
+            infile = output_dir + "/" + conf_name + "/" + model + ".log"
+
+            #Write name of Model
+            statisticsfile.write(str(model))
+
+            for feature in relevantFeatures.keys():
+                #Currently don't look for reps
+                value = pipeline("grep '"+relevantFeatures[feature]+"' "+infile)
+                value = value.replace(relevantFeatures[feature], "")
+                statisticsfile.write(", "+value)
+
+            #Print newline for next Model
+            statisticsfile.write("\n")

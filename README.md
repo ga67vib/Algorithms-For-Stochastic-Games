@@ -1,6 +1,7 @@
 # Algorithms-For-Stochastic-Games
 
-Extension of the project PRISM-games [https://github.com/prismmodelchecker/prism-games] with the algorithms as described in GandALF'20 paper "Comparison of Algorithms for Simple Stochastic Games" and the FSTTCS'21 submission "Faster Value Iteration for Simple Stochastic Games".
+Extension of the project PRISM-games [https://github.com/prismmodelchecker/prism-games] with the algorithms as described in GandALF'20 paper "Comparison of Algorithms for Simple Stochastic Games".
+Additionally, we include ongoing work.
 
 ## License:
 
@@ -31,13 +32,15 @@ Now the following command should execute without errors from the prism-games-3.0
 At this point you should be able to run the case-study script for everything except for the mathematical programming approaches.
 
 ### More tutorial on setting up PRISM-games
+
+The following tutorial includes a summary of common errors and fixes we have experienced over the past years when working with PRISM. 
+
 - Download PRISM sources (not binaries), e.g. from https://github.com/ga67vib/Algorithms-For-Stochastic-Games or https://prismmodelchecker.org/games/
 
 - Install PRISM (more instructions available here: https://prismmodelchecker.org/games/installation.php)
-    - Open project in IntelliJ (use prism folder inside prism-games-3-sthsth-whatever folder). Note: This is important. If you select choose right, IntelliJ finds some libraries and stuff itself. Otherwise you'll have to manually add them or tell it where sources are and stuff.
-    - From prism folder, run make
-        Possibly encounter weird errors. Fix by googling or asking supervisor
-    - Check that installation worked: execute (from prism folder) bin/prism in terminal. Should report version and stuff. Congrats, you can now run prism!
+    - Open project in IntelliJ. Note: Use prism folder inside prism-games-3-sthsth folder. This is important! If you choose right, IntelliJ finds some libraries and dependencies itself. Otherwise you'll have to manually add them, tell it where sources are etc.
+    - From prism folder, run make. Possibly encounter weird errors. Fix by googling or sending a mail to us.
+    - Check that installation worked: execute (from prism folder) bin/prism in terminal. Should report version. Congrats, you can now run prism!
 
 - How to be able to run it from IntelliJ:
     - Build the project (There's a menu at the top)
@@ -48,10 +51,10 @@ At this point you should be able to run the case-study script for everything exc
             d: Also in project settings, add lib folder to libraries<br>
     - Add a configuration to run it, i.e. top right there should be "Add configuration" or "edit configuration". Add new configuration of type "Application". Set the Main class to prism.PrismCL and add a new Environment variable - LD_LIBRARY_PATH=:lib. Note that on MAC OS, this is called DYLD_LIBRARY_PATH.<br>
             In case of weird errors, check a, b, d from before (often stuff with libraries missing, so copy them from some other place. Or source folder not specified (can't select PrismCL as main class), so select it. Or wrong Java/no SDK selected)<br>
-            In case of errors that include "Parma Polyhedra Library", you still have to properly install the ppl library, which is needed for multi-objective stuff (and hence sadly also in general, cause we have to compile all of PRISM)<br>
+            In case of errors that include "Parma Polyhedra Library", you still have to properly install the ppl library, which is needed for multi-objective code; still, to compile PRISM, sometimes it complains about this.<br>
                 In the Algorithms-for-SG github, PPL is already in ext folder, so it might also work out of the box (and break if you try to install it manually)<br>
-            If there are libraries missing (PPL or commons or sth like that), then go to project settings (Ctrl Alt Shift S) -> Libraries -> + and add the ext and lib folder. Or PPl.jar directly. 
-    - Click play and see if it runs. If yes: Party. If no: Call someone who might know what to do, e.g. Pranav, Tobi or Maxi.
+            If there are libraries missing (PPL or commons or sth like that), then go to project settings (Ctrl Alt Shift S) -> Libraries -> + and add the ext and lib folder (or possibly PPl.jar directly). 
+    - Click play and see if it runs. If yes: Celebrate! If no: Call/mail someone who might know what to do, e.g. Pranav, Tobi or Maxi.
 
 - Now to add command line parameters in order to run the specific thing you want
     Syntax when calling from command line: bin/prism <path/to/model> <path/to/property> -const <constants> <configuration modifiers>
@@ -60,19 +63,20 @@ At this point you should be able to run the case-study script for everything exc
         ../../case-studies/BigMec.prism ../../case-studies/BigMec.props -const N=1 -ii -smg_opts 2
     in order run on the model BigMec with the BigMec.props property file. We set the free scaling constant of the model N to 1. We use -ii, so bounded value iteration (aka interval iteration). And we set smg_opts to 2, which the method can use to differentiate variants of the algorithm. E.g. 2 corresponds to sound value iteration (unless we changed it in the meantime).
 
-- How to modify the code
-    Find the method that actually does the stuff you are interested in. Often this is in explicit/STPGModelChecker (at least for my research), as this class contains the algorithms to model check an STPG. 
+- How to modify the code:
+    Often you can restrict your interest to very specific methods. While PRISM has a huge body of code to handle command line parameters, parsing models and preparing everything for the actual model checking, the method of interest typically is located in explicit/STPGModelChecker (at least for our research), as this class contains the algorithms to model check an STPG (e.g. VI, SI and QP). 
     
 - How to pass arguments through PRISM
-    Breakpoint in PrismCL.main, debug, pray
+    Set a breakpoint in PrismCL.main, debug to figure out what happens. There are many places that you can (or have to) modify in order to pass arguments.
 
 
 ### Using quadratic programming
 To be able to use our quadratic programming implementation, you need a Gurobi 9.0.0 or more recent license file. We use Gurobi to construct the quadratic program from the stochastic game as well as to solve it. Gurobi provides free academic licenses that expire after one year.
 To obtain a license, install gurobi and activate the license follow the guidelines provided on:<br/>
 https://www.gurobi.com/documentation/quickstart.html<br/>
+(in a bit more detail: Login, download gurobi optmizer, extract to some folder, get license online, get the license_key command; note that licenses do not work in docker containers)
 After executing `./grbgetkey <YOUR_LICENSE_KEY>` in the bin folder of Gurobi, you should be able to use quadratic programming to solve simple stochastic games with our implementation. To verify this, try out the following command in the prism-games-3.0.beta-src/prism folder:<br/>
-`./bin/prism ../../case_studies/BigMec.prism ../../case_studies/BigMec.props -const N=1 -qp`
+`./bin/prism ../../case-studies/BigMec.prism ../../case-studies/BigMec.props -const N=1 -qp`
 
 #### CPLEX
 Due to license requirements, we disabled solving simple stochastic games with CPLEX.
@@ -99,9 +103,24 @@ Note that we expect you to use prism for AMPL from either the prism-games-3.0.be
 
 ## Running the code
 
-You can either use the script scripts/run_benchmarks.py to perform multiple (or all) experiments at once, see scripts/README.md for more details.
-Or you can directly execute PRISM from the command line. The necessary switches are -ii for BVI, -qp for mathematical programming and -politer for strategy iteration.
-The switch -smg_opts can be used to select the optimizations. Refer to the runscript to see which number corresponds to which combination of optimizations.
+You can use the aformentioned syntax bin/prism <path/to/model> <path/to/property> -const <constants> <configuration modifiers> to run single experiments (from console or from IntelliJ).
+We used scripts to run batches of experiments. 
+The script scripts/gandalf_run_benchmarks.py allows you to run all experiments at once; see scripts/README.md for more details or look inside the scripts (they are reasonably commented).
+
+Note that for parallelization, we use pueue. So to use the scripts, you will have to download and install it.
+  
+### Pueue
+
+Download pueue by following instructions here https://github.com/Nukesor/pueue. It is an awesome utility for parallelizing commands.
+
+Common bugs: If not found, add the appropriate folder to PATH, e.g. PATH=$PATH:/home/maxi/.cargo/bin
+
+
+Then execute '''pueued -d''', which starts the pueue daemon and makes it listen for tasks.
+Configure pueue as described here: https://github.com/Nukesor/pueue/wiki/Configuration and here https://github.com/Nukesor/pueue/wiki/Groups, setting the number of parallel tasks and using groups to ensure every task has a single CPU.
+The gandalf scripts assumes that you have created groups named cpu0 to cpuX, where X is the number of CPUs you gave it in the scripts.
+
+Then run the script, which adds the task to the pueue and then runs them in parellel.
 
 ## Looking at the code
 

@@ -9,4 +9,3 @@
 
 // Is there an attack with expected cost at most 500
 // and success probability at least 0.005? (yes)
-<<a>> (R{"cost"}<=500 [ C ] & R{"success"}>=0.005 [ C ])

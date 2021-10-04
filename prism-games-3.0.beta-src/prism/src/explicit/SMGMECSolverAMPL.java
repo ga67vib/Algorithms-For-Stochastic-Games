@@ -51,12 +51,16 @@ public class SMGMECSolverAMPL extends SMGMECSolver {
         String constraint;
 
         for (int state = mec.nextSetBit(0); state >= 0; state = mec.nextSetBit(state + 1)) {
-            stateName = stateNames[state];
-            //constraint = "subject to const_ZeroMEC_"+stateName+": ";
-            constraint = "redeclare param ";
-            constraint += stateName + " = 0;\n";
+            stateName = stateNames[getStateIndex(state)];
 
-            append(constraint);
+            String constraintMin = "subject to const_ZeroMEC_"+stateName+"_Leq: "+stateName+" <= 0;\n";
+            String constraintMax = "subject to const_ZeroMEC_"+stateName+"_Geq: "+stateName+" >= 0;\n";
+
+            //constraint = "redeclare param ";
+            //constraint += stateName + " = 0;\n";
+
+            append(constraintMin);
+            append(constraintMax);
         }
 
     }
@@ -109,7 +113,7 @@ public class SMGMECSolverAMPL extends SMGMECSolver {
                     rhs += it.hasNext() ? " + " : ";\n";
                 }
             }
-            constraint += rhs;
+            constraint = createParameter(tmpVar, rhs);
             append(constraint);
         }
         int i = 0;
@@ -117,14 +121,19 @@ public class SMGMECSolverAMPL extends SMGMECSolver {
             if (state == Integer.MAX_VALUE) {
                 break;
             }
-            stateName = stateNames[state];
-            //constraint = "subject to const_"+"BestExit_"+stateName+": "+stateName+" =";
-            constraint = "redeclare param ";
+            stateName = stateNames[getStateIndex(state)];
+            String constraintMin = "subject to const_"+"BestExit_"+stateName+"_Min: "+stateName+" >=";
+            String constraintMax = "subject to const_"+"BestExit_"+stateName+"_Max: "+stateName+" <=";
+            //constraint = "redeclare param "+stateName+" =";
 
-            rhs = constructMinMax((String[]) tmpVarNames.toArray(), true);
-            constraint += " " + rhs + ";\n";
+            String[] stringArray = new String[0];
+            stringArray = tmpVarNames.toArray(stringArray);
+            rhs = constructMinMax(stringArray, true);
+            constraintMin += " " + rhs + ";\n";
+            constraintMax += " " + rhs + ";\n";
 
-            append(constraint);
+            append(constraintMin);
+            append(constraintMax);
 
             i++;
         }
@@ -312,6 +321,7 @@ public class SMGMECSolverAMPL extends SMGMECSolver {
             constraint = "param " + minConstrVars[i] + " =";
             rhs = constructMinMax(equalVarsTranspose[i], false);
             constraint += " " + rhs + ";\n";
+            constraint = createParameter(minConstrVars[i], rhs);
             append(constraint);
         }
     }
@@ -367,6 +377,16 @@ public class SMGMECSolverAMPL extends SMGMECSolver {
         }
     }
 
+    private String createParameter(String paramName, String rhs) {
+        String paramDefinition = "";
+
+        paramDefinition = "var "+paramName+" >= 0, <= 1;\n";
+        paramDefinition += "subject to const_"+paramName+"_LEQ: "+ paramName+" <= " + rhs+"";
+        paramDefinition += "subject to const_"+paramName+"_GEQ: "+ paramName+" >= " + rhs+"";
+
+        return paramDefinition;
+    }
+
     private void initializeVarNames(String[][] vars, String prefix) {
         for (int i = 0; i < vars.length; i++) {
             for (int j = 0; j < vars[i].length; j++) {
@@ -414,6 +434,10 @@ public class SMGMECSolverAMPL extends SMGMECSolver {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private int getStateIndex(int index) {
+        return (map != null) ? map.get(index) : index;
     }
 
     private String getValueIfKnown(int index) {
