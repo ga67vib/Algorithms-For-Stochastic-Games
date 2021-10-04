@@ -13,3 +13,4 @@ InC-G:
 	- run rr.py to get mems, analyze
 - create graphics (time vs. #bench and vice versa)
 - update algo selection text to include graphics and used metric
+Check

@@ -587,6 +587,144 @@ public class STPGModelChecker extends ProbModelChecker
 //    }
 //    return res;
 //  }
+	/**
+	 * Compute reachability probabilities using value iteration.
+	 * @param stpg The STPG
+	 * @param no Probability 0 states
+	 * @param yes Probability 1 states
+	 * @param min1 Min or max probabilities for player 1 (true=min, false=max)
+	 * @param min2 Min or max probabilities for player 2 (true=min, false=max)
+	 * @param init Optionally, an initial solution vector (will be overwritten)
+	 * @param known Optionally, a set of states for which the exact answer is known
+	 * Note: if 'known' is specified (i.e. is non-null, 'init' must also be given and is used for the exact values.
+	 */
+	protected ModelCheckerResult computeReachProbsValIterVanilla(STPG stpg, BitSet no, BitSet yes, boolean min1, boolean min2, double init[], BitSet known)
+			throws PrismException
+	{
+		ModelCheckerResult res = null;
+		BitSet unknown;
+		int i, n, iters;
+		double soln[], soln2[], tmpsoln[], initVal;
+		int adv[] = null;
+		boolean genAdv, done;
+		long timer;
+
+		// Are we generating an optimal adversary?
+		genAdv = exportAdv || generateStrategy;
+
+		// Start value iteration
+		timer = System.currentTimeMillis();
+		if (verbosity >= 1)
+			mainLog.println("Starting value iteration (" + (min1 ? "min" : "max") + (min2 ? "min" : "max") + ")...");
+
+		// Store num states
+		n = stpg.getNumStates();
+
+		// Create solution vector(s)
+		soln = new double[n];
+		soln2 = (init == null) ? new double[n] : init;
+
+		// Initialise solution vectors. Use (where available) the following in order of preference:
+		// (1) exact answer, if already known; (2) 1.0/0.0 if in yes/no; (3) passed in initial value; (4) initVal
+		// where initVal is 0.0 or 1.0, depending on whether we converge from below/above.
+		initVal = (valIterDir == ValIterDir.BELOW) ? 0.0 : 1.0;
+		if (init != null) {
+			if (known != null) {
+				for (i = 0; i < n; i++)
+					soln[i] = soln2[i] = known.get(i) ? init[i] : yes.get(i) ? 1.0 : no.get(i) ? 0.0 : init[i];
+			} else {
+				for (i = 0; i < n; i++)
+					soln[i] = soln2[i] = yes.get(i) ? 1.0 : no.get(i) ? 0.0 : init[i];
+			}
+		} else {
+			for (i = 0; i < n; i++)
+				soln[i] = soln2[i] = yes.get(i) ? 1.0 : no.get(i) ? 0.0 : initVal;
+		}
+
+		// Determine set of states actually need to compute values for
+		unknown = new BitSet();
+		unknown.set(0, n);
+		unknown.andNot(yes);
+		unknown.andNot(no);
+		if (known != null)
+			unknown.andNot(known);
+
+		// Create/initialise adversary storage
+		if (genAdv) {
+			adv = new int[n];
+			for (i = 0; i < n; i++) {
+				adv[i] = -1;
+			}
+
+			int s;
+			for (i = 0; i < no.length(); i++) {
+				s = no.nextSetBit(i);
+				for (int c = 0; c < stpg.getNumChoices(s); c++) {
+					if (stpg.allSuccessorsInSet(s, c, no)) {
+						adv[i] = c;
+						break;
+					}
+				}
+			}
+		}
+
+		// Start iterations
+		iters = 0;
+		done = false;
+		while (!done && iters < maxIters) {
+			iters++;
+			// Matrix-vector multiply and min/max ops
+			stpg.mvMultMinMax(soln, min1, min2, soln2, unknown, false, genAdv ? adv : null);
+			// Check termination
+			done = PrismUtils.doublesAreClose(soln, soln2, termCritParam, termCrit == TermCrit.ABSOLUTE);
+			// Swap vectors for next iter
+			tmpsoln = soln;
+			soln = soln2;
+			soln2 = tmpsoln;
+		}
+
+		// Finished value iteration
+		timer = System.currentTimeMillis() - timer;
+		if (verbosity >= 1) {
+			mainLog.print("Value iteration (" + (min1 ? "min" : "max") + (min2 ? "min" : "max") + ")");
+			mainLog.println(" took " + iters + " iterations and " + timer / 1000.0 + " seconds.");
+		}
+
+		// Non-convergence is an error (usually)
+		if (!done && errorOnNonConverge) {
+			String msg = "Iterative method did not converge within " + iters + " iterations.";
+			msg += "\nConsider using a different numerical method or increasing the maximum number of iterations";
+			throw new PrismException(msg);
+		}
+
+		// Store results/strategy
+		res = new ModelCheckerResult();
+		res.soln = soln;
+		double maxDiff = PrismUtils.measureSupNorm(soln, soln2, termCrit == TermCrit.ABSOLUTE);
+		//res.accuracy = AccuracyFactory.valueIteration(termCritParam, maxDiff, termCrit == TermCrit.ABSOLUTE);
+		res.numIters = iters;
+		res.timeTaken = timer / 1000.0;
+		if (generateStrategy) {
+			res.strat = new MemorylessDeterministicStrategy(adv);
+		}
+
+		// Print adversary
+		genAdv = false;
+		if (genAdv) {
+			PrismLog out = new PrismFileLog(exportAdvFilename);
+			if (exportAdvFilename.lastIndexOf('.') != -1 && exportAdvFilename.substring(exportAdvFilename.lastIndexOf('.') + 1).equals("dot")) {
+				stpg.exportToDotFileWithStrat(out, null, adv);
+			} else {
+				for (i = 0; i < n; i++) {
+					out.println(i + " " + (adv[i] != -1 ? stpg.getAction(i, adv[i]) : "-"));
+				}
+				out.println();
+			}
+			out.close();
+		}
+
+		return res;
+	}
 
 	/**
 	 * Compute reachability probabilities using value iteration.
@@ -726,6 +864,8 @@ public class STPGModelChecker extends ProbModelChecker
 		// Start iterations
 		if (getDoTopologicalValueIteration()) {
 
+			boolean useAttractorToGetDTMC = false;
+
 			BitSet haveAlreadyFixedValues = new BitSet();
 			haveAlreadyFixedValues.or(yes);
 			// [Small optimization:] We don't care for sinks for the attractors so we won't set them
@@ -747,11 +887,19 @@ public class STPGModelChecker extends ProbModelChecker
 
 					BitSet statesForSCC = new BitSet();
 					statesForSCC.set(state);
-					int[][] startegyComputationResult = STPGValueIterationUtils.computeStrategyFromBounds(stpg, yes, lowerBounds, upperBounds, this.termCritParam, statesForSCC, haveAlreadyFixedValues, alreadyComputedAttractorDistances);
-					int[] sigma = startegyComputationResult[0];
-					int[] tau = startegyComputationResult[1];
+					double[] values;
+					if (useAttractorToGetDTMC) {
+						int[][] startegyComputationResult = STPGValueIterationUtils.computeStrategyFromBounds(stpg, yes, lowerBounds, upperBounds, this.termCritParam, statesForSCC, haveAlreadyFixedValues, alreadyComputedAttractorDistances);
+						int[] sigma = startegyComputationResult[0];
+						int[] tau = startegyComputationResult[1];
 
-					double[] values = STPGValueIterationUtils.getValueFromStrategies(this, stpg, sigma, tau, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam, lowerBounds, upperBounds);
+						values = STPGValueIterationUtils.getValueFromStrategies(this, stpg, sigma, tau, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam, lowerBounds, upperBounds);
+						alreadyComputedAttractorDistances = startegyComputationResult[2];
+					}
+					else {
+						values = STPGValueIterationUtils.getValueFromStrategiesWithoutAttractor(this, stpg, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam, lowerBounds, upperBounds);
+					}
+
 					// Fix value of states
 					lowerBounds[state] = values[state];
 					lowerBounds2[state] = values[state];
@@ -761,7 +909,6 @@ public class STPGModelChecker extends ProbModelChecker
 					iters++;
 					IterationMethod.intervalIterationCheckForProblems(lowerBounds, upperBounds, IntSet.asIntSet(state).iterator());
 
-					alreadyComputedAttractorDistances = startegyComputationResult[2];
 					haveAlreadyFixedValues.set(state);
 				} else {
 					// complex SCC: do VI
@@ -778,11 +925,18 @@ public class STPGModelChecker extends ProbModelChecker
 					lowerBounds = subres[0];
 					upperBounds = subres[1];
 
-					int[][] startegyComputationResult = STPGValueIterationUtils.computeStrategyFromBounds(stpg, yes, lowerBounds, upperBounds, this.termCritParam, statesForSCC, haveAlreadyFixedValues, alreadyComputedAttractorDistances);
-					int[] sigma = startegyComputationResult[0];
-					int[] tau = startegyComputationResult[1];
+					double[] values;
+					if (useAttractorToGetDTMC) {
+						int[][] startegyComputationResult = STPGValueIterationUtils.computeStrategyFromBounds(stpg, yes, lowerBounds, upperBounds, this.termCritParam, statesForSCC, haveAlreadyFixedValues, alreadyComputedAttractorDistances);
+						int[] sigma = startegyComputationResult[0];
+						int[] tau = startegyComputationResult[1];
 
-					double[] values = STPGValueIterationUtils.getValueFromStrategies(this, stpg, sigma, tau, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam, lowerBounds, upperBounds);
+						values = STPGValueIterationUtils.getValueFromStrategies(this, stpg, sigma, tau, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam, lowerBounds, upperBounds);
+						alreadyComputedAttractorDistances = startegyComputationResult[2];
+					}
+					else {
+						values = STPGValueIterationUtils.getValueFromStrategiesWithoutAttractor(this, stpg, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam, lowerBounds, upperBounds);
+					}
 					// Fix value of states
 					for (int state = statesForSCC.nextSetBit(0); state >= 0; state = statesForSCC.nextSetBit(state + 1)) {
 						lowerBounds[state] = values[state];
@@ -795,7 +949,6 @@ public class STPGModelChecker extends ProbModelChecker
 //					mainLog.println("Non-trivial SCC done in " + itersInSCC + " many iterations");
 					iters+=itersInSCC;
 
-					alreadyComputedAttractorDistances = startegyComputationResult[2];
 					haveAlreadyFixedValues.or(statesForSCC);
 				}
 //				mainLog.println("SCC done. Precision: [" + lowerBounds[sccs.getStatesForSCC(scc).iterator().nextInt()] + "," + upperBounds[sccs.getStatesForSCC(scc).iterator().nextInt()] + "]. \nIters: " + iters);
@@ -1250,13 +1403,28 @@ public class STPGModelChecker extends ProbModelChecker
       }
 
       // compute the attractor set for the best exit
-      BitSet attractor = computeAttractor(stpg, bestExitState, sec, maxPlayer);
+      //BitSet attractor = computeAttractor(stpg, bestExitState, sec, maxPlayer);
+      BitSet attractor = computeWeakAttractor(stpg, bestExitState, sec, maxPlayer);
+
+//      //deflate every state in the attractor
+//      for (int s = sec.nextSetBit(0); s >= 0; s = sec.nextSetBit(s+1)) {
+//        //stepBoundReach[s] = Math.max(stepBoundReach[s], reachVal);
+//        stepBoundStay[s] = Math.min(stepBoundStay[s], stayVal);
+//      }
+//
+//      //deflate every state in the attractor
+//      for (int s = attractor.nextSetBit(0); s >= 0; s = attractor.nextSetBit(s+1)) {
+//        stepBoundReach[s] = Math.max(stepBoundReach[s], reachVal);
+//        // stepBoundStay[s] = Math.min(stepBoundStay[s], stayVal);
+//      }
+
 
       //deflate every state in the attractor
       for (int s = attractor.nextSetBit(0); s >= 0; s = attractor.nextSetBit(s+1)) {
         stepBoundReach[s] = Math.max(stepBoundReach[s], reachVal);
         stepBoundStay[s] = Math.min(stepBoundStay[s], stayVal);
       }
+
     }
     return new double[][]{stepBoundStay,stepBoundReach};
   }
@@ -1298,6 +1466,93 @@ public class STPGModelChecker extends ProbModelChecker
         attractor2 = (BitSet) attractor.clone();
       }
     }
+    return attractor;
+  }
+
+
+
+
+  private BitSet computeWeakAttractor(STPGExplicit stpg, int bestExitState, BitSet sec, int maxPlayer) {
+
+    BitSet attractor = new BitSet();
+    BitSet attractor2 =  new BitSet();
+
+    //HashSet impliatonSet = new HashSet(new Pair<new BitSet(), new BitSet()>);
+    attractor.set(bestExitState);
+    boolean done = false;
+    while(!done) {
+      sec.andNot(attractor); //SEC object is not used as SEC after this anymore, so we can use it to store workset of attractor algorithm
+      for (int s = sec.nextSetBit(0); s >= 0; s = sec.nextSetBit(s + 1)) {
+        if (stpg.getPlayer(s) == 1 || maxPlayer == 3) {
+          //some successor states for atleast one action for the max in attractor
+          for (int i = 0; i < stpg.getNumChoices(s); i++) {
+            //boolean all = stpg.allSuccessorsInSet(s, i, attractor);
+            boolean some = stpg.someSuccessorsInSet(s, i, attractor);
+            if (some) {
+              attractor.set(s);
+              break;
+            }
+          }
+        } else {
+          // all successor states of all actions for the min must be in attractor
+          boolean exitExist = false;
+          for (int i = 0; i < stpg.getNumChoices(s); i++) {
+            boolean all = stpg.allSuccessorsInSet(s, i, attractor);
+            if (!all) {
+              exitExist = true;
+              break;
+            }
+          }
+          if(!exitExist) attractor.set(s);
+        }
+      }
+
+
+      if (attractor.equals(attractor2)) {
+        done = true;
+      } else {
+        attractor2 = (BitSet) attractor.clone();
+      }
+    }
+
+    // BitSet stableAttractor= new BitSet();
+    boolean noupdate=false;
+    // removing states that have action which may lead to outside the attractor
+    while(!noupdate) {
+      noupdate = true;
+      for (int s = attractor.nextSetBit(0); s >= 0; s = attractor.nextSetBit(s + 1)) {
+        if (s == bestExitState) {
+          break;
+        } else {
+          if (stpg.getPlayer(s) == 1 || maxPlayer == 3) {
+            //all successor states for atleast one action for the max in attractor
+            boolean stayPossible = false;
+            for (int i = 0; i < stpg.getNumChoices(s); i++) {
+              boolean all = stpg.allSuccessorsInSet(s, i, attractor);
+              if (all) {
+                stayPossible = true;
+                break;
+              }
+            }
+            if (!stayPossible) {
+              attractor.andNot(new BitSet(s));
+              noupdate = false;
+              break;
+            }
+          } else {
+            for (int i = 0; i < stpg.getNumChoices(s); i++) {
+              boolean all = stpg.allSuccessorsInSet(s, i, attractor);
+              if (!all) {
+                attractor.andNot(new BitSet(s));
+                noupdate = false;
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+
     return attractor;
   }
 
@@ -1519,7 +1774,7 @@ public class STPGModelChecker extends ProbModelChecker
   }
 
 
-  private static int findAction(STPGExplicit stpg, int s, double[] stepBoundReach, double[] stepBoundStay, boolean min, double lowerbound, double uperbound){
+  private static int findAction(STPGExplicit stpg, int s, double[] stepBoundReach, double[] stepBoundStay, boolean min, double lowerbound, double upperbound){
     // best choice -1 means it does not exit
     int bestChoice=-1;
     int numChoices = stpg.getNumChoices(s);
@@ -1536,7 +1791,7 @@ public class STPGModelChecker extends ProbModelChecker
         Set<Integer> successors = d.keySet();
         double currentValue=0;
         for(int succ : d.keySet()){
-          currentValue += d.get(succ) * (stepBoundReach[succ]+stepBoundStay[succ]*uperbound);
+          currentValue += d.get(succ) * (stepBoundReach[succ]+stepBoundStay[succ]*upperbound);
         }
         if (currentValue>bestValueSoFar){
           bestValueSoFar = currentValue;
@@ -1772,7 +2027,17 @@ public class STPGModelChecker extends ProbModelChecker
 				for (int i = 0; i < stpg.getNumChoices(s); i++)
 					mdp.addChoice(s, new Distribution(stpg.getTransitionsIterator(s, i)));
 			MDPModelChecker mdpModelChecker = new MDPModelChecker(this);
-			ModelCheckerResult simpleCaseResult = mdpModelChecker.computeReachProbsPolIter(mdp, no, yes, min2, null);
+			//Solve SI exactly
+			ModelCheckerResult simpleCaseResult;
+			if (solnMethodOptions == 9 || solnMethodOptions == 10) {
+				simpleCaseResult = mdpModelChecker.computeReachProbsPolIter(mdp, no, yes, min2, null, false, null, null);
+			}
+			else if (solnMethodOptions == 13 || solnMethodOptions == 14) {
+				simpleCaseResult = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(mdp, no, yes, min2, null, null);
+			}
+			else {
+				simpleCaseResult = mdpModelChecker.computeReachProbsPolIter(mdp, no, yes, min2, null);
+			}
 			simpleCaseResult.timeTaken = System.currentTimeMillis() - timer;
 			return simpleCaseResult;
 		}
@@ -2018,7 +2283,13 @@ public class STPGModelChecker extends ProbModelChecker
 			changeOccured=false;
 			// Solve MDP, where no and yes are only target and sink; init should be transferred values of init (as those are updated during SI) //TODO: Latter thing currently not done
 			ModelCheckerResult counter;
-			if((this.solnMethodOptions / 4) % 4 == 1)
+			if (this.solnMethodOptions == 9 || this.solnMethodOptions == 10) {
+				counter = mdpModelChecker.computeReachProbsPolIter(mdp, no, yes, min2, tau, false, null, null);
+			}
+			else if (this.solnMethodOptions == 13 || this.solnMethodOptions == 14) {
+				counter = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(mdp, no, yes, min2, tau, null);
+			}
+			else if((this.solnMethodOptions / 4) % 4 == 1)
 				counter = mdpModelChecker.doIntervalIterationReachProbs(mdp, no, yes, min2, null, null, new IterationMethodGS(true, 0.001, false), false, tau);
 			else if((this.solnMethodOptions / 4) % 4 == 2)
 				counter = mdpModelChecker.computeReachProbsValIter(mdp, no, yes, min2, null, null, tau);

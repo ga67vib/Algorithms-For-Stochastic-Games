@@ -1141,7 +1141,7 @@ public class MDPModelChecker extends ProbModelChecker
 	 */
 	protected ModelCheckerResult computeReachProbsPolIter(MDP mdp, BitSet no, BitSet yes, boolean min, int strat[]) throws PrismException
 	{
-		return computeReachProbsPolIter(mdp, no, yes, min, strat, true);
+		return computeReachProbsPolIter(mdp, no, yes, min, strat, true, null, null);
 	}
 
 	/**
@@ -1153,7 +1153,7 @@ public class MDPModelChecker extends ProbModelChecker
 	 * @param min: Min or max probabilities (true=min, false=max)
 	 * @param strat Storage for (memoryless) strategy choice indices (ignored if null)
 	 */
-	protected ModelCheckerResult computeReachProbsPolIter(MDP mdp, BitSet no, BitSet yes, boolean min, int strat[], boolean iterativeSolution) throws PrismException
+	protected ModelCheckerResult computeReachProbsPolIter(MDP mdp, BitSet no, BitSet yes, boolean min, int strat[], boolean iterativeSolution, double[] initVector, double[] lowerBounds) throws PrismException
 	{
 		DTMCNonIterativeSolutionMethods dtmcNonIterativeSolutionMethods = new DTMCNonIterativeSolutionMethods();
 		ModelCheckerResult res;
@@ -1214,7 +1214,7 @@ public class MDPModelChecker extends ProbModelChecker
 			if (iterativeSolution)
 				res = mcDTMC.computeReachProbsGaussSeidel(dtmc, no, yes, reUseSoln ? soln : null, null, backwardsGS);
 			else
-				res = dtmcNonIterativeSolutionMethods.solveMarkovChain(dtmc, yes);
+				res = dtmcNonIterativeSolutionMethods.solveMarkovChain(dtmc, yes, initVector, termCritParam);
 			soln = res.soln;
 			totalIters += res.numIters;
 			// Check if optimal, improve non-optimal choices
