@@ -30,11 +30,15 @@ import typing
 #prism_path="../../qp/code/prism-games/prism/bin/prism" #Path to PRISM
 prism_path="../prism-games-3.0.beta-src/prism/bin/prism"
 wp_path="../../CAV20Impl/mycode/WP/bin/prism"
-max_processes = 10
-reps=1 #Repetitions. If set to 1, it will not appear in filename of log.    
-output_dir="allModels"
+max_processes = 7
+reps=1 #Repetitions. If set to 1, it will not appear in filename of log.
+ampl_model_dir = "../prism-games-3.0.beta-src/prism/AmplModels/"    
+output_dir="randomModelsTest"
 random_input_dir = "../case-studies/random-models/"
 proc_output = namedtuple('proc_output', 'stdout stderr') #Is needed for the pipeline (i suppose)
+
+# Solution parameters
+TIMEOUT = "2m"
 
 #Had to add in these extra commands since subrocess.output seems to make trouble with "|"
 #Found on Stackoverflow
@@ -67,43 +71,43 @@ def _parse(cmd):
 # Configurations
 configurations = dict()
 
-configurations["VI"] = (prism_path, "")
-configurations["GVI"] = (prism_path, "-gs")
-configurations["TVI"] = (prism_path, "-topological")
-configurations["TGVI"] = (prism_path, "-gs -topological")
+#configurations["VI"] = (prism_path, "")
+#configurations["GVI"] = (prism_path, "-gs")
+#configurations["TVI"] = (prism_path, "-topological")
+#configurations["TGVI"] = (prism_path, "-gs -topological")
 
 #BVI
-configurations["BVI_1"] = (prism_path, "-ii -maxiters 1")
+#configurations["BVI_1"] = (prism_path, "-ii -maxiters 1")
 configurations["BVI_100"] = (prism_path, "-ii -maxiters 100")
-configurations["TBVI_1"] = (prism_path, "-ii -maxiters 1 -topological")
+#configurations["TBVI_1"] = (prism_path, "-ii -maxiters 1 -topological")
 configurations["TBVI_100"] = (prism_path, "-ii -maxiters 100 -topological")
 
-configurations["GBVI_1"] = (prism_path, "-ii -maxiters 1 -smg_opts 1")
-configurations["GBVI_100"] = (prism_path, "-ii -maxiters 100 -smg_opts 1")
-configurations["TGBVI_1"] = (prism_path, "-ii -maxiters 1 -topological -smg_opts 1")
-configurations["TGBVI_100"] = (prism_path, "-ii -maxiters 100 -topological -smg_opts 1")
+#configurations["GBVI_1"] = (prism_path, "-ii -maxiters 1 -smg_opts 1")
+#configurations["GBVI_100"] = (prism_path, "-ii -maxiters 100 -smg_opts 1")
+#configurations["TGBVI_1"] = (prism_path, "-ii -maxiters 1 -topological -smg_opts 1")
+#configurations["TGBVI_100"] = (prism_path, "-ii -maxiters 100 -topological -smg_opts 1")
 
 #SVI
-configurations["SVI_1"] = (prism_path, "-svi -maxiters 1")
-configurations["SVI_100"] = (prism_path, "-svi -maxiters 100")
-configurations["TSVI_1"] = (prism_path, "-svi -maxiters 1 -topological")
-configurations["TSVI_100"] = (prism_path, "-svi -maxiters 100 -topological")
+#configurations["SVI_1"] = (prism_path, "-svi -maxiters 1")
+#configurations["SVI_100"] = (prism_path, "-svi -maxiters 100")
+#configurations["TSVI_1"] = (prism_path, "-svi -maxiters 1 -topological")
+#configurations["TSVI_100"] = (prism_path, "-svi -maxiters 100 -topological")
 
-configurations["GSVI_1"] = (prism_path, "-svi -maxiters 1 -smg_opts 1")
-configurations["GSVI_100"] = (prism_path, "-svi -maxiters 100 -smg_opts 1")
-configurations["TGSVI_1"] = (prism_path, "-svi -maxiters 1 -topological -smg_opts 1")
-configurations["TGSVI_100"] = (prism_path, "-svi -maxiters 100 -topological -smg_opts 1")
+#configurations["GSVI_1"] = (prism_path, "-svi -maxiters 1 -smg_opts 1")
+#configurations["GSVI_100"] = (prism_path, "-svi -maxiters 100 -smg_opts 1")
+#configurations["TGSVI_1"] = (prism_path, "-svi -maxiters 1 -topological -smg_opts 1")
+#configurations["TGSVI_100"] = (prism_path, "-svi -maxiters 100 -topological -smg_opts 1")
 
 #OVI
-configurations["OVI_1"] = (prism_path, "-ovi -maxiters 1")
-configurations["OVI_100"] = (prism_path, "-ovi -maxiters 100")
-configurations["TOVI_1"] = (prism_path, "-ovi -maxiters 1 -topological")
-configurations["TOVI_100"] = (prism_path, "-ovi -maxiters 100 -topological")
+#configurations["OVI_1"] = (prism_path, "-ovi -maxiters 1")
+#configurations["OVI_100"] = (prism_path, "-ovi -maxiters 100")
+#configurations["TOVI_1"] = (prism_path, "-ovi -maxiters 1 -topological")
+#configurations["TOVI_100"] = (prism_path, "-ovi -maxiters 100 -topological")
 
-configurations["OVI_1_opt"] = (prism_path, "-ovi -maxiters 1 -smg_opts 4")
-configurations["OVI_100_opt"] = (prism_path, "-ovi -maxiters 100 -smg_opts 4")
-configurations["TOVI_1_opt"] = (prism_path, "-ovi -maxiters 1 -topological -smg_opts 4")
-configurations["TOVI_100_opt"] = (prism_path, "-ovi -maxiters 100 -topological -smg_opts 4")
+#configurations["OVI_1_opt"] = (prism_path, "-ovi -maxiters 1 -smg_opts 4")
+#configurations["OVI_100_opt"] = (prism_path, "-ovi -maxiters 100 -smg_opts 4")
+#configurations["TOVI_1_opt"] = (prism_path, "-ovi -maxiters 1 -topological -smg_opts 4")
+#configurations["TOVI_100_opt"] = (prism_path, "-ovi -maxiters 100 -topological -smg_opts 4")
 
 #SI
 configurations["SI"] =  (prism_path, "-politer -smg_opts 0") # Normal Strategy Iteration - SI Opponent, i.e. MDP Solver is SI
@@ -116,13 +120,13 @@ configurations["SI_T_BV"] =  (prism_path, "-politer -smg_opts 6") # MEC decompos
 configurations["SI_PR_T_BV"] =  (prism_path, "-politer -smg_opts 7") # Value Iteration Precomputation & MEC decomposition & BVI Opp>
 
 #WP
-configurations["WP"] = (wp_path, "-ex -BVI_A")
+#configurations["WP"] = (wp_path, "-ex -BVI_A")
 
 
 #Models
 models=dict()
 
-
+"""
 models["cdmsn"]="../case-studies/cdmsn.prism ../case-studies/cdmsn.props"
 models["cloud5"]="../case-studies/cloud_5.prism ../case-studies/cloud.props"
 models["cloud6"]="../case-studies/cloud_6.prism ../case-studies/cloud.props"
@@ -165,13 +169,13 @@ models["two_investors"]="../case-studies/two_investors.prism ../case-studies/two
 models["coins"]="../case-studies/coins.prism ../case-studies/coins.props -prop 1"
 models["prison_dil"]="../case-studies/prisoners_dilemma.prism ../case-studies/prisoners_dilemma.props -prop 9"
 #models["simple"]="../case-studies/SimpleModel.prism ../case-studies/randomModels.props -prop 1"
-
+"""
 # Random Models
-#random_model_files_dir = random_input_dir
-#for random_model_file in os.listdir(random_model_files_dir):
-#    if random_model_file.startswith("RANDOM") and random_model_file.endswith(".prism"):
-#        model_name = random_model_file.replace(".prism", "")
-#        models[model_name] = random_model_files_dir+random_model_file+" ../case-studies/randomModels.props -prop 1"
+random_model_files_dir = random_input_dir
+for random_model_file in os.listdir(random_model_files_dir):
+    if random_model_file.startswith("RANDOM") and random_model_file.endswith(".prism"):
+        model_name = random_model_file.replace(".prism", "")
+        models[model_name] = random_model_files_dir+random_model_file+" ../case-studies/randomModels.props -prop 1"
 
 """
 # Model Extensions
@@ -184,7 +188,7 @@ for config_file in os.listdir(extension_config_folder_path):
     config_name = config_file.replace(".json", "")
     for model_key in models.keys():
         new_key = model_key+"_"+config_name
-        extension_config_models[new_key] = models[model_key]+" -smg-extend"+os.path.join(extension_config_folder_path,config_file)
+        extension_config_models[new_key] = models[model_key]+" -smg_extend "+os.path.join(extension_config_folder_path,config_file)
 #Unify models with the extensions
 models = {**models, **extension_config_models}
 """
@@ -193,6 +197,9 @@ models = {**models, **extension_config_models}
 if len(sys.argv) == 0 or str(sys.argv[1]) not in ["run", "read", "analyse"]:
     print("This script can only run in three modes: run, read or analyse. Call it with one of these three as command line parameter")
 elif sys.argv[1] == "run":
+    #Clean Models in AMPL folder to not flood it too much
+    os.system("rm "+ampl_model_dir+"*")
+
     command_list = []
     for conf_count, conf in enumerate(sorted(configurations.keys())):
         #print(conf)
@@ -208,7 +215,7 @@ elif sys.argv[1] == "run":
                     print("\t\tAlready there, skipping")
                     continue
                 prismParams = "" # "-javamaxmem 32g -javastack 16g"  # Change this appropriately
-                command = "timeout 10m " + configurations[conf][0] + " " + \
+                command = "timeout "+ TIMEOUT +" " + configurations[conf][0] + " " + \
                     models[model] + " " + configurations[conf][1] + " " + prismParams + \
                     " > " + output_dir + "/" + conf + "/" + model + rep_string + ".log"
                 command_list.append((command, counting_str))
@@ -346,12 +353,12 @@ elif (sys.argv[1] == "analyse"):
     relevantFeatures["SmallestSCC"] = "Smallest SCC has size: "
     relevantFeatures["AvgSCC"] = "Average SCC has size: "
 
-
     #Cyclefree-Checks
     relevantFeatures["NearestTarget"] = "Nearest Target from any Initial State: "
     relevantFeatures["FurthestTarget"] = "Furthest Target from any Initial State: "
     relevantFeatures["TargetDistanceAverage"] = "Target-distance Average: "
     relevantFeatures["TargetDistanceMedian"] = "Target-distance Median: "
+
 
 
     #Run
