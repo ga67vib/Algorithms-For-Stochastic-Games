@@ -1,7 +1,6 @@
 package explicit.smgModelExtensions;
 
 import explicit.Distribution;
-import explicit.SMGModelExtender;
 import explicit.STPGExplicit;
 import parser.State;
 
@@ -9,10 +8,10 @@ import java.util.BitSet;
 import java.util.List;
 import java.util.Random;
 
-public class SMGModelExtension_ProbabilityTree extends SMGModelExtension{
+public class SMGModelExtension_ActionTree extends SMGModelExtension{
     int oldInitialState;
     int numComponents;
-    int treeDepth;
+    int numStates;
     int treeBranchingFactor;
     double probabilityToReachComponentsInitialState;
     double probabilityToReachSink;
@@ -25,18 +24,18 @@ public class SMGModelExtension_ProbabilityTree extends SMGModelExtension{
      * @param statesList Is necessary, because stateList from STPG is protected in the package
      * @param useThisExtension Should this extension be used
      * @param numComponents how many components should there be?
-     * @param treeDepth how many levels should the tree have (root level is 0)
+     * @param numStates how many states should the tree have
      * @param treeBranchingFactor how many actions does each node of the tree have
      * @param probabilityToReachComponentsInitialState what is the probability to reach the initial state while using an action?
      * @param probabilityToReachSink what is the probability to reach the sink while using an action. The sum of probabilityToReachSink and probabilityToReachComponentsInitialState must be in [0, 1]
      * @param sinkState sink
      */
-    public SMGModelExtension_ProbabilityTree(STPGExplicit stpg, BitSet remain, List<State> statesList, boolean useThisExtension, int numComponents, int treeDepth, int treeBranchingFactor,
-                                             double probabilityToReachComponentsInitialState, double probabilityToReachSink, int sinkState) {
+    public SMGModelExtension_ActionTree(STPGExplicit stpg, BitSet remain, List<State> statesList, boolean useThisExtension, int numComponents, int numStates, int treeBranchingFactor,
+                                        double probabilityToReachComponentsInitialState, double probabilityToReachSink, int sinkState) {
         super(stpg, remain, statesList, useThisExtension);
         this.sinkState = sinkState;
         this.numComponents = numComponents;
-        this.treeDepth = treeDepth;
+        this.numStates = numStates;
         this.treeBranchingFactor = treeBranchingFactor;
         this.probabilityToReachComponentsInitialState = probabilityToReachComponentsInitialState;
         this.probabilityToReachSink = probabilityToReachSink;
@@ -48,8 +47,8 @@ public class SMGModelExtension_ProbabilityTree extends SMGModelExtension{
         if (numComponents <= 0) {
             throw new IllegalArgumentException("[Model Extension]: The number of added Components per initial state must be at least 1");
         }
-        else if (treeDepth < 0) {
-            throw new IllegalArgumentException("[Model Extension]: The depth of added ProbabilityTrees per initial state must be at least 0");
+        else if (numStates <= 0) {
+            throw new IllegalArgumentException("[Model Extension]: There must be at least one state");
         }
         else if (treeBranchingFactor <= 0) {
             throw new IllegalArgumentException("[Model Extension]: The treeBranchingFactor must be at least 1");
@@ -67,13 +66,7 @@ public class SMGModelExtension_ProbabilityTree extends SMGModelExtension{
         Random random = new Random();
         random.setSeed(100); //Set deterministic Seed because we do want deterministic models but don't care about who the states belong
 
-        long numNewStatesPerComponentLong = 1;
-        for (int depth = 1; depth <= treeDepth; depth++) {
-            numNewStatesPerComponentLong += Math.pow(treeBranchingFactor, depth);
-            if (numNewStatesPerComponentLong < 0 || numNewStatesPerComponentLong > Integer.MAX_VALUE) {
-                throw new IllegalArgumentException("[Model Extension]: The Tree Depth is too high. The amount of states per component exceeds Integer.MAX_VALUE");
-            }
-        }
+        long numNewStatesPerComponentLong = numStates;
 
         if (numNewStatesPerComponentLong * numComponents > Integer.MAX_VALUE || numNewStatesPerComponentLong * numComponents < 0) {
             throw new IllegalArgumentException("[Model Extension]: The number of new states is too big. You exceed Integer.MAX_VALUE. Try reducing tree depth or the number of copmonents");
@@ -104,10 +97,12 @@ public class SMGModelExtension_ProbabilityTree extends SMGModelExtension{
 
             for (currentState = currentInitialState; currentState < currentInitialState + numNewStatesPerComponent; currentState++) {
                 stpg.setPlayer(currentState, random.nextInt(2)+1); //Set player to either 1 or 2
+                double actionCounter = 0;
                 int childrenOffset = (currentState - currentInitialState) * treeBranchingFactor + currentInitialState; //Indexing in Trees
                 for (int nextState = childrenOffset + 1; nextState <= childrenOffset + treeBranchingFactor; nextState++) {
+                    int trueNextState = nextState;
                     if (nextState >= currentInitialState + numNewStatesPerComponent) {
-                        nextState = nextInitialState;
+                        trueNextState = nextInitialState;
                     }
                     Distribution transitionDistribution = new Distribution();
 
@@ -115,15 +110,15 @@ public class SMGModelExtension_ProbabilityTree extends SMGModelExtension{
                         transitionDistribution.add(sinkState, probabilityToReachSink);
                     }
                     if (probabilityToReachSink < 1) {
+                        double probToShare = 1.0 - probabilityToReachSink - probabilityToReachComponentsInitialState;
+                        double probToSelf = probToShare - (1.0 * actionCounter / (this.treeBranchingFactor+1));
+                        double probToNext = probToShare - probToSelf;
                         if (probabilityToReachComponentsInitialState > 0) transitionDistribution.add(currentInitialState, probabilityToReachComponentsInitialState);
-                        transitionDistribution.add(nextState, (1-probabilityToReachComponentsInitialState-probabilityToReachSink));
+                        transitionDistribution.add(trueNextState, (probToNext));
+                        transitionDistribution.add(currentState, probToSelf);
                     }
                     stpg.addChoice(currentState, transitionDistribution);
-
-                    //Without this statement the for-loop may never end
-                    if (nextState == nextInitialState) {
-                        break;
-                    }
+                    actionCounter++;
                 }
             }
             currentInitialState = nextInitialState;

@@ -68,6 +68,17 @@ public class SMGModelExtender {
                         config.probExtension_componentBranchingFactor,
                         config.probExtension_probabilityToGoBackToIntialState,
                         config.probExtension_probabilityLeadingToSink,
+                        sink),
+                new SMGModelExtension_ActionTree(
+                        newStpg,
+                        remain,
+                        statesList,
+                        config.extendWithActionTrees,
+                        config.actionTreeExtension_numComponents,
+                        config.actionTreeExtension_componentNumStates,
+                        config.actionTreeExtension_componentBranchingFactor,
+                        config.actionTreeExtension_probabilityToGoBackToIntialState,
+                        config.actionTreeExtension_probabilityLeadingToSink,
                         sink)
         };
 
@@ -175,6 +186,16 @@ public class SMGModelExtender {
                 config.probExtension_componentTreeDepth = Integer.parseInt(extensionProbabilistic.get("componentTreeDepth").toString());
                 config.probExtension_probabilityLeadingToSink = Double.parseDouble(extensionProbabilistic.get("probabilityLeadingToSink").toString());
                 config.probExtension_probabilityToGoBackToIntialState = Double.parseDouble(extensionProbabilistic.get("probabilityToGoBackToInitialState").toString());
+
+                JSONObject extensionActionTree = (JSONObject) extensions.get("ActionTreeModel");
+
+                config.extendWithActionTrees = Boolean.parseBoolean(extensionActionTree.get("use").toString());
+                config.actionTreeExtension_numComponents = Integer.parseInt(extensionActionTree.get("numComponents").toString());
+                config.actionTreeExtension_componentBranchingFactor = Integer.parseInt(extensionActionTree.get("componentBranchingFactor").toString());
+                config.actionTreeExtension_componentNumStates = Integer.parseInt(extensionActionTree.get("componentNumberOfStates").toString());
+                config.actionTreeExtension_probabilityLeadingToSink = Double.parseDouble(extensionActionTree.get("probabilityLeadingToSink").toString());
+                config.actionTreeExtension_probabilityToGoBackToIntialState = Double.parseDouble(extensionActionTree.get("probabilityToGoBackToInitialState").toString());
+
 
             } catch (Exception e) {
                 e.printStackTrace();

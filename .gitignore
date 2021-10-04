@@ -33,6 +33,13 @@ prism-games-3.0.beta-src/prism/out/
 prism-games-3.0.beta-src/prism/model.lp
 prism-games-3.0.beta-src/prism/.idea/codeStyles/codeStyleConfig.xml
 
+#Files generated on-mass
+model-extension-configs/*
+random-generated-models/*
+scripts/*.prism
+scripts-clones/*
+
+
 scripts/output
 *.lp
 *.o

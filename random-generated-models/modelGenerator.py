@@ -1,4 +1,5 @@
 import argparse
+from genericpath import isdir
 import os, os.path
 import glob
 from graphGenerator import GeneratedGraph
@@ -18,6 +19,7 @@ def main():
     smallest_transition_probability_default = 0.5
     backwards_probability_default = 0.5
     branching_probability_default = 0.8
+    force_unknown_default = False
 
     parser = argparse.ArgumentParser(description = 'Generate PRISM models randomly')
     parser.add_argument(
@@ -44,6 +46,9 @@ def main():
     parser.add_argument(
         '-branchingProb', type = float, default = branching_probability_default, help="probability to add a branch in an action. There can be maximal 10 transitions per action"
     )
+    parser.add_argument(
+        '-forceUnknown', type = bool, default = force_unknown_default, help='Try to minimize the number of yes- and no-states. This can lead to every state having a small probability of reaching the target.'
+    )
 
     arguments = parser.parse_args()
     output_dir = arguments.outputDir
@@ -54,6 +59,7 @@ def main():
     smallest_transition_probability = arguments.smallestProb
     backwards_probability = arguments.backwardsProb
     branching_probability = arguments.branchingProb
+    force_unknown = arguments.forceUnknown
 
 
     choice_permutator=Permutation_AllStatesPossible()
@@ -71,8 +77,12 @@ def main():
     max_num_actions_player1 = 3
     max_num_actions_player2 = 3
 
+    num_states_before_iters = num_states #num_states could be overriden to add extra sinks/targets. Need to reset after every modelIteration
+
     for modelNumber in range(num_models):
         print("Generating Model Number: "+(str(modelNumber+1))+"...")
+
+        num_states = num_states_before_iters
 
         # Generate Graph
         graph = graph_model
@@ -82,16 +92,20 @@ def main():
                 maximum_incoming_edges=3,
                 probability_to_branch=branching_probability,
                 probability_for_backwards_action=backwards_probability,
-                probability_to_be_maximizer_state=0.7,
+                probability_to_be_maximizer_state=0.5,
                 minimum_outgoing_edges=num_min_actions,
                 choice_permutator=choice_permutator,
                 transition_permutator=transition_permutator,
-                denominator_range=int(1/smallest_transition_probability)
+                denominator_range=int(1/smallest_transition_probability),
+                force_unknown=force_unknown
             )
 
         graph.generateGraph(
             generation_parameters
         )
+
+        # Could have changed to subvert trivial targets
+        num_states = generation_parameters.num_states
 
         max_num_actions_player1 = graph.max_player_1_actions
         max_num_actions_player2 = graph.max_player_2_actions
@@ -180,6 +194,8 @@ def main():
 
 
         # Write to file
+        if (not os.path.isdir(output_dir)):
+            os.mkdir(output_dir)
         file = open(os.path.join(output_dir,output_file_name), "w")
         file.write(file_string)
         file.close()
