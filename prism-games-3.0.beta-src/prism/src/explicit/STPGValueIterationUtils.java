@@ -271,12 +271,16 @@ public class STPGValueIterationUtils {
                 alreadyComputedStates, fixedValues,
                 suggestedLocalDTMC.stpgStatesToDtmcStates, suggestedLocalDTMC.dtmcStatesToStpgStates, dtmcSolution.soln,
                 allowedMaximizerActions, allowedMinimizerActions,
-                precision/10 //The precision must be very close to the suggested Value
+                precision/1000 //The precision must be very close to the suggested Value
             )
         ) {
             throw new PrismException("Not consistent!!");
         }
 
+        // Set Values to the ones computed in the DTMC, since it's the values that should correspond to the optimal strategy
+        for (int state = relevantStates.nextSetBit(0); state >= 0; state = relevantStates.nextSetBit(state+1)) {
+            fixedValues[state] = dtmcSolution.soln[suggestedLocalDTMC.stpgStatesToDtmcStates.get(state)];
+        }
 
         return fixedValues;
     }
