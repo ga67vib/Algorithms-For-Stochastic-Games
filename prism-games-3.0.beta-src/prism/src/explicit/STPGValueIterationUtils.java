@@ -205,6 +205,11 @@ public class STPGValueIterationUtils {
         ArrayList<Integer>[] allowedMaximizerActions = new ArrayList[stpg.getNumStates()];
         int[] allowedMinimizerActions = new int[stpg.getNumStates()];
 
+        // Important hack for VI and OVI
+        if (upperBounds == null) {
+            upperBounds = lowerBounds;
+        }
+
         // Find allowd actions for maximizer and strategy for minimizer
         for (int state = relevantStates.nextSetBit(0); state >= 0; state = relevantStates.nextSetBit(state+1)) {
             boolean isMaximizerState = stpg.getPlayer(state) == 1;
@@ -302,6 +307,8 @@ public class STPGValueIterationUtils {
 
             int bestChoice = -1;
 
+            ArrayList<Double> choiceValues = new ArrayList<>();
+
             for (int choice = 0; choice < stpg.getNumChoices(state); choice++) {
                 double choiceValue = 0;
 
@@ -336,15 +343,28 @@ public class STPGValueIterationUtils {
                     bestChoiceValue = choiceValue;
                     bestChoice = choice;
                 }
+                choiceValues.add(choiceValue);
             }
 
-            // The best value one can achieve should be exactly the one suggested by the DTMC - otherwise something went wrong
-            // We have to allow for very small difference due to floating point operations
-            if (!PrismUtils.doublesAreClose(suggestedSGValue[stpgToDtmc.get(state)], bestChoiceValue, precision, true)) {
-                throw new PrismException("State "+state+" was suspected to get value "+suggestedSGValue[stpgToDtmc.get(state)]+" by playing "+
-                        (isMaximizerState ? "an action from set "+suggestedMaximizerActions[state].toString() : "action "+suggestedMinimizerActions[state])+
-                        " but "+bestChoice+" would yield value "+bestChoiceValue+" according to the DTMC." +
-                        " Thus, the topological heuristic failed. Try another solution method..");
+            // Is the strategy part of argmax?
+            if (isMaximizerState) {
+                for (int suggestedAction : suggestedMaximizerActions[state]) {
+                    if (!PrismUtils.doublesAreClose(choiceValues.get(suggestedAction), bestChoiceValue, precision, true)) {
+                        throw new PrismException("State "+state+" was suspected to get value "+suggestedSGValue[stpgToDtmc.get(state)]+" by playing "+
+                                (isMaximizerState ? "an action from set "+suggestedMaximizerActions[state].toString() : "action "+suggestedMinimizerActions[state])+
+                                " but "+bestChoice+" would yield value "+bestChoiceValue+" according to the DTMC." +
+                                " Thus, the topological heuristic failed. Try another solution method..");
+                    }
+                }
+            }
+            // Is the suggested strategy part of argmin?
+            else {
+                if (!PrismUtils.doublesAreClose(choiceValues.get(suggestedMinimizerActions[state]), bestChoiceValue, precision, true)) {
+                    throw new PrismException("State "+state+" was suspected to get value "+suggestedSGValue[stpgToDtmc.get(state)]+" by playing "+
+                            (isMaximizerState ? "an action from set "+suggestedMaximizerActions[state].toString() : "action "+suggestedMinimizerActions[state])+
+                            " but "+bestChoice+" would yield value "+bestChoiceValue+" according to the DTMC." +
+                            " Thus, the topological heuristic failed. Try another solution method..");
+                }
             }
         }
         return true;
