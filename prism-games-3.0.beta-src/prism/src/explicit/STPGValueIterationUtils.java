@@ -271,7 +271,7 @@ public class STPGValueIterationUtils {
                 alreadyComputedStates, fixedValues,
                 suggestedLocalDTMC.stpgStatesToDtmcStates, suggestedLocalDTMC.dtmcStatesToStpgStates, dtmcSolution.soln,
                 allowedMaximizerActions, allowedMinimizerActions,
-                precision/1000 //The precision must be very close to the suggested Value
+                precision/10 //The precision must be very close to the suggested Value
             )
         ) {
             throw new PrismException("Not consistent!!");
