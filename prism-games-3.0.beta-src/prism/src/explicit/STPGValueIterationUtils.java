@@ -261,7 +261,7 @@ public class STPGValueIterationUtils {
 
         // Solve the created MarkovChain
         DTMCNonIterativeSolutionMethods dtmcNonIterativeSolutionMethods = new DTMCNonIterativeSolutionMethods();
-        ModelCheckerResult dtmcSolution = dtmcNonIterativeSolutionMethods.solveMarkovChain(suggestedLocalDTMC.dtmc, suggestedLocalDTMC.targets, upperBounds, precision);
+        ModelCheckerResult dtmcSolution = dtmcNonIterativeSolutionMethods.solveMarkovChain(suggestedLocalDTMC.dtmc, suggestedLocalDTMC.targets, suggestedLocalDTMC.upperboundsInDTMC, precision);
 
         // We now have supposedly correct values for every state in relevantStates - Try to confirm them
         if (!isDTMCResultConsistentWithSTPG(
@@ -277,6 +277,10 @@ public class STPGValueIterationUtils {
             throw new PrismException("Not consistent!!");
         }
 
+        // Set Values to the ones computed in the DTMC, since it's the values that should correspond to the optimal strategy
+        for (int state = relevantStates.nextSetBit(0); state >= 0; state = relevantStates.nextSetBit(state+1)) {
+            fixedValues[state] = dtmcSolution.soln[suggestedLocalDTMC.stpgStatesToDtmcStates.get(state)];
+        }
 
         return fixedValues;
     }
@@ -543,6 +547,10 @@ public class STPGValueIterationUtils {
         int sink = dtmc.addState();
         int target = dtmc.addState();
 
+        double[] upperboundsInDTMC = new double[dtmc.getNumStates()];
+        upperboundsInDTMC[sink] = 0;
+        upperboundsInDTMC[target] = 1;
+
         //Set self-loops for sink and target
         dtmc.addToProbability(sink, sink, 1.0);
         dtmc.addToProbability(target, target, 1.0);
@@ -551,6 +559,8 @@ public class STPGValueIterationUtils {
         for (int state = relevantStates.nextSetBit(0); state >= 0; state = relevantStates.nextSetBit(state + 1)) {
             boolean isMaximizerState = stpg.getPlayer(state) == 1;
             double probabilityScaling = 1.0;
+
+            upperboundsInDTMC[stpgToDtmc.get(state)] = upperBounds[state];
 
             // One Distribution for all actions that will be contracted into one
             for (int choice = 0; choice < stpg.getNumChoices(state); choice++) {
@@ -610,6 +620,7 @@ public class STPGValueIterationUtils {
         }
 
         LocalDTMCTransformation transformationResult = new LocalDTMCTransformation();
+        transformationResult.upperboundsInDTMC = upperboundsInDTMC;
         transformationResult.dtmc = dtmc;
         transformationResult.dtmcStatesToStpgStates = dtmcToStpg;
         transformationResult.stpgStatesToDtmcStates = stpgToDtmc;
@@ -1009,5 +1020,6 @@ public class STPGValueIterationUtils {
         BitSet sinks;
         HashMap<Integer, Integer> stpgStatesToDtmcStates;
         HashMap<Integer, Integer> dtmcStatesToStpgStates;
+        double[] upperboundsInDTMC;
     }
 }
