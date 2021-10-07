@@ -8,6 +8,13 @@ import java.util.*;
 
 public class STPGValueIterationUtils {
 
+    public static long dtmcBuildingTime = 0;
+    public static long dtmcSolvingTime = 0;
+    public static long inverseCalcTime = 0;
+    public static long getAllowedActionsTime = 0;
+    public static long verificationTime = 0;
+    public static long assignmentTime = 0;
+
     /**
      * Computes a strategy from the currently given bounds on the values of the states.
      * @param stpg
@@ -27,6 +34,7 @@ public class STPGValueIterationUtils {
             relevantStates = new BitSet();
             relevantStates.set(0, stpg.getNumStates()-1);
         }
+
         ArrayList<Integer>[] allowedMaximizerActions = new ArrayList[stpg.getNumStates()];
 
         // Find allowd actions for maximizer and strategy for minimizer
@@ -202,6 +210,11 @@ public class STPGValueIterationUtils {
             relevantStates = new BitSet();
             relevantStates.set(0, stpg.getNumStates()-1);
         }
+
+        long t1;
+        long t2;
+
+        t1 = System.currentTimeMillis();
         ArrayList<Integer>[] allowedMaximizerActions = new ArrayList[stpg.getNumStates()];
         int[] allowedMinimizerActions = new int[stpg.getNumStates()];
 
@@ -209,7 +222,6 @@ public class STPGValueIterationUtils {
         if (upperBounds == null) {
             upperBounds = lowerBounds;
         }
-
         // Find allowd actions for maximizer and strategy for minimizer
         for (int state = relevantStates.nextSetBit(0); state >= 0; state = relevantStates.nextSetBit(state+1)) {
             boolean isMaximizerState = stpg.getPlayer(state) == 1;
@@ -252,10 +264,13 @@ public class STPGValueIterationUtils {
                 }
             }
         }
+        t2 = System.currentTimeMillis();
+        getAllowedActionsTime += (t2-t1);
 
         if (fixedValues == null) {
             fixedValues = new double[stpg.getNumStates()];
         }
+        t1 = System.currentTimeMillis();
         LocalDTMCTransformation suggestedLocalDTMC = createLocalDTMCFromStpg(
                 stpg,
                 allowedMaximizerActions, allowedMinimizerActions,
@@ -263,12 +278,19 @@ public class STPGValueIterationUtils {
                 relevantStates,
                 alreadyComputedStates, fixedValues,
                 lowerBounds, upperBounds);
+        t2 = System.currentTimeMillis();
+        dtmcBuildingTime += (t2-t1);
 
         // Solve the created MarkovChain
+        t1 = System.currentTimeMillis();
         DTMCNonIterativeSolutionMethods dtmcNonIterativeSolutionMethods = new DTMCNonIterativeSolutionMethods();
         ModelCheckerResult dtmcSolution = dtmcNonIterativeSolutionMethods.solveMarkovChain(suggestedLocalDTMC.dtmc, suggestedLocalDTMC.targets, suggestedLocalDTMC.upperboundsInDTMC, precision);
+        t2 = System.currentTimeMillis();
+        inverseCalcTime = DTMCNonIterativeSolutionMethods.inverseCalcTime;
+        dtmcSolvingTime += (t2-t1);
 
         // We now have supposedly correct values for every state in relevantStates - Try to confirm them
+        t1 = System.currentTimeMillis();
         if (!isDTMCResultConsistentWithSTPG(
                 stpg,
                 yes, no,
@@ -276,16 +298,21 @@ public class STPGValueIterationUtils {
                 alreadyComputedStates, fixedValues,
                 suggestedLocalDTMC.stpgStatesToDtmcStates, suggestedLocalDTMC.dtmcStatesToStpgStates, dtmcSolution.soln,
                 allowedMaximizerActions, allowedMinimizerActions,
-                precision/1000 //The precision must be very close to the suggested Value
+                precision //The precision must be very close to the suggested Value
             )
         ) {
             throw new PrismException("Not consistent!!");
         }
+        t2 = System.currentTimeMillis();
+        verificationTime += (t2-t1);
 
+        t1 = System.currentTimeMillis();
         // Set Values to the ones computed in the DTMC, since it's the values that should correspond to the optimal strategy
         for (int state = relevantStates.nextSetBit(0); state >= 0; state = relevantStates.nextSetBit(state+1)) {
             fixedValues[state] = dtmcSolution.soln[suggestedLocalDTMC.stpgStatesToDtmcStates.get(state)];
         }
+        t2 = System.currentTimeMillis();
+        assignmentTime += (t2-t1);
 
         return fixedValues;
     }
@@ -346,24 +373,21 @@ public class STPGValueIterationUtils {
                 choiceValues.add(choiceValue);
             }
 
-            // Is the strategy part of argmax?
-            if (isMaximizerState) {
-                for (int suggestedAction : suggestedMaximizerActions[state]) {
-                    if (!PrismUtils.doublesAreClose(choiceValues.get(suggestedAction), bestChoiceValue, precision, true)) {
-                        throw new PrismException("State "+state+" was suspected to get value "+suggestedSGValue[stpgToDtmc.get(state)]+" by playing "+
-                                (isMaximizerState ? "an action from set "+suggestedMaximizerActions[state].toString() : "action "+suggestedMinimizerActions[state])+
-                                " but "+bestChoice+" would yield value "+bestChoiceValue+" according to the DTMC." +
-                                " Thus, the topological heuristic failed. Try another solution method..");
-                    }
+            ArrayList<Integer> argMaxChoices = new ArrayList<>();
+            for (int choice = 0; choice < stpg.getNumChoices(state); choice++) {
+                if (choice == bestChoice || PrismUtils.doublesAreClose(choiceValues.get(choice), bestChoiceValue, precision, true)) {
+                    argMaxChoices.add(choice);
                 }
             }
-            // Is the suggested strategy part of argmin?
-            else {
-                if (!PrismUtils.doublesAreClose(choiceValues.get(suggestedMinimizerActions[state]), bestChoiceValue, precision, true)) {
-                    throw new PrismException("State "+state+" was suspected to get value "+suggestedSGValue[stpgToDtmc.get(state)]+" by playing "+
-                            (isMaximizerState ? "an action from set "+suggestedMaximizerActions[state].toString() : "action "+suggestedMinimizerActions[state])+
-                            " but "+bestChoice+" would yield value "+bestChoiceValue+" according to the DTMC." +
-                            " Thus, the topological heuristic failed. Try another solution method..");
+
+            if (isMaximizerState) {
+                for (int suggestedAction : suggestedMaximizerActions[state]) {
+                    if (!argMaxChoices.contains(suggestedAction)) {
+                        throw new PrismException("State "+state+" was suspected to get value "+bestChoiceValue+" by playing "+
+                                (isMaximizerState ? "an action from set "+suggestedMaximizerActions[state].toString() : "action "+suggestedMinimizerActions[state])+
+                                " but "+suggestedAction+" would only yield value "+choiceValues.get(suggestedAction)+", which is not optimal." +
+                                " Thus, the TOP heuristic failed. Try another solution method..");
+                    }
                 }
             }
         }

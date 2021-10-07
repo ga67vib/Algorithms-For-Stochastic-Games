@@ -10,6 +10,7 @@ import java.util.*;
 
 public class DTMCNonIterativeSolutionMethods {
 
+    public static long inverseCalcTime = 0;
     /**
      * Returns the Matrix of leaving probabilities of states, where entry ij is the probability that
      * state i will take exit j.
@@ -124,7 +125,10 @@ public class DTMCNonIterativeSolutionMethods {
         */
 
         Matrix M = Matrix.identity(Ashort.getRowDimension(), Ashort.getColumnDimension()).minus(Ashort);
+        long t1 = System.currentTimeMillis();
         Matrix MInverse=M.inverse();
+        long t2 = System.currentTimeMillis();
+        inverseCalcTime += (t2-t1);
         MInverse=extendMatrix(MInverse, delete);
 
 
