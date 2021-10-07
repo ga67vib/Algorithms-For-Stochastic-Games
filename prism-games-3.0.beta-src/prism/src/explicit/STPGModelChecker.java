@@ -1519,14 +1519,15 @@ public class STPGModelChecker extends ProbModelChecker
       }
     }
 
-    // BitSet stableAttractor= new BitSet();
+
     boolean noupdate=false;
     // removing states that have action which may lead to outside the attractor
+    //TODO: improve naming and documentation of the code; does not make sense by looking at it
     while(!noupdate) {
       noupdate = true;
       for (int s = attractor.nextSetBit(0); s >= 0; s = attractor.nextSetBit(s + 1)) {
         if (s == bestExitState) {
-          break;
+          continue;
         } else {
           if (stpg.getPlayer(s) == 1 || maxPlayer == 3) {
             //all successor states for atleast one action for the max in attractor
@@ -1539,7 +1540,8 @@ public class STPGModelChecker extends ProbModelChecker
               }
             }
             if (!stayPossible) {
-              attractor.andNot(new BitSet(s));
+              //attractor.andNot(new BitSet(s));
+              attractor.clear(s);
               noupdate = false;
               break;
             }
@@ -1547,7 +1549,8 @@ public class STPGModelChecker extends ProbModelChecker
             for (int i = 0; i < stpg.getNumChoices(s); i++) {
               boolean all = stpg.allSuccessorsInSet(s, i, attractor);
               if (!all) {
-                attractor.andNot(new BitSet(s));
+                // attractor.andNot(new BitSet(s));
+                attractor.clear(s);
                 noupdate = false;
                 break;
               }
