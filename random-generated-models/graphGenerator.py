@@ -10,16 +10,20 @@ class GeneratedGraph:
         """
         Generates a Graph
 
-            Parameters:
-                num_states: how many states should there be?
+        Respects parameters:
+            num_states
+            force_unknown
+            denominator_range
+            probability_to_branch
+            probability_for_backwards_actions
+            minimum_outgoing_edges
 
-                minimum_incoming_edges: how many actions should at least lead into this state
+        Respects roughly:
+            minimum_incoming_edges: how many actions should at least lead into this state
+            maximum_incoming_edges: how many actions should atmost leat into this state
 
-                maximum_incoming_edges: how many actions should atmost leat into this state
-
-                    NOTE: The actual incoming edges may violate these parameters sometimes. 
-                        Every state except for the initial state has always at least one action leading into it
-
+                NOTE: The actual incoming edges may violate these parameters sometimes. 
+                    Every state except for the initial state has always at least one action leading into it
         """
 
         self._initVars(params)
@@ -101,6 +105,8 @@ class GeneratedGraph:
 
             # Cannot have more actions leading into a state than overall available states
             num_incoming_actions = random.randint(min(state, self.params.minimum_incoming_edges), min(state, self.params.maximum_incoming_edges))
+            if num_incoming_actions > 0:
+                num_incoming_actions = random.randint(1, num_incoming_actions)
             already_included_states = []
             for _ in range(num_incoming_actions):
                 outgoing_state = choice_targets_permutation.next(state, exclude = already_included_states)

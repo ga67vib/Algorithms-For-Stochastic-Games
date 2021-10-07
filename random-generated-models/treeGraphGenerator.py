@@ -9,6 +9,8 @@ class TreeGraphGenerator(graphGenerator.GeneratedGraph):
         probability_for_backwards_actions
         minimum_outgoing_edges
         num_states
+        force_unknown
+        denominator_range
 
     Respects roughly:
         probability_for_backwards_action: These probabilities only apply to leaf nodes
@@ -36,7 +38,7 @@ class TreeGraphGenerator(graphGenerator.GeneratedGraph):
         self._computeMaxActionsPerPlayer()
 
     def _generateChoices(self):
-        choices_per_state = self.params.minimum_outgoing_edges
+        choices_per_state = random.randint(1, self.params.minimum_outgoing_edges)
         for state in range(self.params.num_states):
             leftest_child = state*choices_per_state+1
 
