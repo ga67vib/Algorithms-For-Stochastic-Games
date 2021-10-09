@@ -1476,7 +1476,7 @@ public class STPGModelChecker extends ProbModelChecker
 
 
 
-  private BitSet computePositiveAttractor(STPGExplicit stpg, BitSet attractorSet, BitSet sec, int maxPlayer) {
+  private BitSet computePositiveMaxAttractor(STPGExplicit stpg, BitSet attractorSet, BitSet sec, int maxPlayer) {
     BitSet attractor = (BitSet) attractorSet.clone();
     BitSet attractor2 =  new BitSet();
     boolean done = false;
@@ -1495,16 +1495,27 @@ public class STPGModelChecker extends ProbModelChecker
             }
           }
         } else {
-          // all successor states of all actions for the min must be in attractor
-          boolean exitExist = false;
-          for (int i = 0; i < stpg.getNumChoices(s); i++) {
-            boolean all = stpg.allSuccessorsInSet(s, i, attractor);
-            if (!all) {
-              exitExist = true;
+//          // all successor states of all actions for the min must be in attractor
+//          boolean exitExist = false;
+//          for (int i = 0; i < stpg.getNumChoices(s); i++) {
+//            boolean all = stpg.allSuccessorsInSet(s, i, attractor);
+//            if (!all) {
+//              exitExist = true;
+//              break;
+//            }
+//          }
+//          if(!exitExist) attractor.set(s);
+
+          // for some successor states  of all action for min must be in attractor
+          boolean positiveStayPossible = true;
+          for(int i = 0; i < stpg.getNumChoices(s); i++){
+            boolean some = stpg.someSuccessorsInSet(s,i,attractor);
+            if(!some){
+              positiveStayPossible = false;
               break;
             }
           }
-          if(!exitExist) attractor.set(s);
+          if(positiveStayPossible) attractor.set(s);
         }
       }
 
@@ -1518,7 +1529,7 @@ public class STPGModelChecker extends ProbModelChecker
     return attractor;
   }
 
-  private BitSet computePositiveComplementAttractor(STPGExplicit stpg, BitSet attractorSet, BitSet sec, int maxPlayer) {
+  private BitSet computePositiveMinAttractor(STPGExplicit stpg, BitSet attractorSet, BitSet sec, int maxPlayer) {
     BitSet attractor = (BitSet) attractorSet.clone();
     BitSet attractor2 =  new BitSet();
     boolean done = false;
@@ -1527,19 +1538,29 @@ public class STPGModelChecker extends ProbModelChecker
       newSec.andNot(attractor); //SEC object is not used as SEC after this anymore, so we can use it to store workset of attractor algorithm
       for (int s = newSec.nextSetBit(0); s >= 0; s = newSec.nextSetBit(s + 1)) {
         if (stpg.getPlayer(s) == 1 || maxPlayer == 3) {
-          // all successor states of all the action for the max must be in attractor
-          boolean sureExitExist = false;
-          BitSet complementAttractor= (BitSet) sec.clone();
-          BitSet cloneAttractor= (BitSet) attractor.clone();
-          complementAttractor.andNot(cloneAttractor);
-          for (int i = 0; i < stpg.getNumChoices(s); i++) {
-            boolean all = stpg.allSuccessorsInSet(s, i, complementAttractor);
-            if (all) {
-              sureExitExist = true;
+//          // all successor states of all the action for the max must be in attractor
+//          boolean sureExitExist = false;
+//          BitSet complementAttractor= (BitSet) sec.clone();
+//          BitSet cloneAttractor= (BitSet) attractor.clone();
+//          complementAttractor.andNot(cloneAttractor);
+//          for (int i = 0; i < stpg.getNumChoices(s); i++) {
+//            boolean all = stpg.allSuccessorsInSet(s, i, complementAttractor);
+//            if (all) {
+//              sureExitExist = true;
+//              break;
+//            }
+//          }
+//          if(!sureExitExist) attractor.set(s);
+          // for some successor states  of all action for min must be in attractor
+          boolean positiveStayPossible = true;
+          for(int i = 0; i < stpg.getNumChoices(s); i++){
+            boolean some = stpg.someSuccessorsInSet(s,i,attractor);
+            if(!some){
+              positiveStayPossible = false;
               break;
             }
           }
-          if(!sureExitExist) attractor.set(s);
+          if(positiveStayPossible) attractor.set(s);
         } else {
           //some successor states for atleast one action for the min in attractor
           for (int i = 0; i < stpg.getNumChoices(s); i++) {
@@ -1567,12 +1588,12 @@ public class STPGModelChecker extends ProbModelChecker
   private BitSet computeAlmostSureAttractor(STPGExplicit stpg, int bestExitState, BitSet sec, int maxPlayer) {
     BitSet attractorSet= new BitSet();
     attractorSet.set(bestExitState);
-    BitSet y = computePositiveAttractor(stpg, attractorSet, sec, maxPlayer);
+    BitSet y = computePositiveMaxAttractor(stpg, attractorSet, sec, maxPlayer);
 
     BitSet complementY = (BitSet) sec.clone();
     complementY.andNot(y);
 
-    BitSet chanceAttractor = computePositiveComplementAttractor(stpg, complementY, sec, maxPlayer);
+    BitSet chanceAttractor = computePositiveMinAttractor(stpg, complementY, sec, maxPlayer);
     BitSet almostSureAttractor = (BitSet) sec.clone();
     almostSureAttractor.andNot(chanceAttractor);
     almostSureAttractor.set(bestExitState);
