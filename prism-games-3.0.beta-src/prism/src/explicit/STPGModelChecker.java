@@ -1408,7 +1408,8 @@ public class STPGModelChecker extends ProbModelChecker
 
       // compute the attractor set for the best exit
       //BitSet attractor = computeAttractor(stpg, bestExitState, sec, maxPlayer);
-      BitSet attractor = computeWeakAttractor(stpg, bestExitState, sec, maxPlayer);
+      //BitSet attractor = computeWeakAttractor(stpg, bestExitState, sec, maxPlayer);
+      BitSet attractor = computeAlmostSureAttractor(stpg, bestExitState, sec, maxPlayer);
 
 //      //deflate every state in the attractor
 //      for (int s = sec.nextSetBit(0); s >= 0; s = sec.nextSetBit(s+1)) {
@@ -1475,18 +1476,14 @@ public class STPGModelChecker extends ProbModelChecker
 
 
 
-
-  private BitSet computeWeakAttractor(STPGExplicit stpg, int bestExitState, BitSet sec, int maxPlayer) {
-
-    BitSet attractor = new BitSet();
+  private BitSet computePositiveAttractor(STPGExplicit stpg, BitSet attractorSet, BitSet sec, int maxPlayer) {
+    BitSet attractor = (BitSet) attractorSet.clone();
     BitSet attractor2 =  new BitSet();
-
-    //HashSet impliatonSet = new HashSet(new Pair<new BitSet(), new BitSet()>);
-    attractor.set(bestExitState);
     boolean done = false;
+    BitSet newSec = (BitSet) sec.clone();
     while(!done) {
-      sec.andNot(attractor); //SEC object is not used as SEC after this anymore, so we can use it to store workset of attractor algorithm
-      for (int s = sec.nextSetBit(0); s >= 0; s = sec.nextSetBit(s + 1)) {
+      newSec.andNot(attractor); //SEC object is not used as SEC after this anymore, so we can use it to store workset of attractor algorithm
+      for (int s = newSec.nextSetBit(0); s >= 0; s = newSec.nextSetBit(s + 1)) {
         if (stpg.getPlayer(s) == 1 || maxPlayer == 3) {
           //some successor states for atleast one action for the max in attractor
           for (int i = 0; i < stpg.getNumChoices(s); i++) {
@@ -1518,10 +1515,130 @@ public class STPGModelChecker extends ProbModelChecker
         attractor2 = (BitSet) attractor.clone();
       }
     }
+    return attractor;
+  }
+
+  private BitSet computePositiveComplementAttractor(STPGExplicit stpg, BitSet attractorSet, BitSet sec, int maxPlayer) {
+    BitSet attractor = (BitSet) attractorSet.clone();
+    BitSet attractor2 =  new BitSet();
+    boolean done = false;
+    BitSet newSec = (BitSet) sec.clone();
+    while(!done) {
+      newSec.andNot(attractor); //SEC object is not used as SEC after this anymore, so we can use it to store workset of attractor algorithm
+      for (int s = newSec.nextSetBit(0); s >= 0; s = newSec.nextSetBit(s + 1)) {
+        if (stpg.getPlayer(s) == 1 || maxPlayer == 3) {
+          // all successor states of all the action for the max must be in attractor
+          boolean sureExitExist = false;
+          BitSet complementAttractor= (BitSet) sec.clone();
+          BitSet cloneAttractor= (BitSet) attractor.clone();
+          complementAttractor.andNot(cloneAttractor);
+          for (int i = 0; i < stpg.getNumChoices(s); i++) {
+            boolean all = stpg.allSuccessorsInSet(s, i, complementAttractor);
+            if (all) {
+              sureExitExist = true;
+              break;
+            }
+          }
+          if(!sureExitExist) attractor.set(s);
+        } else {
+          //some successor states for atleast one action for the min in attractor
+          for (int i = 0; i < stpg.getNumChoices(s); i++) {
+            //boolean all = stpg.allSuccessorsInSet(s, i, attractor);
+            boolean some = stpg.someSuccessorsInSet(s, i, attractor);
+            if (some) {
+              attractor.set(s);
+              break;
+            }
+          }
+        }
+      }
+
+
+      if (attractor.equals(attractor2)) {
+        done = true;
+      } else {
+        attractor2 = (BitSet) attractor.clone();
+      }
+    }
+    return attractor;
+  }
+
+
+  private BitSet computeAlmostSureAttractor(STPGExplicit stpg, int bestExitState, BitSet sec, int maxPlayer) {
+    BitSet attractorSet= new BitSet();
+    attractorSet.set(bestExitState);
+    BitSet y = computePositiveAttractor(stpg, attractorSet, sec, maxPlayer);
+
+    BitSet complementY = (BitSet) sec.clone();
+    complementY.andNot(y);
+
+    BitSet chanceAttractor = computePositiveComplementAttractor(stpg, complementY, sec, maxPlayer);
+    BitSet almostSureAttractor = (BitSet) sec.clone();
+    almostSureAttractor.andNot(chanceAttractor);
+    almostSureAttractor.set(bestExitState);
+    return almostSureAttractor;
+  }
+
+
+
+  private BitSet computeWeakAttractor(STPGExplicit stpg, int bestExitState, BitSet sec, int maxPlayer) {
+
+    BitSet attractor = new BitSet();
+    BitSet attractor2 =  new BitSet();
+
+    //BitSet implicationSet = new BitSet();
+    // the implication set needs to contain only the states which have probabilistic actions
+    BitSet statesWithProbActions = new BitSet();
+    HashSet<Pair<Integer, Set<Integer>>> implicationSet = new HashSet<>();
+    attractor.set(bestExitState);
+    boolean done = false;
+    while(!done) {
+      sec.andNot(attractor); //SEC object is not used as SEC after this anymore, so we can use it to store work set of attractor algorithm
+      for (int s = sec.nextSetBit(0); s >= 0; s = sec.nextSetBit(s + 1)) {
+        Set<Integer> stateActionsWithChanceNodes = new HashSet<>();
+        if (stpg.getPlayer(s) == 1 || maxPlayer == 3) {
+          //some successor states for atleast one action for the max in attractor
+          for (int i = 0; i < stpg.getNumChoices(s); i++) {
+            // int countSuccessors = (int) stpg.getSuccessors(s,i).stream().count();
+            Distribution d = stpg.getChoice(s,i);
+            int countSuccessors = d.size();
+            boolean all = stpg.allSuccessorsInSet(s, i, attractor);
+            boolean some = stpg.someSuccessorsInSet(s, i, attractor);
+            if (some) {
+              if(!all && countSuccessors>1){
+                statesWithProbActions.set(s);
+                Pair<Integer, Set<Integer>> pair = new Pair<>(s, stateActionsWithChanceNodes);
+                implicationSet.add(pair);
+              }
+              attractor.set(s);
+              //break;
+            }
+          }
+        } else {
+          // all successor states of all actions for the min must be in attractor
+          boolean exitExist = false;
+          for (int i = 0; i < stpg.getNumChoices(s); i++) {
+            boolean all = stpg.allSuccessorsInSet(s, i, attractor);
+            if (!all) {
+              exitExist = true;
+              break;
+            }
+          }
+          if(!exitExist) attractor.set(s);
+        }
+      }
+
+
+      if (attractor.equals(attractor2)) {
+        done = true;
+      } else {
+        attractor2 = (BitSet) attractor.clone();
+      }
+    }
 
 
     boolean noupdate=false;
-    // removing states that have action which may lead to outside the attractor
+    // removing states that have action which may lead outside of the attractor
     //TODO: improve naming and documentation of the code; does not make sense by looking at it
     while(!noupdate) {
       noupdate = true;
@@ -1556,6 +1673,40 @@ public class STPGModelChecker extends ProbModelChecker
               }
             }
           }
+        }
+      }
+    }
+
+
+
+
+
+    // computing the Sure Attrator
+    noupdate=false;
+    BitSet SureAttractor = new BitSet();
+    SureAttractor.set(bestExitState);
+    attractor.clear(bestExitState);
+    while(!noupdate) {
+      for (int s = attractor.nextSetBit(0); s >= 0; s = attractor.nextSetBit(s + 1)) {
+        if (stpg.getPlayer(s) == 1 || maxPlayer == 3) {
+          //all successor atleast one state and one action for the max in Sure Attractor
+          boolean stayPossible = false;
+          for (int i = 0; i < stpg.getNumChoices(s); i++) {
+            boolean all = stpg.allSuccessorsInSet(s, i, attractor);
+            if (all) {
+              stayPossible = true;
+              break;
+            }
+          }
+          if (!stayPossible) {
+            //attractor.andNot(new BitSet(s));
+            attractor.clear(s);
+            noupdate = false;
+            break;
+          }
+        }
+        else{
+
         }
       }
     }
