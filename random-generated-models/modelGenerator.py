@@ -88,8 +88,8 @@ def main():
         graph = graph_model
         generation_parameters = GraphGenerationParameters(
                 num_states,
-                minimum_incoming_edges=1,
-                maximum_incoming_edges=3,
+                minimum_incoming_edges=num_min_actions,
+                maximum_incoming_edges=num_min_actions + 2,
                 probability_to_branch=branching_probability,
                 probability_for_backwards_action=backwards_probability,
                 probability_to_be_maximizer_state=0.5,
