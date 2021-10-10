@@ -1394,7 +1394,7 @@ public class STPGModelChecker extends ProbModelChecker
       // Get best Maximizer exit from SEC
       BitSet sec = SECs.get(j);
       int maxPlayer = min1 ? (min2 ? -1 : 2) : (min2 ? 1 : 3);
-      int[] bestExitStateAndAction = getBestExitDeflate(sec, stpg, stepBoundReach, stepBoundStay, maxPlayer, upperbound);
+      int[] bestExitStateAndAction = getBestExitDeflate(sec, stpg, stepBoundReach, stepBoundStay, maxPlayer, upperbound, lowerbound);
       int bestExitState = bestExitStateAndAction[0];
       int bestExitAction = bestExitStateAndAction[1];
 
@@ -1468,7 +1468,7 @@ public class STPGModelChecker extends ProbModelChecker
     boolean done = false;
     BitSet newSec = (BitSet) sec.clone();
     while(!done) {
-      newSec.andNot(attractor); //SEC object is not used as SEC after this anymore, so we can use it to store workset of attractor algorithm
+      newSec.andNot(attractor);
       for (int s = newSec.nextSetBit(0); s >= 0; s = newSec.nextSetBit(s + 1)) {
         if (stpg.getPlayer(s) == 1 || maxPlayer == 3) {
           //some successor states for atleast one action for the max in attractor
@@ -1636,7 +1636,7 @@ public class STPGModelChecker extends ProbModelChecker
    * @param upperbound
    * @return
    */
-  private static int[] getBestExitDeflate(BitSet sec, STPGExplicit stpg, double[] stepBoundReach, double[] stepBoundStay, int maxPlayer, double upperbound){
+  private static int[] getBestExitDeflate(BitSet sec, STPGExplicit stpg, double[] stepBoundReach, double[] stepBoundStay, int maxPlayer, double upperbound, double lowerbound){
     double bestValSoFar = 0;
     int bestAction = -1;
     int exitState = -1;
@@ -1649,7 +1649,8 @@ public class STPGModelChecker extends ProbModelChecker
             if (!all) {
               double val = 0;
               for (int succ : stpg.getChoice(s, i).keySet()) {
-                val += stepBoundReach[succ] + stepBoundStay[succ] * upperbound;
+                //val += stepBoundReach[succ] + stepBoundStay[succ] * upperbound;
+                val += stepBoundReach[succ] + stepBoundStay[succ] * lowerbound;
               }
               if (val > bestValSoFar) {
                 bestValSoFar = val;
