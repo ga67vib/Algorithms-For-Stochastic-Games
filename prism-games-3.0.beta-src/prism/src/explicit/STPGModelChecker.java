@@ -1649,10 +1649,9 @@ public class STPGModelChecker extends ProbModelChecker
             if (!all) {
               double val = 0;
               for (int succ : stpg.getChoice(s, i).keySet()) {
-                //val += stepBoundReach[succ] + stepBoundStay[succ] * upperbound;
-                val += stepBoundReach[succ] + stepBoundStay[succ] * lowerbound;
+                val += stepBoundReach[succ] + stepBoundStay[succ] * upperbound;
               }
-              if (val > bestValSoFar) {
+              if (val >= bestValSoFar) {
                 bestValSoFar = val;
                 bestAction = i;
                 exitState = s;
