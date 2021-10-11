@@ -882,9 +882,11 @@ public class STPGModelChecker extends ProbModelChecker
 					int state = sccs.getStatesForSCC(scc).iterator().nextInt();
 					// finish doing that state in all vectors
 					lowerBounds[state] = stpg.mvMultJacMinMaxSingle(state, lowerBounds, min1, min2);
-					upperBounds[state] = stpg.mvMultJacMinMaxSingle(state, upperBounds, min1, min2);
 					lowerBounds2[state] = stpg.mvMultJacMinMaxSingle(state, lowerBounds2, min1, min2);
-					upperBounds2[state] = stpg.mvMultJacMinMaxSingle(state, upperBounds2, min1, min2);
+					if (upperBounds != null) {
+						upperBounds[state] = stpg.mvMultJacMinMaxSingle(state, upperBounds, min1, min2);
+						upperBounds2[state] = stpg.mvMultJacMinMaxSingle(state, upperBounds2, min1, min2);
+					}
 
 					BitSet statesForSCC = new BitSet();
 					statesForSCC.set(state);
@@ -905,8 +907,10 @@ public class STPGModelChecker extends ProbModelChecker
 						// Fix value of states
 						lowerBounds[state] = values[state];
 						lowerBounds2[state] = values[state];
-						upperBounds[state] = values[state];
-						upperBounds2[state] = values[state];
+						if (upperBounds != null && upperBounds2 != null) {
+							upperBounds[state] = values[state];
+							upperBounds2[state] = values[state];
+						}
 					}
 
 					iters++;
@@ -944,8 +948,10 @@ public class STPGModelChecker extends ProbModelChecker
 						for (int state = statesForSCC.nextSetBit(0); state >= 0; state = statesForSCC.nextSetBit(state + 1)) {
 							lowerBounds[state] = values[state];
 							lowerBounds2[state] = values[state];
-							upperBounds[state] = values[state];
-							upperBounds2[state] = values[state];
+							if (upperBounds != null && upperBounds2 != null) {
+								upperBounds[state] = values[state];
+								upperBounds2[state] = values[state];
+							}
 						}
 					}
 
@@ -971,6 +977,15 @@ public class STPGModelChecker extends ProbModelChecker
 		if (verbosity >= 1) {
 			mainLog.print("Value iteration variant "+ variant + "(" + (min1 ? "min" : "max") + (min2 ? "min" : "max") + ")");
 			mainLog.println(" took " + iters + " iterations and " + timer / 1000.0 + " seconds.");
+			if (doTopologicalValueIteration) {
+				mainLog.println("--TOP Stats--");
+				mainLog.println("Get Suggested Actions: "+STPGValueIterationUtils.getAllowedActionsTime);
+				mainLog.println("Build DTMC: "+STPGValueIterationUtils.dtmcBuildingTime);
+				mainLog.println("Solve DTMC: "+STPGValueIterationUtils.dtmcSolvingTime);
+				mainLog.println("Inverse Calc Time: "+STPGValueIterationUtils.inverseCalcTime);
+				mainLog.println("Verify Value: "+STPGValueIterationUtils.verificationTime);
+				mainLog.println("Assign SCC Result : "+STPGValueIterationUtils.assignmentTime);
+			}
 		}
 
 		// Non-convergence is an error (usually)
