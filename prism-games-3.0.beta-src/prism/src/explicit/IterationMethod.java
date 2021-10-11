@@ -817,7 +817,7 @@ public abstract class IterationMethod {
 	{
 		while (states.hasNext()) {
 			int s = states.nextInt();
-			if (lower[s] > upper[s]) {
+			if (upper != null && lower[s] > upper[s]) {
 				throw new PrismException("In interval iteration, the lower value (" + lower[s] + ") is larger than the upper value (" + upper[s] + ").\n"
 						+ "This indicates either problems with numerical stability (rounding, precision of the floating-point representation) or that the initial bounds (for reward computations) are incorrect");
 			}
