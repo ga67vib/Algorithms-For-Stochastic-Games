@@ -1382,35 +1382,28 @@ public class STPGModelChecker extends ProbModelChecker
     for(int s=0; s < stpg.numStates; s++){
           currentValReachAndStay[s] = stepBoundReach[s] + stepBoundStay[s] * lowerbound;
     }
-    // Find all SECs in given MEC
+    // Find all MSECs in given MEC
     List<BitSet> SECs = ec.getSECs(mec,currentValReachAndStay,min1,min2);
     for (int j = 0; j < SECs.size(); j++) {
       // Get best Maximizer exit from SEC
       BitSet sec = SECs.get(j);
+      BitSet subset = (BitSet) sec.clone();
       int maxPlayer = min1 ? (min2 ? -1 : 2) : (min2 ? 1 : 3);
       int[] bestExitStateAndAction = getBestExitDeflate(sec, stpg, stepBoundReach, stepBoundStay, maxPlayer, upperbound, lowerbound);
       int bestExitState = bestExitStateAndAction[0];
       int bestExitAction = bestExitStateAndAction[1];
-
-
-      double reachVal = 0, stayVal = 0;
-      Distribution succ_dist = stpg.getChoice(bestExitState, bestExitAction);
-      for (int succ : succ_dist.keySet()) {
-        reachVal += succ_dist.get(succ) * stepBoundReach[succ];
-        stayVal += succ_dist.get(succ) * stepBoundStay[succ];
-      }
+      double reachVal = stpg.mvMultSingle(bestExitState, bestExitAction, stepBoundReach);
+      double stayVal = stpg.mvMultSingle(bestExitState, bestExitAction, stepBoundStay);
 
       // compute the attractor set for the best exit
       BitSet attractor = computeAlmostSureAttractor(stpg, bestExitState, sec, maxPlayer);
-
-
       //deflate every state in the attractor
       for (int s = attractor.nextSetBit(0); s >= 0; s = attractor.nextSetBit(s+1)) {
         stepBoundReach[s] = Math.max(stepBoundReach[s], reachVal);
         stepBoundStay[s] = Math.min(stepBoundStay[s], stayVal);
       }
-
     }
+
     return new double[][]{stepBoundStay,stepBoundReach};
   }
 
@@ -1641,18 +1634,22 @@ public class STPGModelChecker extends ProbModelChecker
         for (int i = 0; i < stpg.getNumChoices(s); i++) {
             boolean all = stpg.allSuccessorsInSet(s, i, sec);
             if (!all) {
-              double val = 0;
-              for (int succ : stpg.getChoice(s, i).keySet()) {
-                val += stepBoundReach[succ] + stepBoundStay[succ] * upperbound;
-              }
+//              double val = 0;
+//              for (int succ : stpg.getChoice(s, i).keySet()) {
+//                val += stepBoundReach[succ] + stepBoundStay[succ] * upperbound;
+//              }
+              double val = stpg.mvMultSingle(s, i, stepBoundStay);
               if (val >= bestValSoFar) {
                 bestValSoFar = val;
                 bestAction = i;
                 exitState = s;
+
               }
             }
         }
+
       }
+      if(bestValSoFar==1.0) break;
       //TODO: We might want to deflate minimizer stuff to 0. Should be handled by prob0 though.
     }
     return new int[]{exitState, bestAction};
