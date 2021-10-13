@@ -1001,16 +1001,15 @@ public class STPGModelChecker extends ProbModelChecker
 		res.numIters = iters;
 		res.timeTaken = timer / 1000.0;
 
-		this.generateStrategy = true;
 		if (generateStrategy) {
 			BitSet allStates = new BitSet();
 			allStates.set(0, stpg.getNumStates()-1);
 			int[][] startegyComputationResult = STPGValueIterationUtils.computeStrategyFromBounds(stpg, yes, lowerBounds, lowerBounds, this.termCritParam, allStates, null, null);
 			int[] sigma = startegyComputationResult[0];
 			int[] tau = startegyComputationResult[1];
-			for (int state = 0; state < stpg.getNumStates(); state++) {
+			/*for (int state = 0; state < stpg.getNumStates(); state++) {
 				mainLog.println("State "+state+" choice: "+((stpg.getPlayer(state) == 1) ? sigma[state] : tau[state]));
-			}
+			}*/
 		}
 
 		// Print adversary
