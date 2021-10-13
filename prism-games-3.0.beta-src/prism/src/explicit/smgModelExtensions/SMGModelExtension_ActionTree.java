@@ -111,7 +111,7 @@ public class SMGModelExtension_ActionTree extends SMGModelExtension{
                     }
                     if (probabilityToReachSink < 1) {
                         double probToShare = 1.0 - probabilityToReachSink - probabilityToReachComponentsInitialState;
-                        double probToSelf = probToShare - (1.0 * actionCounter / (this.treeBranchingFactor+1));
+                        double probToSelf = (probToShare / (this.treeBranchingFactor+1));
                         double probToNext = probToShare - probToSelf;
                         if (probabilityToReachComponentsInitialState > 0) transitionDistribution.add(currentInitialState, probabilityToReachComponentsInitialState);
                         transitionDistribution.add(trueNextState, (probToNext));
