@@ -1001,36 +1001,16 @@ public class STPGModelChecker extends ProbModelChecker
 		res.numIters = iters;
 		res.timeTaken = timer / 1000.0;
 
+		this.generateStrategy = true;
 		if (generateStrategy) {
-			/* Old version, has some bugs
-			 * doesn't work for:
-			 * this.generateStrategy = true
-			 * on mdsm model
-			 */
-//			res.strat = new MemorylessDeterministicStrategy(adv);
-			/*
-			 * New version
-			 * We recompute adv[]
-			 */
-			for(s = 0; s < n; s++){
-				for(int c = 0; c < stpg.getNumChoices(s); c++){
-					Iterator<Entry<Integer, Double>> iter = stpg.getTransitionsIterator(s, c);
-					double currentChoiceValue = 0;
-					while(iter.hasNext()){
-						Entry<Integer, Double> ent = iter.next();
-						currentChoiceValue += lowerBounds[ent.getKey()] * ent.getValue();
-					}
-					if((stpg.getPlayer(s) == 1 && min1 || stpg.getPlayer(s) == 2 && min2)
-							&& currentChoiceValue <= lowerBounds[s]){
-						adv[s] = c;
-					}
-					else if((stpg.getPlayer(s) == 1 && !min1 || stpg.getPlayer(s) == 2 && !min2)
-							&& currentChoiceValue >= lowerBounds[s]){
-						adv[s] = c;
-					}
-				}
+			BitSet allStates = new BitSet();
+			allStates.set(0, stpg.getNumStates()-1);
+			int[][] startegyComputationResult = STPGValueIterationUtils.computeStrategyFromBounds(stpg, yes, lowerBounds, lowerBounds, this.termCritParam, allStates, null, null);
+			int[] sigma = startegyComputationResult[0];
+			int[] tau = startegyComputationResult[1];
+			for (int state = 0; state < stpg.getNumStates(); state++) {
+				mainLog.println("State "+state+" choice: "+((stpg.getPlayer(state) == 1) ? sigma[state] : tau[state]));
 			}
-			res.strat = new MemorylessDeterministicStrategy(adv);
 		}
 
 		// Print adversary
@@ -2034,7 +2014,7 @@ public class STPGModelChecker extends ProbModelChecker
 		}
 
 		// Doing a few rounds of value iteration to find a good initial strategy
-		if(this.solnMethodOptions % 2 == 1) {
+		if(this.solnMethodOptions % 2 == 1 && this.solnMethodOptions != 9 && this.solnMethodOptions != 13) {
 			double oldTermCritParam = getTermCritParam();
 			int oldMaxIters = getMaxIters();
 			boolean oldGenerateStrategy = getGenStrat();
@@ -2211,7 +2191,7 @@ public class STPGModelChecker extends ProbModelChecker
 					int bestChoice = -1;
 					for (int a = 0; a < stpg.getNumChoices(m2g.get(s)); a++) {
 						double expectedReturn = getValueGameTransInMDP(m2g.get(s),stpg.getTransitionsIterator(m2g.get(s), a),subset, known, knownValues, counter.soln, g2m);
-						if ((expectedReturn > bestValue && !min1) || (expectedReturn < bestValue && min1)) {
+						if (((expectedReturn > bestValue && !min1) || (expectedReturn < bestValue && min1))) {
 							bestChoice = a;
 							bestValue = expectedReturn;
 						}
@@ -2220,7 +2200,8 @@ public class STPGModelChecker extends ProbModelChecker
 					double sigmaReturn = getValueGameTransInMDP(m2g.get(s),stpg.getTransitionsIterator(m2g.get(s), sigma[s]),subset, known, knownValues, counter.soln, g2m);
 
 					// Change if we are better than with sigma
-					if (bestValue - sigmaReturn > 0) {
+					// We cannot simply check if bestValue - sigmaReturn > 0 since they may have a difference of 0.0000000000000001 (floating point stuff)
+					if (!PrismUtils.doublesAreClose (sigmaReturn, bestValue, termCritParam/1000, termCrit == TermCrit.ABSOLUTE)) {
 						sigma[s] = bestChoice;
 						knownValues[m2g.get(s)] = bestValue;
 						changeOccured = true;
