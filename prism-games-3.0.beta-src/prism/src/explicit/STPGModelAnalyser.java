@@ -37,28 +37,63 @@ public class STPGModelAnalyser {
 
         int maxChoices=0;
         int maxTransitions=0;
+        float avgTransitions=0;
         int choiceNum;
         double minTrans=1.0;
         int numChoicesWithBranches = 0;
+        int maximizerStates = 0;
+        int minimizerStates = 0;
+        int backwardsTransitions = 0;
+
+        int[] incomingTransitions = new int[stpg.getNumStates()];
+
         for (int state=0; state<stpg.getNumStates(); state++) {
             choiceNum=stpg.getNumChoices(state);
+            if (stpg.getPlayer(state) == 1) {
+                maximizerStates++;
+            }
+            else {
+                minimizerStates++;
+            }
+
             if (choiceNum>maxChoices) maxChoices=choiceNum;
             for (int choice=0; choice<choiceNum; choice++) {
+                avgTransitions+=stpg.getNumTransitions(state, choice);
                 if (stpg.getNumTransitions(state, choice) > 1) numChoicesWithBranches++;
                 if (stpg.getNumTransitions(state,choice)>maxTransitions) maxTransitions=stpg.getNumTransitions(state,choice);
                 for (Iterator<Map.Entry<Integer, Double>> it = stpg.getTransitionsIterator(state, choice); it.hasNext(); ) {
                     Map.Entry<Integer, Double> tr = it.next();
+                    if (tr.getKey() < state) {
+                        backwardsTransitions++;
+                    }
+
                     if (minTrans > tr.getValue()) {
                         minTrans = tr.getValue();
                     }
+                    incomingTransitions[tr.getKey()]++;
                 }
             }
         }
 
         log("Number of maximal choices per state: " + maxChoices);
         log("Number of maximal transitions per choice: " + maxTransitions);
+        log("Average Number of Choices per state: " + (float)stpg.getNumChoices() / (float)stpg.getNumStates());
+        log("Average Number of Transitions per state: " + avgTransitions/stpg.getNumStates());
+        log("Average Number of Transitions per choice: " + avgTransitions/stpg.getNumChoices());
         log("Smallest transition probability: " + minTrans);
         log("Number of Choices with probability: " + numChoicesWithBranches);
+        log("Number of Maximizer States: " + maximizerStates);
+        log("Number of Minimizer States: " + minimizerStates);
+        log("Percentage of Backwards Transitions: "+ (float) backwardsTransitions / (float) stpg.getNumTransitions());
+
+        float incomingTransitionAvg = 0;
+        for (int i = 0; i < incomingTransitions.length; i++) {
+            incomingTransitionAvg+=incomingTransitions[i];
+        }
+        incomingTransitionAvg/=stpg.getNumStates();
+        log("Average of Incoming Transitions: " + incomingTransitionAvg);
+
+
 
         try {
         List<BitSet> mecs = null;
@@ -91,7 +126,7 @@ public class STPGModelAnalyser {
                 mecSizeMedian = mecs.get(medianIndex).cardinality();
             }
             else {
-                mecSizeMedian = (mecs.get(medianIndex).cardinality() + mecs.get(medianIndex+1).cardinality())/2.0;
+                mecSizeMedian = (mecs.get(medianIndex-1).cardinality() + mecs.get(medianIndex).cardinality())/2.0;
             }
             log("Biggest MEC has size: " + maximalCardinalityMEC);
             log("Smallest MEC has size: " + minimalCardinalityMEC);
