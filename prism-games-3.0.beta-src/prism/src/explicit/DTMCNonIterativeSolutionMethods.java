@@ -20,11 +20,6 @@ public class DTMCNonIterativeSolutionMethods {
      */
     protected ModelCheckerResult solveMarkovChain(DTMC dtmc, BitSet targets, double[] upperbounds, double precision) {
 
-        if (upperbounds == null) {
-            upperbounds = new double[dtmc.getNumStates()];
-            Arrays.fill(upperbounds, 1.0);
-        }
-
         ModelCheckerResult result = new ModelCheckerResult();
         result.soln = new double[dtmc.getNumStates()];
         result.numIters = 0;

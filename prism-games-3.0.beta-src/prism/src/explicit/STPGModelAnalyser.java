@@ -126,7 +126,7 @@ public class STPGModelAnalyser {
                 mecSizeMedian = mecs.get(medianIndex).cardinality();
             }
             else {
-                mecSizeMedian = (mecs.get(medianIndex).cardinality() + mecs.get(medianIndex+1).cardinality())/2.0;
+                mecSizeMedian = (mecs.get(medianIndex-1).cardinality() + mecs.get(medianIndex).cardinality())/2.0;
             }
             log("Biggest MEC has size: " + maximalCardinalityMEC);
             log("Smallest MEC has size: " + minimalCardinalityMEC);
