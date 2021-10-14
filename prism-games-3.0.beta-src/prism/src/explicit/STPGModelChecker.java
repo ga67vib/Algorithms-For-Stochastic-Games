@@ -1065,7 +1065,7 @@ public class STPGModelChecker extends ProbModelChecker
 		while (!done) {
 			//System.out.println("Changed? "+java.util.Arrays.equals(lowerBoundsBackup, lowerBounds)+", "+java.util.Arrays.equals(upperBoundsBackup, upperBounds));
 			iters++;
-      System.out.println("iteration: " + iters);
+      //System.out.println("iteration: " + iters);
 			//Debug output:
 //			if(iters % 10000 == 0){
 //				mainLog.println(iters+"\t\t LB: " + lowerBounds[0] + " UB: " + (upperBounds!=null ? upperBounds[0] : "none"));
