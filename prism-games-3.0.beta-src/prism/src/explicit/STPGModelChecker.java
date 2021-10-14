@@ -1065,7 +1065,7 @@ public class STPGModelChecker extends ProbModelChecker
 		while (!done) {
 			//System.out.println("Changed? "+java.util.Arrays.equals(lowerBoundsBackup, lowerBounds)+", "+java.util.Arrays.equals(upperBoundsBackup, upperBounds));
 			iters++;
-      System.out.println("iteration: " + iters);
+//      System.out.println("iteration: " + iters);
 			//Debug output:
 //			if(iters % 10000 == 0){
 //				mainLog.println(iters+"\t\t LB: " + lowerBounds[0] + " UB: " + (upperBounds!=null ? upperBounds[0] : "none"));
@@ -1443,20 +1443,23 @@ public class STPGModelChecker extends ProbModelChecker
       double reachVal = stpg.mvMultSingle(bestExitState, bestExitAction, stepBoundReach);
       double stayVal = stpg.mvMultSingle(bestExitState, bestExitAction, stepBoundStay);
 
-      int numStates = stpg.numStates;
-      BitSet allStates = new BitSet();
-      for (int i = 0; i < numStates; i++) {
-        allStates.set(i);
-      }
+//      int numStates = stpg.numStates;
+//      BitSet allStates = new BitSet();
+//      for (int i = 0; i < numStates; i++) {
+//        allStates.set(i);
+//      }
       // compute the attractor set for the best exit
-      BitSet attractor = computeAlmostSureAttractor(stpg, bestExitState, subset, maxPlayer);
-
-      //deflate every state in the attractor
-      for (int s = attractor.nextSetBit(0); s >= 0; s = attractor.nextSetBit(s+1)) {
-        stepBoundReach[s] = Math.max(stepBoundReach[s], reachVal);
-        stepBoundStay[s] = Math.min(stepBoundStay[s], stayVal);
-      }
-      mecMinusAttractor.andNot(attractor);
+//      BitSet attractor = computeAlmostSureAttractor(stpg, bestExitState, subse0t, maxPlayer);
+//
+//      //deflate every state in the attractor
+//      for (int s = attractor.nextSetBit(0); s >= 0; s = attractor.nextSetBit(s+1)) {
+//        stepBoundReach[s] = Math.max(stepBoundReach[s], reachVal);
+//        stepBoundStay[s] = Math.min(stepBoundStay[s], stayVal);
+//      }
+//      mecMinusAttractor.andNot(attractor);
+      stepBoundReach[bestExitState] = Math.max(stepBoundReach[bestExitState], reachVal);
+      stepBoundStay[bestExitState] = Math.min(stepBoundStay[bestExitState], stayVal);
+      mecMinusAttractor.clear(bestExitState);
     }
 //    return new double[][]{stepBoundStay,stepBoundReach};
 
