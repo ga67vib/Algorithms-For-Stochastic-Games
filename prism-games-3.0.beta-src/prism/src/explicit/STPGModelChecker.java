@@ -914,7 +914,7 @@ public class STPGModelChecker extends ProbModelChecker
 					}
 
 					iters++;
-					IterationMethod.intervalIterationCheckForProblems(lowerBounds, upperBounds, IntSet.asIntSet(state).iterator());
+					if (variant == SolnMethod.INTERVAL_ITERATION) IterationMethod.intervalIterationCheckForProblems(lowerBounds, upperBounds, IntSet.asIntSet(state).iterator());
 
 					if (useTOP) haveAlreadyFixedValues.set(state);
 				} else {
@@ -954,8 +954,7 @@ public class STPGModelChecker extends ProbModelChecker
 							}
 						}
 					}
-
-					IterationMethod.intervalIterationCheckForProblems(lowerBounds, upperBounds, statesForSCCIntSet.iterator());
+					if (variant == SolnMethod.INTERVAL_ITERATION) IterationMethod.intervalIterationCheckForProblems(lowerBounds, upperBounds, statesForSCCIntSet.iterator());
 //					mainLog.println("Non-trivial SCC done in " + itersInSCC + " many iterations");
 					iters+=itersInSCC;
 
@@ -1065,7 +1064,7 @@ public class STPGModelChecker extends ProbModelChecker
 		while (!done) {
 			//System.out.println("Changed? "+java.util.Arrays.equals(lowerBoundsBackup, lowerBounds)+", "+java.util.Arrays.equals(upperBoundsBackup, upperBounds));
 			iters++;
-      System.out.println("iteration: " + iters);
+      //System.out.println("iteration: " + iters);
 			//Debug output:
 //			if(iters % 10000 == 0){
 //				mainLog.println(iters+"\t\t LB: " + lowerBounds[0] + " UB: " + (upperBounds!=null ? upperBounds[0] : "none"));
