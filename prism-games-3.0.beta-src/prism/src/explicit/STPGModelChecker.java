@@ -1064,7 +1064,6 @@ public class STPGModelChecker extends ProbModelChecker
 		while (!done) {
 			//System.out.println("Changed? "+java.util.Arrays.equals(lowerBoundsBackup, lowerBounds)+", "+java.util.Arrays.equals(upperBoundsBackup, upperBounds));
 			iters++;
-      //System.out.println("iteration: " + iters);
 			//Debug output:
 //			if(iters % 10000 == 0){
 //				mainLog.println(iters+"\t\t LB: " + lowerBounds[0] + " UB: " + (upperBounds!=null ? upperBounds[0] : "none"));
@@ -1192,7 +1191,9 @@ public class STPGModelChecker extends ProbModelChecker
 							}
 							if (variant == SolnMethod.SOUND_VALUE_ITERATION) {
 //								svi_deflate(stpg, min1, min2, lowerBoundsNew, upperBoundsNew, mec, ec, upperBound);
-								double[][] reachNstay = svi_deflate(stpg, min1, min2, lowerBoundsNew, upperBoundsNew, mec, ec, lowerBound, upperBound);
+//								double[][] reachNstay = svi_deflate(stpg, min1, min2, lowerBoundsNew, upperBoundsNew, mec, ec, lowerBound, upperBound);
+//								double[][] reachNstay = svi_deflateAllBestExits(stpg, min1, min2, lowerBoundsNew, upperBoundsNew, mec, ec, lowerBound, upperBound);
+                double[][] reachNstay = svi_deflate_recursive(stpg, min1, min2, lowerBoundsNew, upperBoundsNew, mec, ec, lowerBound, upperBound);
 								lowerBoundsNew = reachNstay[1];
 								upperBoundsNew = reachNstay[0];
 							}
@@ -1376,12 +1377,57 @@ public class STPGModelChecker extends ProbModelChecker
   /**
    * SVI deflate operation.
    */
-  private double[][] svi_deflate(STPGExplicit stpg, boolean min1, boolean min2, double[] stepBoundReach, double[] stepBoundStay, BitSet mec, explicit.ECComputerDefault ec, double lowerbound, double upperbound) throws PrismException {
+//  private double[][] svi_deflate(STPGExplicit stpg, boolean min1, boolean min2, double[] stepBoundReach, double[] stepBoundStay, BitSet mec, explicit.ECComputerDefault ec, double lowerbound, double upperbound) throws PrismException {
+//
+//    double [] currentValReachAndStay = new double[stpg.numStates];
+//    for(int s=0; s < stpg.numStates; s++){
+//          currentValReachAndStay[s] = stepBoundReach[s] + stepBoundStay[s] * lowerbound;
+//    }
+//    // Find all MSECs in given MEC
+//    List<BitSet> SECs = ec.getSECs(mec,currentValReachAndStay,min1,min2);
+//    for (int j = 0; j < SECs.size(); j++) {
+//      // Get best Maximizer exit from SEC
+//      BitSet sec = SECs.get(j);
+//      BitSet subset = (BitSet) sec.clone();
+//      int maxPlayer = min1 ? (min2 ? -1 : 2) : (min2 ? 1 : 3);
+//      int[] bestExitStateAndAction = getBestExitDeflate(sec, stpg, stepBoundReach, stepBoundStay, maxPlayer, upperbound);
+//      int bestExitState = bestExitStateAndAction[0];
+//      int bestExitAction = bestExitStateAndAction[1];
+//      double reachVal = stpg.mvMultSingle(bestExitState, bestExitAction, stepBoundReach);
+//      double stayVal = stpg.mvMultSingle(bestExitState, bestExitAction, stepBoundStay);
+//
+//      int numStates = stpg.numStates;
+//      BitSet allStates = new BitSet();
+//      for (int i = 0; i < numStates; i++) {
+//        allStates.set(i);
+//      }
+//      // compute the attractor set for the best exit
+//      BitSet attractor = computeAlmostSureAttractor(stpg, bestExitState, sec, maxPlayer);
+//      //deflate every state in the attractor
+//      for (int s = attractor.nextSetBit(0); s >= 0; s = attractor.nextSetBit(s+1)) {
+//        stepBoundReach[s] = Math.max(stepBoundReach[s], reachVal);
+//        stepBoundStay[s] = Math.min(stepBoundStay[s], stayVal);
+//      }
+//    }
+//
+//    return new double[][]{stepBoundStay,stepBoundReach};
+//  }
+
+
+
+
+
+  /**
+   * SVI deflate operation.
+   */
+  private double[][] svi_deflate_recursive(STPGExplicit stpg, boolean min1, boolean min2, double[] stepBoundReach, double[] stepBoundStay, BitSet mec, explicit.ECComputerDefault ec, double lowerbound, double upperbound) throws PrismException {
 
     double [] currentValReachAndStay = new double[stpg.numStates];
     for(int s=0; s < stpg.numStates; s++){
-          currentValReachAndStay[s] = stepBoundReach[s] + stepBoundStay[s] * lowerbound;
+      currentValReachAndStay[s] = stepBoundReach[s] + stepBoundStay[s] * lowerbound;
     }
+    BitSet mecMinusAttractor = new BitSet();
+    mecMinusAttractor.or(mec);
     // Find all MSECs in given MEC
     List<BitSet> SECs = ec.getSECs(mec,currentValReachAndStay,min1,min2);
     for (int j = 0; j < SECs.size(); j++) {
@@ -1389,23 +1435,74 @@ public class STPGModelChecker extends ProbModelChecker
       BitSet sec = SECs.get(j);
       BitSet subset = (BitSet) sec.clone();
       int maxPlayer = min1 ? (min2 ? -1 : 2) : (min2 ? 1 : 3);
-      int[] bestExitStateAndAction = getBestExitDeflate(sec, stpg, stepBoundReach, stepBoundStay, maxPlayer, upperbound);
+      int[] bestExitStateAndAction = getBestExitDeflate(subset, stpg, stepBoundReach, stepBoundStay, maxPlayer, upperbound);
       int bestExitState = bestExitStateAndAction[0];
       int bestExitAction = bestExitStateAndAction[1];
       double reachVal = stpg.mvMultSingle(bestExitState, bestExitAction, stepBoundReach);
       double stayVal = stpg.mvMultSingle(bestExitState, bestExitAction, stepBoundStay);
 
+//      int numStates = stpg.numStates;
+//      BitSet allStates = new BitSet();
+//      for (int i = 0; i < numStates; i++) {
+//        allStates.set(i);
+//      }
       // compute the attractor set for the best exit
-      BitSet attractor = computeAlmostSureAttractor(stpg, bestExitState, sec, maxPlayer);
+      BitSet attractor = computeAlmostSureAttractor(stpg, bestExitState, subset, maxPlayer);
+
       //deflate every state in the attractor
       for (int s = attractor.nextSetBit(0); s >= 0; s = attractor.nextSetBit(s+1)) {
         stepBoundReach[s] = Math.max(stepBoundReach[s], reachVal);
         stepBoundStay[s] = Math.min(stepBoundStay[s], stayVal);
       }
+      mecMinusAttractor.andNot(attractor);
+//      stepBoundReach[bestExitState] = Math.max(stepBoundReach[bestExitState], reachVal);
+//      stepBoundStay[bestExitState] = Math.min(stepBoundStay[bestExitState], stayVal);
+//      mecMinusAttractor.clear(bestExitState);
     }
+//    return new double[][]{stepBoundStay,stepBoundReach};
 
-    return new double[][]{stepBoundStay,stepBoundReach};
+
+
+
+
+    if(SECs.size()==0){
+      return new double[][]{stepBoundStay,stepBoundReach};
+    } else{
+      return svi_deflate_recursive(stpg, min1, min2, stepBoundReach, stepBoundStay, mecMinusAttractor, ec, lowerbound, upperbound);
+    }
   }
+
+
+//  private double[][] svi_deflateAllBestExits(STPGExplicit stpg, boolean min1, boolean min2, double[] stepBoundReach, double[] stepBoundStay, BitSet mec, explicit.ECComputerDefault ec, double lowerbound, double upperbound) throws PrismException {
+//
+//    double [] currentValReachAndStay = new double[stpg.numStates];
+//    for(int s=0; s < stpg.numStates; s++){
+//      currentValReachAndStay[s] = stepBoundReach[s] + stepBoundStay[s] * lowerbound;
+//    }
+//    // Find all MSECs in given MEC
+//    List<BitSet> SECs = ec.getSECs(mec,currentValReachAndStay,min1,min2);
+//    for (int j = 0; j < SECs.size(); j++) {
+//      // Get best Maximizer exit from SEC
+//      BitSet sec = SECs.get(j);
+//      BitSet subset = (BitSet) sec.clone();
+//      int maxPlayer = min1 ? (min2 ? -1 : 2) : (min2 ? 1 : 3);
+//      Map<Integer,Integer> bestExitsStateAndAction = getBestExitsDeflate(subset, stpg, stepBoundReach, stepBoundStay, maxPlayer, upperbound);
+//      for(int bestExitState: bestExitsStateAndAction.keySet()) {
+//        int bestExitAction = bestExitsStateAndAction.get(bestExitState);
+//        double reachVal = stpg.mvMultSingle(bestExitState, bestExitAction, stepBoundReach);
+//        double stayVal = stpg.mvMultSingle(bestExitState, bestExitAction, stepBoundStay);
+//        // compute the attractor set for the best exit
+//        BitSet attractor = computeAlmostSureAttractor(stpg, bestExitState, subset, maxPlayer);
+//        //deflate every state in the attractor
+//        for (int s = attractor.nextSetBit(0); s >= 0; s = attractor.nextSetBit(s + 1)) {
+//          stepBoundReach[s] = Math.max(stepBoundReach[s], reachVal);
+//          stepBoundStay[s] = Math.min(stepBoundStay[s], stayVal);
+//        }
+//      }
+//    }
+//
+//    return new double[][]{stepBoundStay,stepBoundReach};
+//  }
 
 //  private BitSet computeAttractor(STPGExplicit stpg, int bestExitState, BitSet sec, int maxPlayer) {
 //
@@ -1638,9 +1735,8 @@ public class STPGModelChecker extends ProbModelChecker
               for (int succ : stpg.getChoice(s, i).keySet()) {
                 val += stepBoundReach[succ] + stepBoundStay[succ] * upperbound;
               }
-
-              //double val = stpg.mvMultSingle(s, i, stepBoundStay);
-              if (val >= bestValSoFar) {
+               //double val = stpg.mvMultSingle(s, i, stepBoundStay);
+              if (val > bestValSoFar) {
                 bestValSoFar = val;
                 bestAction = i;
                 exitState = s;
@@ -1650,11 +1746,66 @@ public class STPGModelChecker extends ProbModelChecker
         }
 
       }
-      //if(bestValSoFar==1.0) break;
+      if(bestValSoFar==1.0) break;
       //TODO: We might want to deflate minimizer stuff to 0. Should be handled by prob0 though.
     }
     return new int[]{exitState, bestAction};
   }
+
+
+
+//  private static Map<Integer,Integer> getBestExitsDeflate(BitSet sec, STPGExplicit stpg, double[] stepBoundReach, double[] stepBoundStay, int maxPlayer, double upperbound){
+//    double bestValSoFar = 0;
+//    int bestAction = -1;
+//    int exitState = -1;
+////    List<Integer> allExitStates = new ArrayList<>();
+////    List<Integer> allExitActions= new ArrayList<>();
+////    List<List<Integer>> bestExits =new ArrayList<>();
+//    Map<Integer, Integer> StateActionPair = new HashMap<>();
+//    Map<Integer, Double> StateValuePair = new HashMap<>();
+//    //int [][] allExits = new int[][] {};
+//    //int [][] bestExits = new int[][] {};
+//    //bestExits[0]= new int[] {1, 3};
+//    double [] ObtainedValues = new double[]{};
+//    //find best stay props bound belonging to maxPlayer that does not let stuck
+//    for (int s = sec.nextSetBit(0); s >= 0; s = sec.nextSetBit(s+1)) {
+//      if (stpg.getPlayer(s)==maxPlayer || maxPlayer == 3) {
+//        //mainLog.println("Searching for best leaving value; state belongs to maximizer");
+//        for (int i = 0; i < stpg.getNumChoices(s); i++) {
+//          boolean all = stpg.allSuccessorsInSet(s, i, sec);
+//          if (!all) {
+//            double val = 0;
+//            for (int succ : stpg.getChoice(s, i).keySet()) {
+//              val += stepBoundReach[succ] + stepBoundStay[succ] * upperbound;
+//            }
+//
+//            //double val = stpg.mvMultSingle(s, i, stepBoundStay);
+//            if (val >= bestValSoFar) {
+//              bestValSoFar = val;
+//              bestAction = i;
+//              exitState = s;
+//              StateValuePair.put(s,val);
+//            }
+//          }
+//        }
+//      }
+//
+//      if(exitState!=-1) StateActionPair.put(exitState,bestAction);
+//
+//      //if(bestValSoFar==1.0) break;
+//      //TODO: We might want to deflate minimizer stuff to 0. Should be handled by prob0 though.
+//    }
+//
+//    for(int s: StateValuePair.keySet()){
+//      if(StateValuePair.get(s)==bestValSoFar){
+//      }else{
+//        StateActionPair.remove(s);
+//      }
+//    }
+////    return new int[]{exitState, bestAction};
+//    return StateActionPair;
+//  }
+
 
 
   private static int findAction(STPGExplicit stpg, int s, double[] stepBoundReach, double[] stepBoundStay, boolean min, double lowerbound, double upperbound){
