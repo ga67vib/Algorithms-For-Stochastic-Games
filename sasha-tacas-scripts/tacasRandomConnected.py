@@ -31,7 +31,7 @@ import typing
 prism_path="../prism-games-3.0.beta-src/prism/bin/prism"
 wp_path="../../CAV20Impl/mycode/WP/bin/prism"
 max_processes = 6
-TIMEOUT = "15m"
+TIMEOUT = "2m"
 JAVAMAXMEM = "5g" # "Free: 36g Processes: 6 -> 5g MaxMem and 1g JavaStack"
 JAVASTACK = "1g"
 reps=1 #Repetitions. If set to 1, it will not appear in filename of log.    
@@ -70,7 +70,41 @@ def _parse(cmd):
 # Configurations
 configurations = dict()
 
-configurations["BVI_100"] = (prism_path, "-ii -maxiters 100")
+configurations["VI"] = (prism_path, "")
+configurations["TOP_VI"] = (prism_path, "-topological")
+
+#BVI
+configurations["BVI"] = (prism_path, "-ii -maxiters 1")
+configurations["G_BVI"] = (prism_path, "-ii -maxiters 1 -smg_opts 1")
+configurations["T_BVI"] = (prism_path, "-ii -maxiters 1 -topological -smg_opts 2")
+configurations["TOP_BVI"] = (prism_path, "-ii -maxiters 1 -topological")
+configurations["D_BVI"] = (prism_path, "-ii -maxiters 100")
+
+#SVI
+configurations["SVI"] = (prism_path, "-svi -maxiters 1")
+configurations["G_SVI"] = (prism_path, "-svi -maxiters 1 -smg_opts 1")
+configurations["T_SVI"] = (prism_path, "-svi -maxiters 1 -topological -smg_opts 2")
+configurations["TOP_SVI"] = (prism_path, "-svi -maxiters 1 -topological")
+configurations["D_SVI"] = (prism_path, "-svi -maxiters 100")
+
+#OVI
+configurations["OVI"] = (prism_path, "-ovi -maxiters 1")
+configurations["G_OVI"] = (prism_path, "-ovi -maxiters 1 -smg_opts 1")
+configurations["T_OVI"] = (prism_path, "-ovi -maxiters 1 -topological -smg_opts 2")
+configurations["TOP_OVI"] = (prism_path, "-ovi -maxiters 1 -topological")
+configurations["OPT_OVI"] = (prism_path, "-ovi -maxiters 1 -smg_opts 4")
+
+#WP
+configurations["WP"] = (wp_path, "-ex -BVI_A")
+
+#SI
+#configurations["SI"] =  (prism_path, "-politer -smg_opts 0") # Normal Strategy Iteration - SI Opponent, i.e. MDP Solver is SI
+#configurations["SI_SI"] =  (prism_path, "-politer -smg_opts 9") # Normal Strategy Iteration - SI Opponent, i.e. MDP Solver is SI
+configurations["T_SI_SI"] =  (prism_path, "-politer -smg_opts 10") # Normal Strategy Iteration - SI Opponent, i.e. MDP Solver is S
+#configurations["LP_SI"] =  (prism_path, "-politer -smg_opts 13") # Normal Strategy Iteration - SI Opponent, i.e. MDP Solver is S
+#configurations["T_LP_SI"] =  (prism_path, "-politer -smg_opts 14") # Normal Strategy Iteration - SI Opponent, i.e. MDP Solver is S
+
+
 
 
 #Models
@@ -150,8 +184,8 @@ models = {**models, **extension_config_models}
 """
 
 # Parse command line to decide whether to run benchmarks or read them
-if len(sys.argv) == 0 or str(sys.argv[1]) not in ["run", "read", "analyse"]:
-    print("This script can only run in three modes: run, read or analyse. Call it with one of these three as command line parameter")
+if len(sys.argv) == 0 or str(sys.argv[1]) not in ["run", "read", "analyse", "ovi_iters"]:
+    print("This script can only run in the following modes: run, read, analyse or ovi_iters. Call it with one of these as command line parameter")
 elif sys.argv[1] == "run":
     command_list = []
     for conf_count, conf in enumerate(sorted(configurations.keys())):
@@ -167,7 +201,10 @@ elif sys.argv[1] == "run":
                 if exists(output_dir + "/" + conf + "/" + model + rep_string + ".log"):
                     print("\t\tAlready there, skipping")
                     continue
-                prismParams = "-javamaxmem "+JAVAMAXMEM+" -javastack "+JAVASTACK+" " # "-javamaxmem 32g -javastack 16g"  # Change this appropriately
+                if (conf != "WP"):
+                    prismParams = "-javamaxmem "+JAVAMAXMEM+" -javastack "+JAVASTACK+" " # "-javamaxmem 32g -javastack 16g"  # Change this appropriately
+                else:
+                    prismParams = "-javamaxmem "+JAVAMAXMEM+" "
                 command = "timeout "+TIMEOUT+" " + configurations[conf][0] + " " + \
                     models[model] + " " + configurations[conf][1] + " " + prismParams + \
                     " > " + output_dir + "/" + conf + "/" + model + rep_string + ".log"
@@ -292,6 +329,13 @@ elif (sys.argv[1] == "analyse"):
     relevantFeatures["NumMaxTransitions"] = "Number of maximal transitions per choice: "
     relevantFeatures["SmallestTransProb"] = "Smallest transition probability: "
     relevantFeatures["NumProbActions"] = "Number of Choices with probability: "
+    relevantFeatures["AvgNumActionsPerState"] = "Average Number of Choices per state: "
+    relevantFeatures["AvgNumTransPerState"] = "Average Number of Transitions per state: "
+    relevantFeatures["AvgNumTransPerAction"] = "Average Number of Transitions per choice: "
+    relevantFeatures["NumMaxStates"] = "Number of Maximizer States: "
+    relevantFeatures["NumMinStates"] = "Number of Minimizer States: "
+    relevantFeatures["NumBackwardsTransitions"] = "Percentage of Backwards Transitions: "
+
 
     #MEC-related
     relevantFeatures["NumMECs"] = "Number of MECs: "
@@ -364,3 +408,52 @@ elif (sys.argv[1] == "analyse"):
 
             #Print newline for next Model
             statisticsfile.write("\n")
+
+elif (sys.argv[1] == "ovi_iters"):
+    #Read
+    headers = ["Conf", "Case Study", "Verification Time", "Number Of Verif. Phases", "Iterations in Verif Phase"]
+
+    with open(output_dir+"/ovi_iters.csv", "w") as statisticsfile:
+        header = ""
+        for h in headers:
+            header += h + ", "
+        header = header[0:-2]
+        statisticsfile.write(header+"\n")
+
+        for conf_name in sorted(configurations.keys()):
+            if ("OVI" not in conf_name):
+                continue
+
+            for model in sorted(models.keys()):
+                infile_name = output_dir + "/" + conf_name + "/" + model + ".log"
+
+                num_verifications = 0
+                iters_in_verif_phase = "-"
+                verif_time = "-"
+
+                with open(infile_name, "r") as infile:
+                    for line in infile:
+                        if ("Starting a verification phase in iteration" in line):
+                            num_verifications+=1
+                            modified_line = line.replace("Starting a verification phase in iteration ", "")
+
+                        elif ("Time for model checking:" in line):
+                            modified_line = line.replace("Time for model checking: ", "")
+                            modified_line = modified_line.replace(" seconds.", "")
+                            verif_time = int(float(modified_line))
+
+                        elif (" iterations in the verification phase." in line):
+                            modified_line = line.replace("Proved U to be inductive upper bound in iteration", "")
+                            modified_line = modified_line.replace("iterations in the verification phase.", "")
+                            # There are two numbers left, split them
+                            split_iters = modified_line.split(" after ")
+                            # Iters in verification phase is the second of those two numbers
+                            iters_in_verif_phase = int(split_iters[1])
+
+                
+
+                #Write name of Model
+                statisticsfile.write(str(conf_name)+", "+str(model)+", ")
+                statisticsfile.write(str(verif_time)+", ")
+                statisticsfile.write(str(num_verifications)+", ")
+                statisticsfile.write(str(iters_in_verif_phase)+"\n")

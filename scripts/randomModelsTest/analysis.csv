@@ -1,0 +1,12 @@
+Model,NumStates,NumActions,NumTargets,NumSinks,NumUnknown,NumMaxActions,NumMaxTransitions,SmallestTransProb,NumProbActions,NumMECs,BiggestMEC,SmallestMEC,AvgMEC,MedianMEC,NumSCCs,NearestTarget,FurthestTarget,TargetDistanceAverage,TargetDistanceMedian
+RANDOM_SIZE_10000_MODEL_1, 10000, 23348, 1, 9995, 4, 9, 2, 0.5, 4501, 0, , , , , 4, , , , 
+RANDOM_SIZE_10000_MODEL_10, 10000, 23244, 2284, 4735, 2981, 10, 2, 0.5, 4403, 0, , , , , 1411, , , , 
+RANDOM_SIZE_10000_MODEL_2, 10000, 23331, 1, 4649, 5350, 9, 2, 0.5, 4406, 2, , , , , , , , , 
+RANDOM_SIZE_10000_MODEL_3, 10000, 23132, 3, 4924, 5073, 11, 2, 0.5, 4300, 2, , , , , , , , , 
+RANDOM_SIZE_10000_MODEL_4, 10000, 23403, 2415, 4829, 2756, 12, 2, 0.5, 4320, 2, , , , , , , , , 
+RANDOM_SIZE_10000_MODEL_5, 10000, 23362, 3, 4748, 5249, 10, 2, 0.5, 4423, 2, , , , , , , , , 
+RANDOM_SIZE_10000_MODEL_6, 10000, 23293, 1, 4839, 5160, 10, 2, 0.5, 4287, 1, 3115, 3115, 3115.0, 3115.0, 468, , , , 
+RANDOM_SIZE_10000_MODEL_7, 10000, 23304, 3, 4928, 5069, 12, 2, 0.5, 4468, 1, 3160, 3160, 3160.0, 3160.0, 475, , , , 
+RANDOM_SIZE_10000_MODEL_8, 10000, 23439, 14, 4659, 5327, 9, 2, 0.5, 4495, 1, 3321, 3321, 3321.0, 3321.0, 523, , , , 
+RANDOM_SIZE_10000_MODEL_9, 10000, 23485, 7, 9993, 0, 10, 2, 0.5, 4404, 0, , , , , 0, , , , 
+RANDOM_TEST_TOPOLOGICAL, 118, 353, 1, 9, 108, 5, 8, 0.01, 74, 1, 107, 107, 107.0, 107.0, 1, 3, 3, 3.0, 3.0

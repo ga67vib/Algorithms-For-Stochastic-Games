@@ -3,7 +3,7 @@
 # Startup script for PRISM GUI (Linux/Solaris)
 
 # PRISM home directory
-PRISM_DIR="/home/sasha/Algorithms-For-Stochastic-Games/prism-games-3.0.beta-src/prism"
+PRISM_DIR="/home/sascha/Algorithms-For-Stochastic-Games/prism-games-3.0.beta-src/prism"
 
 # Launch using main PRISM script
 PRISM_MAINCLASS=userinterface.GUIPrism

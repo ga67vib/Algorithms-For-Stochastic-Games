@@ -1,50 +1,50 @@
-Model,NumStates,NumActions,NumTargets,NumSinks,NumUnknown,NumMaxActions,NumMaxTransitions,SmallestTransProb,NumProbActions,NumMECs,BiggestMEC,SmallestMEC,AvgMEC,MedianMEC,NumSCCs,NearestTarget,FurthestTarget,TargetDistanceAverage,TargetDistanceMedian
-simple, 3, 3, 1, 1, 1, 1, 2, 0.5, 1, 0, , , , , 1, 1, 1, 1.0, 1.0
-simple_actionTree_sinkP_1_initP_0_branch_100_numStates_400_numComp_1, 404, 40004, 1, 2, 401, 100, 3, 0.0, 40001, 0, , , , , 401, 3, 3, 3.0, 3.0
-simple_actionTree_sinkP_1_initP_0_branch_100_numStates_400_numComp_20, 8004, 800004, 1, 2, 8001, 100, 3, 0.0, 800001, 0, , , , , 8001, 41, 41, 41.0, 41.0
-simple_actionTree_sinkP_1_initP_0_branch_100_numStates_400_numComp_5, 2004, 200004, 1, 2, 2001, 100, 3, 0.0, 200001, 0, , , , , 2001, 11, 11, 11.0, 11.0
-simple_actionTree_sinkP_1_initP_0_branch_10_numStates_400_numComp_1, 404, 4004, 1, 2, 401, 10, 3, 0.0, 4001, 0, , , , , 401, 4, 4, 4.0, 4.0
-simple_actionTree_sinkP_1_initP_0_branch_10_numStates_400_numComp_20, 8004, 80004, 1, 2, 8001, 10, 3, 0.0, 80001, 0, , , , , 8001, 61, 61, 61.0, 61.0
-simple_actionTree_sinkP_1_initP_0_branch_10_numStates_400_numComp_5, 2004, 20004, 1, 2, 2001, 10, 3, 0.0, 20001, 0, , , , , 2001, 16, 16, 16.0, 16.0
-simple_actionTree_sinkP_1_initP_0_branch_200_numStates_400_numComp_1, 404, 80004, 1, 2, 401, 200, 3, -4.97512437811487E-5, 80001, 0, , , , , 401, 3, 3, 3.0, 3.0
-simple_actionTree_sinkP_1_initP_0_branch_200_numStates_400_numComp_20, 8004, 1600004, 1, 2, 8001, 200, 3, -4.97512437811487E-5, 1600001, 0, , , , , 8001, 41, 41, 41.0, 41.0
-simple_actionTree_sinkP_1_initP_0_branch_200_numStates_400_numComp_5, 2004, 400004, 1, 2, 2001, 200, 3, -4.97512437811487E-5, 400001, 0, , , , , 2001, 11, 11, 11.0, 11.0
-simple_actionTree_sinkP_1_initP_0_branch_2_numStates_400_numComp_1, 404, 804, 1, 2, 401, 2, 3, 0.0, 801, 0, , , , , 401, 9, 9, 9.0, 9.0
-simple_actionTree_sinkP_1_initP_0_branch_2_numStates_400_numComp_20, 8004, 16004, 1, 2, 8001, 2, 3, 0.0, 16001, 0, , , , , 8001, 161, 161, 161.0, 161.0
-simple_actionTree_sinkP_1_initP_0_branch_2_numStates_400_numComp_5, 2004, 4004, 1, 2, 2001, 2, 3, 0.0, 4001, 0, , , , , 2001, 41, 41, 41.0, 41.0
-simple_actionTree_sinkP_1_initP_0_branch_30_numStates_400_numComp_1, 404, 12004, 1, 2, 401, 30, 3, 0.0, 12001, 0, , , , , 401, 3, 3, 3.0, 3.0
-simple_actionTree_sinkP_1_initP_0_branch_30_numStates_400_numComp_20, 8004, 240004, 1, 2, 8001, 30, 3, 0.0, 240001, 0, , , , , 8001, 41, 41, 41.0, 41.0
-simple_actionTree_sinkP_1_initP_0_branch_30_numStates_400_numComp_5, 2004, 60004, 1, 2, 2001, 30, 3, 0.0, 60001, 0, , , , , 2001, 11, 11, 11.0, 11.0
-simple_actionTree_sinkP_1_initP_0_branch_50_numStates_400_numComp_1, 404, 20004, 1, 2, 401, 50, 3, 0.0, 20001, 0, , , , , 401, 3, 3, 3.0, 3.0
-simple_actionTree_sinkP_1_initP_0_branch_50_numStates_400_numComp_20, 8004, 400004, 1, 2, 8001, 50, 3, 0.0, 400001, 0, , , , , 8001, 41, 41, 41.0, 41.0
-simple_actionTree_sinkP_1_initP_0_branch_50_numStates_400_numComp_5, 2004, 100004, 1, 2, 2001, 50, 3, 0.0, 100001, 0, , , , , 2001, 11, 11, 11.0, 11.0
-simple_actionTree_sinkP_1_initP_0_branch_5_numStates_400_numComp_1, 404, 2004, 1, 2, 401, 5, 3, 0.0, 2001, 0, , , , , 401, 5, 5, 5.0, 5.0
-simple_actionTree_sinkP_1_initP_0_branch_5_numStates_400_numComp_20, 8004, 40004, 1, 2, 8001, 5, 3, 0.0, 40001, 0, , , , , 8001, 81, 81, 81.0, 81.0
-simple_actionTree_sinkP_1_initP_0_branch_5_numStates_400_numComp_5, 2004, 10004, 1, 2, 2001, 5, 3, 0.0, 10001, 0, , , , , 2001, 21, 21, 21.0, 21.0
-simple_actionTree_sinkP_1_initP_0_branch_70_numStates_400_numComp_1, 404, 28004, 1, 2, 401, 70, 3, 0.0, 28001, 0, , , , , 401, 3, 3, 3.0, 3.0
-simple_actionTree_sinkP_1_initP_0_branch_70_numStates_400_numComp_20, 8004, 560004, 1, 2, 8001, 70, 3, 0.0, 560001, 0, , , , , 8001, 41, 41, 41.0, 41.0
-simple_actionTree_sinkP_1_initP_0_branch_70_numStates_400_numComp_5, 2004, 140004, 1, 2, 2001, 70, 3, 0.0, 140001, 0, , , , , 2001, 11, 11, 11.0, 11.0
-simple_actionTree_sinkP_1_initP_1_branch_100_numStates_400_numComp_1, 404, 40004, 1, 2, 401, 100, 4, -1.980198019801982E-4, 40001, 0, , , , , 2, 3, 3, 3.0, 3.0
-simple_actionTree_sinkP_1_initP_1_branch_100_numStates_400_numComp_20, 8004, 800004, 1, 2, 8001, 100, 4, -1.980198019801982E-4, 800001, 0, , , , , 21, 41, 41, 41.0, 41.0
-simple_actionTree_sinkP_1_initP_1_branch_100_numStates_400_numComp_5, 2004, 200004, 1, 2, 2001, 100, 4, -1.980198019801982E-4, 200001, 0, , , , , 6, 11, 11, 11.0, 11.0
-simple_actionTree_sinkP_1_initP_1_branch_10_numStates_400_numComp_1, 404, 4004, 1, 2, 401, 10, 4, 0.0, 4001, 0, , , , , 2, 4, 4, 4.0, 4.0
-simple_actionTree_sinkP_1_initP_1_branch_10_numStates_400_numComp_20, 8004, 80004, 1, 2, 8001, 10, 4, 0.0, 80001, 0, , , , , 21, 61, 61, 61.0, 61.0
-simple_actionTree_sinkP_1_initP_1_branch_10_numStates_400_numComp_5, 2004, 20004, 1, 2, 2001, 10, 4, 0.0, 20001, 0, , , , , 6, 16, 16, 16.0, 16.0
-simple_actionTree_sinkP_1_initP_1_branch_200_numStates_400_numComp_1, 404, 80004, 1, 2, 401, 200, 4, -0.010049751243781158, 80001, 0, , , , , 2, 3, 3, 3.0, 3.0
-simple_actionTree_sinkP_1_initP_1_branch_200_numStates_400_numComp_20, 8004, 1600004, 1, 2, 8001, 200, 4, -0.010049751243781158, 1600001, 0, , , , , 21, 41, 41, 41.0, 41.0
-simple_actionTree_sinkP_1_initP_1_branch_200_numStates_400_numComp_5, 2004, 400004, 1, 2, 2001, 200, 4, -0.010049751243781158, 400001, 0, , , , , 6, 11, 11, 11.0, 11.0
-simple_actionTree_sinkP_1_initP_1_branch_2_numStates_400_numComp_1, 404, 804, 1, 2, 401, 2, 4, 0.0, 801, 0, , , , , 2, 9, 9, 9.0, 9.0
-simple_actionTree_sinkP_1_initP_1_branch_2_numStates_400_numComp_20, 8004, 16004, 1, 2, 8001, 2, 4, 0.0, 16001, 0, , , , , 21, 161, 161, 161.0, 161.0
-simple_actionTree_sinkP_1_initP_1_branch_2_numStates_400_numComp_5, 2004, 4004, 1, 2, 2001, 2, 4, 0.0, 4001, 0, , , , , 6, 41, 41, 41.0, 41.0
-simple_actionTree_sinkP_1_initP_1_branch_30_numStates_400_numComp_1, 404, 12004, 1, 2, 401, 30, 4, 0.0, 12001, 0, , , , , 2, 3, 3, 3.0, 3.0
-simple_actionTree_sinkP_1_initP_1_branch_30_numStates_400_numComp_20, 8004, 240004, 1, 2, 8001, 30, 4, 0.0, 240001, 0, , , , , 21, 41, 41, 41.0, 41.0
-simple_actionTree_sinkP_1_initP_1_branch_30_numStates_400_numComp_5, 2004, 60004, 1, 2, 2001, 30, 4, 0.0, 60001, 0, , , , , 6, 11, 11, 11.0, 11.0
-simple_actionTree_sinkP_1_initP_1_branch_50_numStates_400_numComp_1, 404, 20004, 1, 2, 401, 50, 4, 0.0, 20001, 0, , , , , 2, 3, 3, 3.0, 3.0
-simple_actionTree_sinkP_1_initP_1_branch_50_numStates_400_numComp_20, 8004, 400004, 1, 2, 8001, 50, 4, 0.0, 400001, 0, , , , , 21, 41, 41, 41.0, 41.0
-simple_actionTree_sinkP_1_initP_1_branch_50_numStates_400_numComp_5, 2004, 100004, 1, 2, 2001, 50, 4, 0.0, 100001, 0, , , , , 6, 11, 11, 11.0, 11.0
-simple_actionTree_sinkP_1_initP_1_branch_5_numStates_400_numComp_1, 404, 2004, 1, 2, 401, 5, 4, 0.0, 2001, 0, , , , , 2, 5, 5, 5.0, 5.0
-simple_actionTree_sinkP_1_initP_1_branch_5_numStates_400_numComp_20, 8004, 40004, 1, 2, 8001, 5, 4, 0.0, 40001, 0, , , , , 21, 81, 81, 81.0, 81.0
-simple_actionTree_sinkP_1_initP_1_branch_5_numStates_400_numComp_5, 2004, 10004, 1, 2, 2001, 5, 4, 0.0, 10001, 0, , , , , 6, 21, 21, 21.0, 21.0
-simple_actionTree_sinkP_1_initP_1_branch_70_numStates_400_numComp_1, 404, 28004, 1, 2, 401, 70, 4, 0.0, 28001, 0, , , , , 2, 3, 3, 3.0, 3.0
-simple_actionTree_sinkP_1_initP_1_branch_70_numStates_400_numComp_20, 8004, 560004, 1, 2, 8001, 70, 4, 0.0, 560001, 0, , , , , 21, 41, 41, 41.0, 41.0
-simple_actionTree_sinkP_1_initP_1_branch_70_numStates_400_numComp_5, 2004, 140004, 1, 2, 2001, 70, 4, 0.0, 140001, 0, , , , , 6, 11, 11, 11.0, 11.0
+Model,NumStates,NumActions,NumTargets,NumSinks,NumUnknown,NumMaxActions,NumMaxTransitions,SmallestTransProb,NumProbActions,NumMECs,BiggestMEC,SmallestMEC,AvgMEC,MedianMEC,NumSCCs,BiggestSCC,SmallestSCC,AvgSCC,NearestTarget,FurthestTarget,TargetDistanceAverage,TargetDistanceMedian
+simple, 3, 3, 1, 1, 1, 1, 2, 0.5, 1, 0, , , , , 1, 1, 1, 1.0, 1, 1, 1.0, 1.0
+simple_actionTree_sinkP_1_initP_0_branch_100_numStates_400_numComp_1, 404, 40004, 1, 2, 401, 100, 3, 0.0, 40001, 0, , , , , 401, 1, 1, 1.0, , , , 
+simple_actionTree_sinkP_1_initP_0_branch_100_numStates_400_numComp_20, 8004, 800004, 1, 2, 8001, 100, 3, 0.0, 800001, 0, , , , , 8001, 1, 1, 1.0, , , , 
+simple_actionTree_sinkP_1_initP_0_branch_100_numStates_400_numComp_5, 2004, 200004, 1, 2, 2001, 100, 3, 0.0, 200001, 0, , , , , 2001, 1, 1, 1.0, , , , 
+simple_actionTree_sinkP_1_initP_0_branch_10_numStates_400_numComp_1, 404, 4004, 1, 2, 401, 10, 3, 0.0, 4001, 0, , , , , 401, 1, 1, 1.0, , , , 
+simple_actionTree_sinkP_1_initP_0_branch_10_numStates_400_numComp_20, 8004, 80004, 1, 2, 8001, 10, 3, 0.0, 80001, 0, , , , , 8001, 1, 1, 1.0, , , , 
+simple_actionTree_sinkP_1_initP_0_branch_10_numStates_400_numComp_5, 2004, 20004, 1, 2, 2001, 10, 3, 0.0, 20001, 0, , , , , 2001, 1, 1, 1.0, , , , 
+simple_actionTree_sinkP_1_initP_0_branch_200_numStates_400_numComp_1, 404, 80004, 1, 2, 401, 200, 3, -4.97512437811487E-5, 80001, 0, , , , , 401, 1, 1, 1.0, , , , 
+simple_actionTree_sinkP_1_initP_0_branch_200_numStates_400_numComp_20, 8004, 1600004, 1, 2, 8001, 200, 3, -4.97512437811487E-5, 1600001, 0, , , , , 8001, 1, 1, 1.0, , , , 
+simple_actionTree_sinkP_1_initP_0_branch_200_numStates_400_numComp_5, 2004, 400004, 1, 2, 2001, 200, 3, -4.97512437811487E-5, 400001, 0, , , , , 2001, 1, 1, 1.0, , , , 
+simple_actionTree_sinkP_1_initP_0_branch_2_numStates_400_numComp_1, 404, 804, 1, 2, 401, 2, 3, 0.0, 801, 0, , , , , 401, 1, 1, 1.0, , , , 
+simple_actionTree_sinkP_1_initP_0_branch_2_numStates_400_numComp_20, 8004, 16004, 1, 2, 8001, 2, 3, 0.0, 16001, 0, , , , , 8001, 1, 1, 1.0, , , , 
+simple_actionTree_sinkP_1_initP_0_branch_2_numStates_400_numComp_5, 2004, 4004, 1, 2, 2001, 2, 3, 0.0, 4001, 0, , , , , 2001, 1, 1, 1.0, , , , 
+simple_actionTree_sinkP_1_initP_0_branch_30_numStates_400_numComp_1, 404, 12004, 1, 2, 401, 30, 3, 0.0, 12001, 0, , , , , 401, 1, 1, 1.0, , , , 
+simple_actionTree_sinkP_1_initP_0_branch_30_numStates_400_numComp_20, 8004, 240004, 1, 2, 8001, 30, 3, 0.0, 240001, 0, , , , , 8001, 1, 1, 1.0, , , , 
+simple_actionTree_sinkP_1_initP_0_branch_30_numStates_400_numComp_5, 2004, 60004, 1, 2, 2001, 30, 3, 0.0, 60001, 0, , , , , 2001, 1, 1, 1.0, , , , 
+simple_actionTree_sinkP_1_initP_0_branch_50_numStates_400_numComp_1, 404, 20004, 1, 2, 401, 50, 3, 0.0, 20001, 0, , , , , 401, 1, 1, 1.0, , , , 
+simple_actionTree_sinkP_1_initP_0_branch_50_numStates_400_numComp_20, 8004, 400004, 1, 2, 8001, 50, 3, 0.0, 400001, 0, , , , , 8001, 1, 1, 1.0, , , , 
+simple_actionTree_sinkP_1_initP_0_branch_50_numStates_400_numComp_5, 2004, 100004, 1, 2, 2001, 50, 3, 0.0, 100001, 0, , , , , 2001, 1, 1, 1.0, , , , 
+simple_actionTree_sinkP_1_initP_0_branch_5_numStates_400_numComp_1, 404, 2004, 1, 2, 401, 5, 3, 0.0, 2001, 0, , , , , 401, 1, 1, 1.0, , , , 
+simple_actionTree_sinkP_1_initP_0_branch_5_numStates_400_numComp_20, 8004, 40004, 1, 2, 8001, 5, 3, 0.0, 40001, 0, , , , , 8001, 1, 1, 1.0, , , , 
+simple_actionTree_sinkP_1_initP_0_branch_5_numStates_400_numComp_5, 2004, 10004, 1, 2, 2001, 5, 3, 0.0, 10001, 0, , , , , 2001, 1, 1, 1.0, , , , 
+simple_actionTree_sinkP_1_initP_0_branch_70_numStates_400_numComp_1, 404, 28004, 1, 2, 401, 70, 3, 0.0, 28001, 0, , , , , 401, 1, 1, 1.0, , , , 
+simple_actionTree_sinkP_1_initP_0_branch_70_numStates_400_numComp_20, 8004, 560004, 1, 2, 8001, 70, 3, 0.0, 560001, 0, , , , , 8001, 1, 1, 1.0, , , , 
+simple_actionTree_sinkP_1_initP_0_branch_70_numStates_400_numComp_5, 2004, 140004, 1, 2, 2001, 70, 3, 0.0, 140001, 0, , , , , 2001, 1, 1, 1.0, , , , 
+simple_actionTree_sinkP_1_initP_1_branch_100_numStates_400_numComp_1, 404, 40004, 1, 2, 401, 100, 4, -1.980198019801982E-4, 40001, 0, , , , , 2, 400, 1, 200.5, , , , 
+simple_actionTree_sinkP_1_initP_1_branch_100_numStates_400_numComp_20, 8004, 800004, 1, 2, 8001, 100, 4, -1.980198019801982E-4, 800001, 0, , , , , 21, 400, 1, 381.0, , , , 
+simple_actionTree_sinkP_1_initP_1_branch_100_numStates_400_numComp_5, 2004, 200004, 1, 2, 2001, 100, 4, -1.980198019801982E-4, 200001, 0, , , , , 6, 400, 1, 333.5, , , , 
+simple_actionTree_sinkP_1_initP_1_branch_10_numStates_400_numComp_1, 404, 4004, 1, 2, 401, 10, 4, 0.0, 4001, 0, , , , , 2, 400, 1, 200.5, , , , 
+simple_actionTree_sinkP_1_initP_1_branch_10_numStates_400_numComp_20, 8004, 80004, 1, 2, 8001, 10, 4, 0.0, 80001, 0, , , , , 21, 400, 1, 381.0, , , , 
+simple_actionTree_sinkP_1_initP_1_branch_10_numStates_400_numComp_5, 2004, 20004, 1, 2, 2001, 10, 4, 0.0, 20001, 0, , , , , 6, 400, 1, 333.5, , , , 
+simple_actionTree_sinkP_1_initP_1_branch_200_numStates_400_numComp_1, 404, 80004, 1, 2, 401, 200, 4, -0.010049751243781158, 80001, 0, , , , , 2, 400, 1, 200.5, , , , 
+simple_actionTree_sinkP_1_initP_1_branch_200_numStates_400_numComp_20, 8004, 1600004, 1, 2, 8001, 200, 4, -0.010049751243781158, 1600001, 0, , , , , 21, 400, 1, 381.0, , , , 
+simple_actionTree_sinkP_1_initP_1_branch_200_numStates_400_numComp_5, 2004, 400004, 1, 2, 2001, 200, 4, -0.010049751243781158, 400001, 0, , , , , 6, 400, 1, 333.5, , , , 
+simple_actionTree_sinkP_1_initP_1_branch_2_numStates_400_numComp_1, 404, 804, 1, 2, 401, 2, 4, 0.0, 801, 0, , , , , 2, 400, 1, 200.5, , , , 
+simple_actionTree_sinkP_1_initP_1_branch_2_numStates_400_numComp_20, 8004, 16004, 1, 2, 8001, 2, 4, 0.0, 16001, 0, , , , , 21, 400, 1, 381.0, , , , 
+simple_actionTree_sinkP_1_initP_1_branch_2_numStates_400_numComp_5, 2004, 4004, 1, 2, 2001, 2, 4, 0.0, 4001, 0, , , , , 6, 400, 1, 333.5, , , , 
+simple_actionTree_sinkP_1_initP_1_branch_30_numStates_400_numComp_1, 404, 12004, 1, 2, 401, 30, 4, 0.0, 12001, 0, , , , , 2, 400, 1, 200.5, , , , 
+simple_actionTree_sinkP_1_initP_1_branch_30_numStates_400_numComp_20, 8004, 240004, 1, 2, 8001, 30, 4, 0.0, 240001, 0, , , , , 21, 400, 1, 381.0, , , , 
+simple_actionTree_sinkP_1_initP_1_branch_30_numStates_400_numComp_5, 2004, 60004, 1, 2, 2001, 30, 4, 0.0, 60001, 0, , , , , 6, 400, 1, 333.5, , , , 
+simple_actionTree_sinkP_1_initP_1_branch_50_numStates_400_numComp_1, 404, 20004, 1, 2, 401, 50, 4, 0.0, 20001, 0, , , , , 2, 400, 1, 200.5, , , , 
+simple_actionTree_sinkP_1_initP_1_branch_50_numStates_400_numComp_20, 8004, 400004, 1, 2, 8001, 50, 4, 0.0, 400001, 0, , , , , 21, 400, 1, 381.0, , , , 
+simple_actionTree_sinkP_1_initP_1_branch_50_numStates_400_numComp_5, 2004, 100004, 1, 2, 2001, 50, 4, 0.0, 100001, 0, , , , , 6, 400, 1, 333.5, , , , 
+simple_actionTree_sinkP_1_initP_1_branch_5_numStates_400_numComp_1, 404, 2004, 1, 2, 401, 5, 4, 0.0, 2001, 0, , , , , 2, 400, 1, 200.5, , , , 
+simple_actionTree_sinkP_1_initP_1_branch_5_numStates_400_numComp_20, 8004, 40004, 1, 2, 8001, 5, 4, 0.0, 40001, 0, , , , , 21, 400, 1, 381.0, , , , 
+simple_actionTree_sinkP_1_initP_1_branch_5_numStates_400_numComp_5, 2004, 10004, 1, 2, 2001, 5, 4, 0.0, 10001, 0, , , , , 6, 400, 1, 333.5, , , , 
+simple_actionTree_sinkP_1_initP_1_branch_70_numStates_400_numComp_1, 404, 28004, 1, 2, 401, 70, 4, 0.0, 28001, 0, , , , , 2, 400, 1, 200.5, , , , 
+simple_actionTree_sinkP_1_initP_1_branch_70_numStates_400_numComp_20, 8004, 560004, 1, 2, 8001, 70, 4, 0.0, 560001, 0, , , , , 21, 400, 1, 381.0, , , , 
+simple_actionTree_sinkP_1_initP_1_branch_70_numStates_400_numComp_5, 2004, 140004, 1, 2, 2001, 70, 4, 0.0, 140001, 0, , , , , 6, 400, 1, 333.5, , , , 

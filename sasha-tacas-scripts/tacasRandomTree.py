@@ -31,7 +31,7 @@ import typing
 prism_path="../prism-games-3.0.beta-src/prism/bin/prism"
 wp_path="../../CAV20Impl/mycode/WP/bin/prism"
 max_processes = 6
-TIMEOUT = "15m"
+TIMEOUT = "2m"
 JAVAMAXMEM = "5g" # "Free: 36g Processes: 6 -> 5g MaxMem and 1g JavaStack"
 JAVASTACK = "1g"
 reps=1 #Repetitions. If set to 1, it will not appear in filename of log.    
@@ -70,7 +70,32 @@ def _parse(cmd):
 # Configurations
 configurations = dict()
 
-configurations["BVI_100"] = (prism_path, "-ii -maxiters 100")
+configurations["VI"] = (prism_path, "")
+configurations["TOP_VI"] = (prism_path, "-topological")
+
+#BVI
+configurations["BVI"] = (prism_path, "-ii -maxiters 1")
+configurations["G_BVI"] = (prism_path, "-ii -maxiters 1 -smg_opts 1")
+configurations["T_BVI"] = (prism_path, "-ii -maxiters 1 -topological -smg_opts 2")
+configurations["TOP_BVI"] = (prism_path, "-ii -maxiters 1 -topological")
+configurations["D_BVI"] = (prism_path, "-ii -maxiters 100")
+
+#SVI
+configurations["SVI"] = (prism_path, "-svi -maxiters 1")
+configurations["G_SVI"] = (prism_path, "-svi -maxiters 1 -smg_opts 1")
+configurations["T_SVI"] = (prism_path, "-svi -maxiters 1 -topological -smg_opts 2")
+configurations["TOP_SVI"] = (prism_path, "-svi -maxiters 1 -topological")
+configurations["D_SVI"] = (prism_path, "-svi -maxiters 100")
+
+#OVI
+configurations["OVI"] = (prism_path, "-ovi -maxiters 1")
+configurations["G_OVI"] = (prism_path, "-ovi -maxiters 1 -smg_opts 1")
+configurations["T_OVI"] = (prism_path, "-ovi -maxiters 1 -topological -smg_opts 2")
+configurations["TOP_OVI"] = (prism_path, "-ovi -maxiters 1 -topological")
+configurations["OPT_OVI"] = (prism_path, "-ovi -maxiters 1 -smg_opts 4")
+
+#WP
+configurations["WP"] = (wp_path, "-ex -BVI_A")
 
 
 #Models

@@ -11,7 +11,7 @@ module player1
 	[a] state=0 & i = 0 -> 1/2 : (state'=1) + 1/2 : (state'=2);
     [b] state=0 & i = 0 -> 1 : (i'=1);
     [a] state=0 & i > 0 & i < N -> 1/1000 : (i'=i+1) + 999/1000 : (i'=i);
-    [b] state=0 & i > 0 & i < N -> 490/1000 : (state'=1) + 510/1000 : (state'=2);
+    [b] state=0 & i > 0 & i < N -> 1/2 : (state'=1) + 1/2 : (state'=2);
     [] state=0 & i = N -> 490/1000 : (state'=1) + 510/1000 : (state'=2);
 	[] state=1 -> 1 : (state'=1);
 endmodule
