@@ -175,7 +175,8 @@ public class ProbModelChecker extends NonProbModelChecker
 
 	// Method used for numerical solution
 	public enum SolnMethod {
-		VALUE_ITERATION, INTERVAL_ITERATION, POLICY_ITERATION, QUADRATIC_PROGRAMMING, GAUSS_SEIDEL, SOUND_VALUE_ITERATION, OPTIMISTIC_VALUE_ITERATION, ANALYSE_MODEL;
+		VALUE_ITERATION, INTERVAL_ITERATION, POLICY_ITERATION, QUADRATIC_PROGRAMMING, GAUSS_SEIDEL, SOUND_VALUE_ITERATION, OPTIMISTIC_VALUE_ITERATION, ANALYSE_MODEL,
+		OPTIMISTIC_INTERVAL_ITERATION, BOOSTER_VALUE_ITERATION;
 	};
 
 	/**
@@ -240,7 +241,10 @@ public class ProbModelChecker extends NonProbModelChecker
 				setSolnMethod(SolnMethod.OPTIMISTIC_VALUE_ITERATION);
 			} else if (s.equals("Analyse")) {
 				setSolnMethod(SolnMethod.ANALYSE_MODEL);
-      } else {
+      		} else if (s.equals("Optimistic interval iteration")) {
+      			setSolnMethod(SolnMethod.OPTIMISTIC_INTERVAL_ITERATION);
+      		} else
+			 {
 				throw new PrismNotSupportedException("Explicit engine does not support SMG solution method \"" + s + "\"");
 			}
 			// SOLN_METHOD_OPTIONS // Added by Maxi 15.05.20. Kinda hacky, since just an int, but nicest way to pass options to all the new methods easily.

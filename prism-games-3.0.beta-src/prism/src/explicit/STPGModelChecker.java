@@ -301,6 +301,14 @@ public class STPGModelChecker extends ProbModelChecker
 			case OPTIMISTIC_VALUE_ITERATION:
 				res = computeReachProbsValIter(stpg, no, yes, min1, min2, init, known, solnMethod);
 				break;
+			case OPTIMISTIC_INTERVAL_ITERATION:
+				STPGOptimisticIntervalIteration optimisticVI = new STPGOptimisticIntervalIteration(this);
+				res = optimisticVI.computeReachProbsValIter(stpg, no, yes, min1, min2, init, known, solnMethod);
+				break;
+			case BOOSTER_VALUE_ITERATION:
+				STPGBoosterIntervalIteration boosterVI = new STPGBoosterIntervalIteration(this);
+				res = boosterVI.computeReachProbsValIter(stpg, no, yes, min1, min2, init, known, solnMethod);
+				break;
 			case ANALYSE_MODEL:
 				res = analyse_model(stpg, no, yes, min1, min2, init, known, target);
 				break;
@@ -316,6 +324,7 @@ public class STPGModelChecker extends ProbModelChecker
 			mainLog.println("Bound is 1, hence I am skipping the computation of other values than 1.");
 		}
 
+		mainLog.println(Arrays.toString(res.soln));
 		// Finished probabilistic reachability
 		timer = System.currentTimeMillis() - timer;
 		if (verbosity >= 1)
@@ -325,8 +334,6 @@ public class STPGModelChecker extends ProbModelChecker
 		res.timeTaken = timer / 1000.0;
 		res.timeProb0 = timerProb0 / 1000.0;
 		res.timePre = (timerProb0 + timerProb1) / 1000.0;
-
-		mainLog.println("Intial-State "+stpg.getFirstInitialState()+" Value: "+res.soln[stpg.getFirstInitialState()]);
 
 		return res;
 	}
@@ -1070,7 +1077,6 @@ public class STPGModelChecker extends ProbModelChecker
 //				mainLog.println(iters+"\t\t LB: " + lowerBounds[0] + " UB: " + (upperBounds!=null ? upperBounds[0] : "none"));
 //				if(variant==SolnMethod.SOUND_VALUE_ITERATION){mainLog.println("l:" + lowerBound + "; u:" + upperBound);}
 //			}
-			//System.out.println("ITERATION: " +iters);
 
 			if(doGS){
 				// For Gauss Seidel, let the new objects have the most up-to-date values, then only work on the new ones
@@ -1448,17 +1454,17 @@ public class STPGModelChecker extends ProbModelChecker
 //        allStates.set(i);
 //      }
       // compute the attractor set for the best exit
-//      BitSet attractor = computeAlmostSureAttractor(stpg, bestExitState, subse0t, maxPlayer);
+      BitSet attractor = computeAlmostSureAttractor(stpg, bestExitState, subset, maxPlayer);
 //
-//      //deflate every state in the attractor
-//      for (int s = attractor.nextSetBit(0); s >= 0; s = attractor.nextSetBit(s+1)) {
-//        stepBoundReach[s] = Math.max(stepBoundReach[s], reachVal);
-//        stepBoundStay[s] = Math.min(stepBoundStay[s], stayVal);
-//      }
-//      mecMinusAttractor.andNot(attractor);
-      stepBoundReach[bestExitState] = Math.max(stepBoundReach[bestExitState], reachVal);
-      stepBoundStay[bestExitState] = Math.min(stepBoundStay[bestExitState], stayVal);
-      mecMinusAttractor.clear(bestExitState);
+      //deflate every state in the attractor
+	  for (int s = attractor.nextSetBit(0); s >= 0; s = attractor.nextSetBit(s+1)) {
+        stepBoundReach[s] = Math.max(stepBoundReach[s], reachVal);
+        stepBoundStay[s] = Math.min(stepBoundStay[s], stayVal);
+      }
+      mecMinusAttractor.andNot(attractor);
+      //stepBoundReach[bestExitState] = Math.max(stepBoundReach[bestExitState], reachVal);
+      //stepBoundStay[bestExitState] = Math.min(stepBoundStay[bestExitState], stayVal);
+      //mecMinusAttractor.clear(bestExitState);
     }
 //    return new double[][]{stepBoundStay,stepBoundReach};
 
