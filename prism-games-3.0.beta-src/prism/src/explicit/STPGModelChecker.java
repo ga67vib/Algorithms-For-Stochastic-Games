@@ -921,7 +921,7 @@ public class STPGModelChecker extends ProbModelChecker
 					}
 
 					iters++;
-					IterationMethod.intervalIterationCheckForProblems(lowerBounds, upperBounds, IntSet.asIntSet(state).iterator());
+					if (variant == SolnMethod.INTERVAL_ITERATION) IterationMethod.intervalIterationCheckForProblems(lowerBounds, upperBounds, IntSet.asIntSet(state).iterator());
 
 					if (useTOP) haveAlreadyFixedValues.set(state);
 				} else {
@@ -961,8 +961,7 @@ public class STPGModelChecker extends ProbModelChecker
 							}
 						}
 					}
-
-					IterationMethod.intervalIterationCheckForProblems(lowerBounds, upperBounds, statesForSCCIntSet.iterator());
+					if (variant == SolnMethod.INTERVAL_ITERATION) IterationMethod.intervalIterationCheckForProblems(lowerBounds, upperBounds, statesForSCCIntSet.iterator());
 //					mainLog.println("Non-trivial SCC done in " + itersInSCC + " many iterations");
 					iters+=itersInSCC;
 
@@ -1455,16 +1454,16 @@ public class STPGModelChecker extends ProbModelChecker
 //      }
       // compute the attractor set for the best exit
       BitSet attractor = computeAlmostSureAttractor(stpg, bestExitState, subset, maxPlayer);
-//
+
       //deflate every state in the attractor
-	  for (int s = attractor.nextSetBit(0); s >= 0; s = attractor.nextSetBit(s+1)) {
+      for (int s = attractor.nextSetBit(0); s >= 0; s = attractor.nextSetBit(s+1)) {
         stepBoundReach[s] = Math.max(stepBoundReach[s], reachVal);
         stepBoundStay[s] = Math.min(stepBoundStay[s], stayVal);
       }
       mecMinusAttractor.andNot(attractor);
-      //stepBoundReach[bestExitState] = Math.max(stepBoundReach[bestExitState], reachVal);
-      //stepBoundStay[bestExitState] = Math.min(stepBoundStay[bestExitState], stayVal);
-      //mecMinusAttractor.clear(bestExitState);
+//      stepBoundReach[bestExitState] = Math.max(stepBoundReach[bestExitState], reachVal);
+//      stepBoundStay[bestExitState] = Math.min(stepBoundStay[bestExitState], stayVal);
+//      mecMinusAttractor.clear(bestExitState);
     }
 //    return new double[][]{stepBoundStay,stepBoundReach};
 
@@ -1742,9 +1741,8 @@ public class STPGModelChecker extends ProbModelChecker
               for (int succ : stpg.getChoice(s, i).keySet()) {
                 val += stepBoundReach[succ] + stepBoundStay[succ] * upperbound;
               }
-
                //double val = stpg.mvMultSingle(s, i, stepBoundStay);
-              if (val >= bestValSoFar) {
+              if (val > bestValSoFar) {
                 bestValSoFar = val;
                 bestAction = i;
                 exitState = s;
@@ -1754,7 +1752,7 @@ public class STPGModelChecker extends ProbModelChecker
         }
 
       }
-      //if(bestValSoFar==1.0) break;
+      if(bestValSoFar==1.0) break;
       //TODO: We might want to deflate minimizer stuff to 0. Should be handled by prob0 though.
     }
     return new int[]{exitState, bestAction};

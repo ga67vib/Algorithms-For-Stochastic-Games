@@ -1,14 +1,16 @@
 import os
 import multiprocess as mp
 
-output_dir = "manyAct_steps"
-models_per_conf = 20
+output_dir = "Tacas_RANDOM_Trees"
+models_per_conf = 10
 types = ["tree"]
-state_sizes = [100, 1000, 10000]
-num_min_actions = [2, 5, 10, 30, 50, 70, 90, 100]
-branchingProbs = [0.9]#[0.1, 0.8]
-backwardsProbs = [0]
-smallestProbs = [0.1]
+state_sizes = [1000, 10000, 100000]
+# 2 3 5
+# 100 for random
+num_min_actions = [2, 5, 10, 50, 100] # In Tree: Branching Factor - In Random: Connectivity Factor (How many Actions lead certainly into state)
+branchingProbs = [0.5] # How probable are multiple transitions per Action? 
+backwardsProbs = [0.01, 0.1] # How probable are MEC-creating Actions?
+smallestProbs = [0.5, 0.01, 0.0001] # What's the smallest allowed probability?
 forceUnknown = True
 
 num_processes = 7

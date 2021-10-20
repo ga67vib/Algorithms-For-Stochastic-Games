@@ -2,7 +2,7 @@ import os
 import json
 
 template_path = "../model-extension-configs/config-template/configTemplate.json"
-out_dir = "../model-extension-configs/manyAct-ActionTreeConfig/"
+out_dir = "../model-extension-configs/oviBad/"
 
 if (not os.path.isdir(out_dir)):
     os.mkdir(out_dir)
@@ -91,20 +91,20 @@ if (action_model["use"]):
     branch_to_num_comp = dict()
     branch_to_depth = dict()
 
-    branching_factors = [2, 5, 10, 30, 50, 70, 100, 200]
+    branching_factors = [1]
 
     #3
-    for sinkProb in [1]:
+    for sinkProb in [0]:
         #3
-        for initProb in [0, 1]:
+        for initProb in [99]:
             if (sinkProb+initProb > 100):
                 continue
             #3
             for branching_factor in branching_factors:
                 #3
-                for numStates in [400]:
+                for numStates in [1]:
                     #3
-                    for numComponents in [1, 5, 20]: # Gives state sizes 400, 2000, 10000
+                    for numComponents in [1, 5, 10, 50, 100, 200]: # Gives state sizes 400, 2000, 10000
                         file_name = "actionTree_sinkP_%d_initP_%d_branch_%d_numStates_%d_numComp_%d.json" % (
                             sinkProb, initProb, branching_factor, numStates, numComponents
                         )
