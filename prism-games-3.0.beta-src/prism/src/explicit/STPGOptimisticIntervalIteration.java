@@ -16,9 +16,12 @@ public class STPGOptimisticIntervalIteration {
 
     int lowerJumps = 0;
     int upperJumps = 0;
-    int penaltyForUnsuccessfulVerfication = 10_000;
+    int penaltyForUnsuccessfulVerfication = 1000;
 
-    boolean debug = false;
+    boolean debug = true;
+
+    double precision = 1e-12;
+    boolean absolute = true;
 
     public STPGOptimisticIntervalIteration(STPGModelChecker modelChecker) {
         this.modelChecker = modelChecker;
@@ -324,7 +327,10 @@ public class STPGOptimisticIntervalIteration {
         double tmpsoln[];
 
         // Helper variables needed for OVI
-        double epsPrime = this.modelChecker.termCritParam; //precision that OVI gives the normal VI phase. Will decrease over time.
+        double epsPrimeLower = this.modelChecker.termCritParam; //precision that OVI gives the normal VI phase. Will decrease over time.
+        double epsPrimeUpper = this.modelChecker.termCritParam; //precision that OVI gives the normal VI phase. Will decrease over time.
+
+
         boolean OVI_L_in_verification_phase = ((this.modelChecker.solnMethodOptions&2) == 2); // Continue to work on L in verification phase?
         int verifIters = 0; //counts how many iterations we made in verification phases
         boolean verifPhase = false; //indicates whether we are in a verification phase right now
@@ -350,6 +356,23 @@ public class STPGOptimisticIntervalIteration {
 
         double[] upperVerificationGuessBounds = new double[stpg.getNumStates()];
         double[] upperVerificationGuessBoundsAfterIteration = new double[stpg.getNumStates()];
+
+        Arrays.fill(lowerVerificationGuessBounds, 1.0);
+        Arrays.fill(lowerVerificationGuessBoundsAfterIteration, 1.0);
+
+        for (int state = 0; state < stpg.getNumStates(); state++) {
+            if (upperBounds[state] == 0) {
+                lowerVerificationGuessBounds[state] = 0;
+                lowerVerificationGuessBoundsAfterIteration[state] = 0;
+            }
+            if (lowerBounds[state] == 1) {
+                upperVerificationGuessBounds[state] = 1;
+                upperVerificationGuessBounds[state] = 1;
+            }
+        }
+
+        int lowerVerifIters = 0;
+        int upperVerifIters = 0;
 
         // Gauss-Seidel
         boolean doGS = ((modelChecker.solnMethodOptions%2)==1);
@@ -437,7 +460,7 @@ public class STPGOptimisticIntervalIteration {
                     lowerVerificationGuessBoundsAfterIteration = deflate(stpg, min1, min2, lowerBoundsNew, lowerVerificationGuessBoundsAfterIteration, sec, ec)[0];
                 }
             }
-            if (upperVerificationPhase) {
+            if (false && upperVerificationPhase) { // Lower bounds don't need deflating and we induce a lower bound from the upper bound
                 for (BitSet sec : OVI_Upper_SECs) {
                     upperVerificationGuessBoundsAfterIteration = deflate(stpg, min1, min2, upperBoundsNew, upperVerificationGuessBoundsAfterIteration, sec, ec)[0];
                 }
@@ -445,13 +468,18 @@ public class STPGOptimisticIntervalIteration {
 
             // Swap vectors for next iter
             // Now lowerBounds is the most up-to-date approximation, while the lowerBoundsNew contains the previous iteration
-            tmpsoln = lowerBounds;
-            lowerBounds = lowerBoundsNew;
-            lowerBoundsNew = tmpsoln;
+            // If lowerBounds were not changed no need to change anything
+            if (!lowerVerificationPhase) {
+                tmpsoln = lowerBounds;
+                lowerBounds = lowerBoundsNew;
+                lowerBoundsNew = tmpsoln;
+            }
 
-            tmpsoln = upperBounds;
-            upperBounds = upperBoundsNew;
-            upperBoundsNew = tmpsoln;
+            if (!upperVerificationPhase) {
+                tmpsoln = upperBounds;
+                upperBounds = upperBoundsNew;
+                upperBoundsNew = tmpsoln;
+            }
 
             /**
              * Check termination
@@ -470,8 +498,9 @@ public class STPGOptimisticIntervalIteration {
             // Optimistic Iteration Criterion
 
             // ------- VERIFICATION FROM THE LOWER BOUND -------
-            if (!lowerVerificationPhase && !lowerVerificationTerminated) {
-                boolean lowerBoundEpsClose = PrismUtils.doublesAreClose(lowerBounds, lowerBoundsNew, epsPrime, modelChecker.termCrit == ProbModelChecker.TermCrit.ABSOLUTE);
+            if (!lowerVerificationPhase) {
+                boolean lowerBoundEpsClose = PrismUtils.doublesAreClose(lowerBounds, lowerBoundsNew, epsPrimeLower,
+                        modelChecker.termCrit == ProbModelChecker.TermCrit.ABSOLUTE);
 
                 if (lowerBoundEpsClose) {
                     System.out.println("Starting Lower Verification Phase in Iteration " + iters);
@@ -502,7 +531,8 @@ public class STPGOptimisticIntervalIteration {
                     boolean improvedAtLeastSomewhere = allUp && lowerVerificationGuessBoundsAfterIteration[s] > lowerBounds[s];
 
                     // We should only consider counterexamples that are not due to some fiddly floating-point arithmetics
-                    boolean farEnoughApart = !PrismUtils.doublesAreClose(lowerVerificationGuessBoundsAfterIteration[s], lowerVerificationGuessBounds[s], modelChecker.termCritParam / 1000, true || modelChecker.termCrit == ProbModelChecker.TermCrit.ABSOLUTE);
+                    //boolean farEnoughApart = !PrismUtils.doublesAreClose(lowerVerificationGuessBoundsAfterIteration[s], lowerVerificationGuessBounds[s],
+                    //        precision, absolute);
                     //wentUp = wentUp && farEnoughApart; // Only count something as an improvment if it REALLY is
                     //wentDown = wentDown && farEnoughApart;
 
@@ -543,17 +573,19 @@ public class STPGOptimisticIntervalIteration {
                     lowerBounds = lowerVerificationGuessBoundsAfterIteration;
                     lowerJumps++;
                     System.out.println("[Iteration "+iters+"]: The induced bound from L was a lower bound, so we use it now");
-                } else {
+                }
+                else {
                     System.out.println("Lower bound induction happened in iteration " + iters + " but was unsuccessful");
                     lowerVerificationPhase = false;
                     lowerVerificationTerminated = true;
                     counterUntilAllowLowerVerification = penaltyForUnsuccessfulVerfication;
+                    epsPrimeLower/=2.0;
                 }
             }
 
             // ------- VERIFICATION FROM THE UPPER BOUND -------
-            if (!done && !upperVerificationPhase && !upperVerificationTerminated) {
-                boolean upperBoundEpsClose = PrismUtils.doublesAreClose(upperBounds, upperBoundsNew, epsPrime, modelChecker.termCrit == ProbModelChecker.TermCrit.ABSOLUTE);
+            if (!done && !upperVerificationPhase) {
+                boolean upperBoundEpsClose = PrismUtils.doublesAreClose(upperBounds, upperBoundsNew, epsPrimeUpper, modelChecker.termCrit == ProbModelChecker.TermCrit.ABSOLUTE);
 
                 if (upperBoundEpsClose) {
                     counterUpperboundsDidNotImproveMuch++;
@@ -566,7 +598,7 @@ public class STPGOptimisticIntervalIteration {
                 // Only start upper verification phase if there wasn't any big change to upper bound for n times
                 // This ensures that it's not because the better value hasn't reached any state so far
                 // furthermore, waiting n iterations too long is probably not too horrible
-                if (counterUpperboundsDidNotImproveMuch >= stpg.getNumStates()) {
+                if (upperBoundEpsClose && counterUpperboundsDidNotImproveMuch >= stpg.getNumStates()) {
                     System.out.println("Starting Upper Verification Phase in Iteration " + iters);
 
                     // Guess the bounds that are above upperBounds and hopefully above the solution
@@ -574,15 +606,6 @@ public class STPGOptimisticIntervalIteration {
                     upperVerificationGuessBounds = diffMinus(upperBounds, upperVerificationGuessBounds, subset);
                     log("Upperbounds: "+Arrays.toString(upperBounds));
                     log("UpperGuess : "+Arrays.toString(upperVerificationGuessBounds));
-
-                    //Also precompute the SECs according to the current upperBound, which will then be used for deflating
-                    OVI_Upper_SECs = new ArrayList<BitSet>();
-                    for (BitSet mec : mecs) {
-                        if (subset.intersects(mec)) {
-                            List<BitSet> SECs = ec.getSECs(mec, upperBounds, min1, min2);
-                            OVI_Upper_SECs.addAll(SECs);
-                        }
-                    }
                 }
             }
             else if (!done && upperVerificationPhase) {
@@ -598,7 +621,8 @@ public class STPGOptimisticIntervalIteration {
                     boolean improvedAtLeastSomewhere = allDown && upperVerificationGuessBoundsAfterIteration[s] < upperBounds[s];
 
                     // We should only consider counterexamples that are not due to some fiddly floating-point arithmetics
-                    boolean farEnoughApart = true;//!PrismUtils.doublesAreClose(upperVerificationGuessBoundsAfterIteration[s], upperVerificationGuessBounds[s], modelChecker.termCritParam / 1000, modelChecker.termCrit == ProbModelChecker.TermCrit.ABSOLUTE);
+                    boolean farEnoughApart = !PrismUtils.doublesAreClose(upperVerificationGuessBoundsAfterIteration[s], upperVerificationGuessBounds[s],
+                            precision, absolute);
                     wentUp = wentUp && farEnoughApart;
                     wentDown = wentDown && farEnoughApart;
 
@@ -648,6 +672,7 @@ public class STPGOptimisticIntervalIteration {
                     upperVerificationPhase = false;
                     upperVerificationTerminated = true;
                     counterUntilAllowUpperVerification = penaltyForUnsuccessfulVerfication;
+                    epsPrimeUpper/=2.0;
                 }
             }
 
@@ -667,6 +692,8 @@ public class STPGOptimisticIntervalIteration {
             System.out.println("Resulting interval: ["+lowerBounds[initialState]+","+((upperBounds!=null) ? upperBounds[initialState] : "none")+"]");
 
         System.out.println("Lowerjumps: "+lowerJumps+", upperJumps: "+upperJumps);
+        System.out.println("Eps' Lower: "+epsPrimeLower);
+        System.out.println("Eps' Upper: "+epsPrimeUpper);
 
         return new double[][]{lowerBounds,upperBounds,{iters}};
     }
@@ -777,7 +804,7 @@ public class STPGOptimisticIntervalIteration {
             else{ //if(modelChecker.termCrit == TermCrit.RELATIVE){
                 lowerBoundsGuess[s] = Math.max(0,upperBounds[s] * (1-modelChecker.termCritParam));
             }
-        }https://open.spotify.com/playlist/5AA8vX723M31GKCel602bM
+        }
         return lowerBoundsGuess;
     }
 

@@ -204,6 +204,100 @@ public class STPGValueIterationUtils {
         return attractorDistances;
     }
 
+    public static double[] getValueFromStrategiesWithoutAttractorWithLP(PrismComponent prismComponent, STPG stpg, BitSet yes, BitSet no, BitSet relevantStates, BitSet alreadyComputedStates, double[] fixedValues, double precision, double[] lowerBounds, double[] upperBounds) throws PrismException {
+        // Compute all Action Possibilities
+        if (relevantStates == null) {
+            relevantStates = new BitSet();
+            relevantStates.set(0, stpg.getNumStates()-1);
+        }
+
+        long t1;
+        long t2;
+
+        t1 = System.currentTimeMillis();
+        ArrayList<Integer>[] allowedMaximizerActions = new ArrayList[stpg.getNumStates()];
+        ArrayList<Integer>[] allowedMinimizerActions = new ArrayList[stpg.getNumStates()];
+        //int[] allowedMinimizerActions = new int[stpg.getNumStates()];
+
+        // Important hack for VI and OVI
+        if (upperBounds == null) {
+            upperBounds = lowerBounds;
+        }
+        // Find allowd actions for maximizer and strategy for minimizer
+        for (int state = relevantStates.nextSetBit(0); state >= 0; state = relevantStates.nextSetBit(state+1)) {
+            boolean isMaximizerState = stpg.getPlayer(state) == 1;
+            double[] referenceBound;
+
+            // Play conservative
+            if (isMaximizerState) {
+                referenceBound = lowerBounds;
+                allowedMaximizerActions[state] = new ArrayList<>();
+            }
+            else {
+                referenceBound = upperBounds;
+                allowedMinimizerActions[state] = new ArrayList<>();
+            }
+
+            double bestChoiceValueMaximizer = 0;
+            double bestChoiceValueMinimizer = 1.0;
+            for (int choice = 0; choice < stpg.getNumChoices(state); choice++) {
+                double choiceValue = 0;
+
+                for (Iterator<Map.Entry<Integer, Double>> it = stpg.getTransitionsIterator(state, choice); it.hasNext(); ) {
+                    Map.Entry<Integer, Double> tr = it.next();
+                    choiceValue += tr.getValue() * referenceBound[tr.getKey()];
+                }
+
+                //Minimizer may take any optimal action
+                if (!isMaximizerState && bestChoiceValueMinimizer > choiceValue) {
+                    bestChoiceValueMinimizer = choiceValue;
+
+                    allowedMinimizerActions[state].clear();
+                    allowedMinimizerActions[state].add(choice);
+                }
+                //If it is equally good as your current actions, add it to your considerations
+                else if (isMaximizerState && PrismUtils.doublesAreClose(bestChoiceValueMaximizer, choiceValue, precision, true)) {
+                    allowedMaximizerActions[state].add(choice);
+                }
+                //If this action is better than the last ones, start considerations from here
+                else if (isMaximizerState && bestChoiceValueMaximizer < choiceValue) {
+                    bestChoiceValueMaximizer = choiceValue;
+                    allowedMaximizerActions[state].clear();
+                    allowedMaximizerActions[state].add(choice);
+                }
+            }
+        }
+        t2 = System.currentTimeMillis();
+        getAllowedActionsTime += (t2-t1);
+
+        if (fixedValues == null) {
+            fixedValues = new double[stpg.getNumStates()];
+        }
+        t1 = System.currentTimeMillis();
+        LocalMDPResult maxFixedLocalMDP = createLocalMDPFromSTPG(stpg, allowedMaximizerActions, true, yes, no, relevantStates, alreadyComputedStates, fixedValues, lowerBounds);
+        LocalMDPResult minFixedLocalMDP = createLocalMDPFromSTPG(stpg, allowedMinimizerActions, false, yes, no, relevantStates, alreadyComputedStates, fixedValues, upperBounds);
+        t2 = System.currentTimeMillis();
+        dtmcBuildingTime += (t2-t1);
+
+        MDPModelChecker mdpModelChecker = new MDPModelChecker(prismComponent);
+
+        ModelCheckerResult maxFixedResult = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(maxFixedLocalMDP.mdp, maxFixedLocalMDP.sinks, maxFixedLocalMDP.targets, true, null, maxFixedLocalMDP.initVector);
+        ModelCheckerResult minFixedResult = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(minFixedLocalMDP.mdp, minFixedLocalMDP.sinks, minFixedLocalMDP.targets, false, null, minFixedLocalMDP.initVector);
+
+        for (int state = relevantStates.nextSetBit(0); state >= 0; state = relevantStates.nextSetBit(state+1)) {
+            double valInMaxFixed = maxFixedResult.soln[maxFixedLocalMDP.stpgStatesToMdpStates.get(state)];
+            double valInMinFixed = minFixedResult.soln[minFixedLocalMDP.stpgStatesToMdpStates.get(state)];
+            if (!PrismUtils.doublesAreClose(valInMaxFixed, valInMinFixed, precision, true)) {
+                throw new PrismException("State " + state + " would get in the MaximizerMDP value " + valInMinFixed + " but " + valInMaxFixed + " in the MinimizerMDP." +
+                        "Thus, topological failed. Bound of the state in the STPG: [" + lowerBounds[state] + ", " + upperBounds[state] + "]");
+            }
+            fixedValues[state] = valInMaxFixed;
+        }
+
+        return fixedValues;
+    }
+
+
     public static double[] getValueFromStrategiesWithoutAttractor(PrismComponent prismComponent, STPG stpg, BitSet yes, BitSet no, BitSet relevantStates, BitSet alreadyComputedStates, double[] fixedValues, double precision, double[] lowerBounds, double[] upperBounds) throws PrismException {
         // Compute all Action Possibilities
         if (relevantStates == null) {
@@ -724,83 +818,116 @@ public class STPGValueIterationUtils {
         mdp.addChoice(target, d);
 
         //Copy actions and fix those that have to be fixed
+        //Copy the suggested actions (merge all suggested actions of maximizer into one
         for (int state = relevantStates.nextSetBit(0); state >= 0; state = relevantStates.nextSetBit(state + 1)) {
-            if (state == 2) {
-                System.out.println("Hi");
-            }
-            initVector[stpgToMdp.get(state)] = bound[state];
             boolean isMaximizerState = stpg.getPlayer(state) == 1;
             double probabilityScaling = 1.0;
 
-            // One Distribution for all actions that will be contracted into one
-            Distribution allowedActionDistribution = new Distribution();
-            boolean distributeOverAllActions = false;
-            for (int choice = 0; choice < stpg.getNumChoices(state); choice++) {
-                Distribution distribution;
-                if ((isMaximizerState && maxIsFixed) || (!isMaximizerState && !maxIsFixed)) {
-                    if (!allowedActions[state].contains(choice)) continue;
+            if ((isMaximizerState && maxIsFixed) || (!isMaximizerState && !maxIsFixed)) {
+                Distribution interActionDistribution = new Distribution();
+                probabilityScaling = 1.0/((double) allowedActions[state].size());
+                if (state == 6501) {
+                    System.out.println("6501!! Probscaling: "+probabilityScaling);
 
-                    distribution = allowedActionDistribution;
-                    distributeOverAllActions = true;
-                    probabilityScaling = 1.0/allowedActions[state].size();
                 }
-                else {
-                    //Take the Distribution of this action alone, since it is not contracted
-                    distribution = new Distribution();
-                }
+                double probability = 0.0;
+                for (int choice : allowedActions[state]) {
+                    if (state == 6501) {
+                        System.out.println("Action: "+choice);
 
-                for (Iterator<Map.Entry<Integer, Double>> it = stpg.getTransitionsIterator(state, choice); it.hasNext(); ) {
-                    Map.Entry<Integer, Double> tr = it.next();
-
-                    int nextState = tr.getKey();
-                    //Redirect action to new target
-                    if (yes.get(nextState)) {
-                        distribution.add(target, tr.getValue() * probabilityScaling);
                     }
-                    //Redirect action to new sink
-                    else if (no.get(nextState)) {
-                        distribution.add(sink, tr.getValue() * probabilityScaling);
-                    }
-                    //Stay inside SCC
-                    else if (relevantStates.get(nextState)) {
-                        distribution.add(stpgToMdp.get(nextState), tr.getValue() * probabilityScaling);
-                    }
-                    //Moving to a already fixed state -> Should already have a fixed value and thus can be replaced
-                    else if (alreadyComputedStates.get(nextState)) {
-                        double targetReachProb = fixedValues[nextState] * tr.getValue() * probabilityScaling;
-                        distribution.add(target, targetReachProb);
-                        if (targetReachProb < 1) {
-                            distribution.add(sink, 1.0 * probabilityScaling - targetReachProb);
+                    for (Iterator<Map.Entry<Integer, Double>> it = stpg.getTransitionsIterator(state, choice); it.hasNext(); ) {
+                        Map.Entry<Integer, Double> tr = it.next();
+                        int nextState = tr.getKey();
+                        //Redirect action to new target
+                        if (yes.get(nextState)) {
+                            if (state == 6501) {
+                                System.out.println("TARGET: "+tr.getValue()+", * prob -> "+(tr.getValue()*probabilityScaling));
+                            }
+                            probability+=tr.getValue() * probabilityScaling;
+                            interActionDistribution.add(target, tr.getValue() * probabilityScaling);
+                        }
+                        //Redirect action to new sink
+                        else if (no.get(nextState)) {
+                            probability+=tr.getValue() * probabilityScaling;
+                            interActionDistribution.add(sink, tr.getValue() * probabilityScaling);
+                            if (state == 6501) {
+                                System.out.println("SINK: "+tr.getValue()+", * prob -> "+(tr.getValue()*probabilityScaling));
+                            }
+                        }
+                        //Stay inside SCC
+                        else if (relevantStates.get(nextState)) {
+                            probability+=tr.getValue() * probabilityScaling;
+                            interActionDistribution.add(stpgToMdp.get(nextState), tr.getValue() * probabilityScaling);
+                            if (state == 6501) {
+                                System.out.println("IN SCC: "+tr.getValue()+", * prob -> "+(tr.getValue()*probabilityScaling));
+                            }
+                        }
+                        //Moving to a already fixed state -> Should already have a fixed value and thus can be replaced
+                        else if (alreadyComputedStates.get(nextState)) {
+                            double targetReachProb = fixedValues[nextState] * tr.getValue();
+                            interActionDistribution.add(target, targetReachProb * probabilityScaling);
+                            if (targetReachProb < 1) {
+                                interActionDistribution.add(sink, (1.0f - fixedValues[nextState]) * tr.getValue() * probabilityScaling);
+                            }
+                            probability+= targetReachProb * probabilityScaling;
+                            probability+= (1.0f - fixedValues[nextState]) * tr.getValue() * probabilityScaling;
+                            if (state == 6501) {
+                                System.out.println("OUT OF SCC: Probability: "+tr.getValue()+", Value of Outside state: "+(fixedValues[nextState]));
+                                System.out.println("ROUTED FROM 6501 TO TARGET: "+targetReachProb * probabilityScaling+", TO SINK: "+((1.0f - fixedValues[nextState]) * tr.getValue() * probabilityScaling));
+                            }
+                        } else {
+                            throw new PrismException("State " + state + " has in action " + choice + " a transition to state " + nextState + ", which is not already computed nor in the current SCC. This method is only suited for topological cases, in which this case should never arrise.");
                         }
                     }
-                    //
-                    else {
-                        throw new PrismException("State " + state + " has in action " + choice + " a transition to state " + nextState + ", which is not already computed. This method is only suited for topological cases, in which this case should never arrise.");
-                    }
                 }
+                if (probability > 1.01 || probability < 0.99) {
+                    throw new PrismException("For state "+state+" and and allowed actions "+allowedActions[state]+" the summed probability is "+probability);
+                }
+                mdp.addChoice(stpgToMdp.get(state), interActionDistribution);
+            }
+            else {
+                for (int choice = 0; choice < stpg.getNumChoices(state); choice++) {
+                    double probability = 0.0;
+                    Distribution distribution = new Distribution();
+                    for (Iterator<Map.Entry<Integer, Double>> it = stpg.getTransitionsIterator(state, choice); it.hasNext(); ) {
+                        Map.Entry<Integer, Double> tr = it.next();
+                        int nextState = tr.getKey();
+                        //Redirect action to new target
+                        if (yes.get(nextState)) {
+                            probability+=tr.getValue();
+                            distribution.add(target, tr.getValue());
+                        }
+                        //Redirect action to new sink
+                        else if (no.get(nextState)) {
+                            distribution.add(sink, tr.getValue());
+                            probability+=tr.getValue();
+                        }
+                        //Stay inside SCC
+                        else if (relevantStates.get(nextState)) {
+                            distribution.add(stpgToMdp.get(nextState), tr.getValue());
+                            probability+=tr.getValue();
+                        }
+                        //Moving to a already fixed state -> Should already have a fixed value and thus can be replaced
+                        else if (alreadyComputedStates.get(nextState)) {
+                            double targetReachProb = fixedValues[nextState] * tr.getValue();
+                            distribution.add(target, targetReachProb);
+                            if (targetReachProb < 1) {
+                                distribution.add(sink, (1.0f - fixedValues[nextState]) * tr.getValue());
+                            }
+                            probability+=fixedValues[nextState] * tr.getValue();
+                            probability+=(1.0f - fixedValues[nextState]) * tr.getValue();
 
-                if (!distributeOverAllActions) {
-                    float sanityCheck = 0.0f;
-                    for (Integer key : distribution.getSupport()) {
-                        sanityCheck+= distribution.get(key);
+                        } else {
+                            throw new PrismException("State " + state + " has in action " + choice + " a transition to state " + nextState + ", which is not already computed nor in the current SCC. This method is only suited for topological cases, in which this case should never arrise.");
+                        }
                     }
-                    if (sanityCheck > 1.1f || sanityCheck < 0.9f) {
-                        throw new PrismException("For state "+state+" Probability does not add up to one, but instead to "+sanityCheck);
+                    if (probability > 1.01 || probability < 0.99) {
+                        throw new PrismException("For state "+state+" and and allowed actions "+allowedActions[state]+" the summed probability is "+probability);
                     }
                     mdp.addChoice(stpgToMdp.get(state), distribution);
                 }
             }
-            if (distributeOverAllActions) {
-                float sanityCheck = 0.0f;
-                for (Integer key : allowedActionDistribution.getSupport()) {
-                    sanityCheck+= allowedActionDistribution.get(key);
-                }
-                if (sanityCheck > 1.1f || sanityCheck < 0.9f) {
-                    throw new PrismException("For state "+state+" Probability does not add up to one, but instead to "+sanityCheck);
-                }
-                mdp.addChoice(stpgToMdp.get(state), allowedActionDistribution);
-            }
-
         }
 
         // Take any Initial State, since it does not matter
