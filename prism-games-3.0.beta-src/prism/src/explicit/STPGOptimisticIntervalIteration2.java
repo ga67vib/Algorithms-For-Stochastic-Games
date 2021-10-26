@@ -18,10 +18,15 @@ public class STPGOptimisticIntervalIteration2 {
     int upperJumps = 0;
     int penaltyForUnsuccessfulVerfication = 1000;
 
+    int totalLowerVerifIters = 0;
+    int totalUpperVerifIters = 0;
+
     boolean debug = false;
 
     double precision = 1e-12;
     boolean absolute = true;
+
+    long timeSpentDeflating = 0;
 
     public STPGOptimisticIntervalIteration2(STPGModelChecker modelChecker) {
         this.modelChecker = modelChecker;
@@ -423,9 +428,12 @@ public class STPGOptimisticIntervalIteration2 {
              */
 
             // Compute deflated upperbounds as in II (KKKW18)
-            for (BitSet mec : mecs) {
-                if (subset.intersects(mec)) {
-                    upperBoundsNew = deflate(stpg, min1, min2, lowerBoundsNew, upperBoundsNew, mec, ec)[0];
+            long t1 = System.currentTimeMillis();
+            if (iters % modelChecker.maxIters == 0) {
+                for (BitSet mec : mecs) {
+                    if (subset.intersects(mec)) {
+                        upperBoundsNew = deflate(stpg, min1, min2, lowerBoundsNew, upperBoundsNew, mec, ec)[0];
+                    }
                 }
             }
 
@@ -437,6 +445,8 @@ public class STPGOptimisticIntervalIteration2 {
                     lowerVerificationGuessBoundsAfterIteration = deflate(stpg, min1, min2, lowerBoundsNew, lowerVerificationGuessBoundsAfterIteration, sec, ec)[0];
                 }
             }
+            long t2 = System.currentTimeMillis();
+            timeSpentDeflating+= (t2-t1);
 
             // Swap vectors for next iter
             // Now lowerBounds is the most up-to-date approximation, while the lowerBoundsNew contains the previous iteration
@@ -539,6 +549,7 @@ public class STPGOptimisticIntervalIteration2 {
                     System.out.println("Lower bound induction happened in iteration " + iters + " but was unsuccessful");
                     lowerVerificationPhase = false;
                     epsPrimeLower/=2.0;
+                    totalLowerVerifIters +=lowerVerifIters;
                     lowerVerifIters = 0;
                 }
                 if (!allUp && !allDown && !abort){
@@ -621,6 +632,7 @@ public class STPGOptimisticIntervalIteration2 {
                     System.out.println("Upper bound induction happened in iteration " + iters + " but was unsuccessful.");
                     upperVerificationPhase = false;
                     epsPrimeUpper/=2.0;
+                    totalUpperVerifIters+=upperVerifIters;
                     upperVerifIters = 0;
                 }
                 else if (!allUp && !allDown && !abort){
@@ -651,7 +663,9 @@ public class STPGOptimisticIntervalIteration2 {
         System.out.println("Lowerjumps: "+lowerJumps+", upperJumps: "+upperJumps);
         System.out.println("Eps' Lower: "+epsPrimeLower);
         System.out.println("Eps' Upper: "+epsPrimeUpper);
-
+        System.out.println("Total Lower Verification Iterations: "+totalLowerVerifIters);
+        System.out.println("Total Upper Verification Iterations: "+totalUpperVerifIters);
+        System.out.println("Time spent Deflating: "+(((double)timeSpentDeflating) / 1000.0)+"s");
         return new double[][]{lowerBounds,upperBounds,{iters}};
     }
 
@@ -752,7 +766,6 @@ public class STPGOptimisticIntervalIteration2 {
      * Corner case: 0 stays 0, nothing greater than 1
      */
     private double[] diffMinus(double[] upperBounds, double[] lowerBoundsGuess, BitSet subset){
-        lowerBoundsGuess = upperBounds.clone(); //Necessary so that states out of the subset get correct Values for Actions
         for(int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s+1)){
             if(modelChecker.termCrit == ProbModelChecker.TermCrit.ABSOLUTE){
                 lowerBoundsGuess[s] = Math.max(0,upperBounds[s] == 1 ? 1 : upperBounds[s] - this.modelChecker.termCritParam);
