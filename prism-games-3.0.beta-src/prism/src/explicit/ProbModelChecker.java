@@ -243,7 +243,9 @@ public class ProbModelChecker extends NonProbModelChecker
 				setSolnMethod(SolnMethod.ANALYSE_MODEL);
       		} else if (s.equals("Optimistic interval iteration")) {
       			setSolnMethod(SolnMethod.OPTIMISTIC_INTERVAL_ITERATION);
-      		} else
+      		} else if (s.equals("Booster interval iteration")) {
+				setSolnMethod(SolnMethod.BOOSTER_VALUE_ITERATION);
+			} else
 			 {
 				throw new PrismNotSupportedException("Explicit engine does not support SMG solution method \"" + s + "\"");
 			}

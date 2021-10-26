@@ -402,7 +402,7 @@ public class STPGBoosterIntervalIteration {
                 }
             }
 
-            if (false && !upperVerificationPhase) {
+            if (true || !upperVerificationPhase) {
                     if (!doGS) {
                     //Non-Gauss Seidel - Save the result in distinct array
                     stpg.mvMultGSMinMax(upperBoundsNew, min1, min2, subset, false, modelChecker.termCrit == ProbModelChecker.TermCrit.ABSOLUTE);
@@ -427,9 +427,11 @@ public class STPGBoosterIntervalIteration {
              */
 
             // Compute deflated upperbounds as in II (KKKW18)
-            for (BitSet mec : mecs) {
-                if (subset.intersects(mec)) {
-                    upperBoundsNew = deflate(stpg, min1, min2, lowerBoundsNew, upperBoundsNew, mec, ec)[0];
+            if (iters % modelChecker.maxIters == 0) {
+                for (BitSet mec : mecs) {
+                    if (subset.intersects(mec)) {
+                        upperBoundsNew = deflate(stpg, min1, min2, lowerBoundsNew, upperBoundsNew, mec, ec)[0];
+                    }
                 }
             }
 

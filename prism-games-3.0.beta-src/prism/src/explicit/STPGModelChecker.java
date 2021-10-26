@@ -275,7 +275,6 @@ public class STPGModelChecker extends ProbModelChecker
 			mainLog.println("target=" + target.cardinality() + ", yes=" + numYes + ", no=" + numNo + ", maybe=" + (n - (numYes + numNo)));
 		// do value iteration only if the values needed wasn't handled by
 		// precomputation
-		//this.solnMethod = SolnMethod.BOOSTER_VALUE_ITERATION;
 		if (bound < 1.0 || !(precomp && prob1 && !genAdv)) {
 			// Compute probabilities
 			switch (solnMethod) {
@@ -325,7 +324,7 @@ public class STPGModelChecker extends ProbModelChecker
 			mainLog.println("Bound is 1, hence I am skipping the computation of other values than 1.");
 		}
 
-		mainLog.println(Arrays.toString(res.soln));
+		//mainLog.println(Arrays.toString(res.soln));
 		// Finished probabilistic reachability
 		timer = System.currentTimeMillis() - timer;
 		if (verbosity >= 1)
@@ -1354,11 +1353,6 @@ public class STPGModelChecker extends ProbModelChecker
 		}
 		if(initialState!=-1)
 			mainLog.println("Resulting interval: ["+lowerBounds[initialState]+","+((upperBounds!=null) ? upperBounds[initialState] : "none")+"]");
-
-		mainLog.println("EpsPrime: "+epsPrime);
-		mainLog.println(Arrays.toString(lowerBounds));
-		mainLog.println(Arrays.toString(upperBounds));
-
 
 		return new double[][]{lowerBounds,upperBounds,{iters}};
 	}
