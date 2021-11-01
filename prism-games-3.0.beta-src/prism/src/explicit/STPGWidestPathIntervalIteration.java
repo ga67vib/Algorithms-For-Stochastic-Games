@@ -6,29 +6,16 @@ import prism.PrismFileLog;
 import prism.PrismLog;
 import prism.PrismUtils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.List;
+import java.util.*;
 
-public class STPGOptimisticIntervalIteration2 {
+public class STPGWidestPathIntervalIteration {
     STPGModelChecker modelChecker;
-
-    int lowerJumps = 0;
-    int upperJumps = 0;
-    int penaltyForUnsuccessfulVerfication = 1000;
-
-    int totalLowerVerifIters = 0;
-    int totalUpperVerifIters = 0;
 
     boolean debug = false;
 
-    double precision = 1e-12;
-    boolean absolute = true;
-
     long timeSpentDeflating = 0;
 
-    public STPGOptimisticIntervalIteration2(STPGModelChecker modelChecker) {
+    public STPGWidestPathIntervalIteration(STPGModelChecker modelChecker) {
         this.modelChecker = modelChecker;
     }
 
@@ -214,7 +201,7 @@ public class STPGOptimisticIntervalIteration2 {
                         statesForSCC.set(state);
                     }
                     //Solve the SCC until all states are close (initialState argument is -1 to ensure all states are solved, not just initial)
-                    double[][] subres = iterateOnSubset((STPGExplicit) stpg, min1, min2, upperBounds, upperBounds2, lowerBounds2, lowerBounds, genAdv, adv, itersInSCC, variant, mecs, ec, statesForSCC, statesForSCCIntSet, -1);
+                    double[][] subres = iterateOnSubset((STPGExplicit) stpg, min1, min2, upperBounds, upperBounds2, lowerBounds2, lowerBounds, genAdv, adv, itersInSCC, variant, mecs, ec, statesForSCC, statesForSCCIntSet, -1, yes);
                     itersInSCC = (int) subres[2][0];
                     lowerBounds = subres[0];
                     upperBounds = subres[1];
@@ -252,7 +239,7 @@ public class STPGOptimisticIntervalIteration2 {
             }
         }
         else{
-            double[][] subres = iterateOnSubset((STPGExplicit) stpg, min1, min2, upperBounds, upperBounds2, lowerBounds2, lowerBounds, genAdv, adv, iters, variant, mecs, ec, unknown, null, initialState);
+            double[][] subres = iterateOnSubset((STPGExplicit) stpg, min1, min2, upperBounds, upperBounds2, lowerBounds2, lowerBounds, genAdv, adv, iters, variant, mecs, ec, unknown, null, initialState, yes);
             iters = (int) subres[2][0];
             lowerBounds = subres[0];
             upperBounds = subres[1];
@@ -326,43 +313,11 @@ public class STPGOptimisticIntervalIteration2 {
      */
     private double[][] iterateOnSubset(STPGExplicit stpg, boolean min1, boolean min2, double[] upperBounds, double[] upperBoundsNew, double[] lowerBoundsNew, double[] lowerBounds,
                                        boolean genAdv, int[] adv, int iters, ProbModelChecker.SolnMethod variant, List<BitSet> mecs, ECComputerDefault ec,
-                                       BitSet subset, IntSet subsetAsIntSet, int initialState) throws PrismException{
+                                       BitSet subset, IntSet subsetAsIntSet, int initialState, BitSet yes) throws PrismException{
         iters = 0;
         boolean done = false;
         double tmpsoln[];
 
-        // Helper variables needed for OVI
-        double epsPrimeLower = this.modelChecker.termCritParam; //precision that OVI gives the normal VI phase. Will decrease over time.
-        double epsPrimeUpper = this.modelChecker.termCritParam; //precision that OVI gives the normal VI phase. Will decrease over time.
-
-        // OIVI verification holders
-        List<BitSet> OVI_Lower_SECs = null;
-
-        boolean lowerVerificationPhase = false;
-        boolean upperVerificationPhase = false;
-        int counterUpperboundsDidNotImproveMuch = 0;
-
-        double[] lowerVerificationGuessBounds = new double[stpg.getNumStates()];
-        double[] lowerVerificationGuessBoundsAfterIteration = new double[stpg.getNumStates()];
-        Arrays.fill(lowerVerificationGuessBounds, 1.0);
-        Arrays.fill(lowerVerificationGuessBoundsAfterIteration, 1.0);
-
-        double[] upperVerificationGuessBounds = new double[stpg.getNumStates()];
-        double[] upperVerificationGuessBoundsAfterIteration = new double[stpg.getNumStates()];
-
-        for (int state = 0; state < stpg.getNumStates(); state++) {
-            if (upperBounds[state] == 0) {
-                lowerVerificationGuessBounds[state] = 0;
-                lowerVerificationGuessBoundsAfterIteration[state] = 0;
-            }
-            if (lowerBounds[state] == 1) {
-                upperVerificationGuessBounds[state] = 1;
-                upperVerificationGuessBounds[state] = 1;
-            }
-        }
-
-        int lowerVerifIters = 0;
-        int upperVerifIters = 0;
 
         // Gauss-Seidel
         boolean doGS = ((modelChecker.solnMethodOptions%2)==1);
@@ -380,90 +335,35 @@ public class STPGOptimisticIntervalIteration2 {
 
             // Update lower and upper bounds for classical Interval Iteration
             // TODO Sasha: Since verification can create a better bound, we should stop normal iterations of the bounds while in verification
-            if (!lowerVerificationPhase) {
-                if (!doGS) {
-                    //Non-Gauss Seidel - Save the result in distinct array
-                    stpg.mvMultMinMax(lowerBounds, min1, min2, lowerBoundsNew, subset, false, genAdv ? adv : null);
-                } else {
-                    //Gauss Seidel - Do operations in-place
-                    stpg.mvMultGSMinMax(lowerBoundsNew, min1, min2, subset, false, modelChecker.termCrit == ProbModelChecker.TermCrit.ABSOLUTE);
-                }
-            }
-            else {
-                lowerVerifIters++;
-                if (!doGS) {
-                    //Non-Gauss Seidel - Save the result in distinct array
-                    log("SUBSET: "+subset);
+            if (!doGS) {
+                //Non-Gauss Seidel - Save the result in distinct array
+                stpg.mvMultMinMax(lowerBounds, min1, min2, lowerBoundsNew, subset, false, genAdv ? adv : null);
+                stpg.mvMultMinMax(upperBounds, min1, min2, upperBoundsNew, subset, false, genAdv ? adv : null);
+                stpg.mvMultGSMinMax(upperBoundsNew, min1, min2, subset, false, modelChecker.termCrit == ProbModelChecker.TermCrit.ABSOLUTE);
 
-                    log("GUESS: "+Arrays.toString(lowerVerificationGuessBounds));
-                    stpg.mvMultMinMax(lowerVerificationGuessBounds, min1, min2, lowerVerificationGuessBoundsAfterIteration, subset, false, genAdv ? adv : null);
-                    log("G+ITE: "+Arrays.toString(lowerVerificationGuessBoundsAfterIteration));
-                } else {
-                    //Gauss Seidel - Do operations in-place
-                    stpg.mvMultGSMinMax(lowerVerificationGuessBoundsAfterIteration, min1, min2, subset, false, modelChecker.termCrit == ProbModelChecker.TermCrit.ABSOLUTE);
-                }
+            } else {
+                //Gauss Seidel - Do operations in-place
+                stpg.mvMultGSMinMax(lowerBoundsNew, min1, min2, subset, false, modelChecker.termCrit == ProbModelChecker.TermCrit.ABSOLUTE);
+                stpg.mvMultGSMinMax(upperBoundsNew, min1, min2, subset, false, modelChecker.termCrit == ProbModelChecker.TermCrit.ABSOLUTE);
             }
 
-            if (!upperVerificationPhase) {
-                    if (!doGS) {
-                    //Non-Gauss Seidel - Save the result in distinct array
-                    stpg.mvMultGSMinMax(upperBoundsNew, min1, min2, subset, false, modelChecker.termCrit == ProbModelChecker.TermCrit.ABSOLUTE);
-                } else {
-                    //Gauss Seidel - Do operations in-place
-                    stpg.mvMultGSMinMax(upperBoundsNew, min1, min2, subset, false, modelChecker.termCrit == ProbModelChecker.TermCrit.ABSOLUTE);
-                }
-            }
-            else {
-                upperVerifIters++;
-                if (!doGS) {
-                    //Non-Gauss Seidel - Save the result in distinct array
-                    stpg.mvMultMinMax(upperVerificationGuessBounds, min1, min2, upperVerificationGuessBoundsAfterIteration, subset, false, genAdv ? adv : null);
-                } else {
-                    //Gauss Seidel - Do operations in-place
-                    stpg.mvMultGSMinMax(upperVerificationGuessBoundsAfterIteration, min1, min2, subset, false, modelChecker.termCrit == ProbModelChecker.TermCrit.ABSOLUTE);
-                }
-            }
-
-            /**
-             * DEFLATING
-             * for II as in KKKW18. For SVI a bit special. For OVI, use the fixed SECs we found before.
-             */
-
-            // Compute deflated upperbounds as in II (KKKW18)
-            long t1 = System.currentTimeMillis();
-            if (iters % modelChecker.maxIters == 0) {
-                for (BitSet mec : mecs) {
-                    if (subset.intersects(mec)) {
-                        upperBoundsNew = deflate(stpg, min1, min2, lowerBoundsNew, upperBoundsNew, mec, ec)[0];
-                    }
-                }
-            }
-
-            //For OVI: If in verification phase, deflate using the precomputed set of SECs
-            //We *must* deflate every iteration, because otherwise we might have some mixed thing (smaller everywhere but in some best exit), and without deflating we conclude inductive lower bound. With deflating, we realize that the best exit became smaller and it is not inductive lower bound.
-            //For now, always deflate
-            if (lowerVerificationPhase) {
-                for (BitSet sec : OVI_Lower_SECs) {
-                    lowerVerificationGuessBoundsAfterIteration = deflate(stpg, min1, min2, lowerBoundsNew, lowerVerificationGuessBoundsAfterIteration, sec, ec)[0];
-                }
-            }
-            long t2 = System.currentTimeMillis();
-            timeSpentDeflating+= (t2-t1);
+            double[][] wpDeflatingResult = STPGValueIterationUtils.widestPathDeflating(stpg, iters, 5, yes, lowerBounds, lowerBoundsNew, upperBoundsNew);
+            lowerBounds = wpDeflatingResult[0];
+            lowerBoundsNew = wpDeflatingResult[1];
+            upperBoundsNew = wpDeflatingResult[2];
 
             // Swap vectors for next iter
             // Now lowerBounds is the most up-to-date approximation, while the lowerBoundsNew contains the previous iteration
             // If lowerBounds were not changed no need to change anything
-            if (!lowerVerificationPhase) {
-                tmpsoln = lowerBounds;
-                lowerBounds = lowerBoundsNew;
-                lowerBoundsNew = tmpsoln;
-            }
+            tmpsoln = lowerBounds;
+            lowerBounds = lowerBoundsNew;
+            lowerBoundsNew = tmpsoln;
 
-            if (!upperVerificationPhase) {
-                tmpsoln = upperBounds;
-                upperBounds = upperBoundsNew;
-                upperBoundsNew = tmpsoln;
-            }
+
+
+            tmpsoln = upperBounds;
+            upperBounds = upperBoundsNew;
+            upperBoundsNew = tmpsoln;
 
             /**
              * Check termination
@@ -477,182 +377,6 @@ public class STPGOptimisticIntervalIteration2 {
                 System.out.println("Upper and Lower bounds are eps-close -> BVI iteration criterion met");
                 break; // End the while loop
             }
-
-
-            // Optimistic Iteration Criterion
-
-            // ------- VERIFICATION FROM THE LOWER BOUND -------
-            if (!lowerVerificationPhase) {
-                boolean lowerBoundEpsClose = PrismUtils.doublesAreClose(lowerBounds, lowerBoundsNew, epsPrimeLower,
-                        modelChecker.termCrit == ProbModelChecker.TermCrit.ABSOLUTE);
-
-                if (lowerBoundEpsClose) {
-                    System.out.println("Starting Lower Verification Phase in Iteration " + iters);
-
-                    // Guess the bounds that are above lowerBounds and hopefully above the solution
-                    lowerVerificationPhase = true;
-                    lowerVerificationGuessBounds = diffPlus(lowerBounds, lowerVerificationGuessBounds, subset);
-
-                    //Also precompute the SECs according to the current lowerBound, which will then be used for deflating
-                    OVI_Lower_SECs = new ArrayList<BitSet>();
-                    for (BitSet mec : mecs) {
-                        if (subset.intersects(mec)) {
-                            List<BitSet> SECs = ec.getSECs(mec, lowerBounds, min1, min2);
-                            OVI_Lower_SECs.addAll(SECs);
-                        }
-                    }
-                }
-            }
-            else if (lowerVerificationPhase) {
-                // Try to find whether we
-                boolean allUp = true;
-                boolean allDown = true;
-                boolean abort = lowerVerifIters>(1.0/epsPrimeLower);
-
-                for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
-                    boolean wentDown = lowerVerificationGuessBoundsAfterIteration[s] < lowerVerificationGuessBounds[s];
-                    boolean wentUp = lowerVerificationGuessBoundsAfterIteration[s] > lowerVerificationGuessBounds[s];
-
-                    if (wentDown) {
-                        if (allUp) {
-                            log("[L-Verification] Not all go up. In state "+s+" value before iter is: "+lowerVerificationGuessBounds[s]+", after iteration: "+lowerVerificationGuessBoundsAfterIteration[s]);
-                        }
-                        allUp = false;
-                    }
-                    if (wentUp) {
-                        lowerVerificationGuessBoundsAfterIteration[s] = lowerVerificationGuessBounds[s]; //May not improve (Termination Proof of OVI?)
-                        if (allDown) {
-                            log("[L-Verification] Not all go down. In state "+s+" value before iter is: "+lowerVerificationGuessBounds[s]+", after iteration: "+lowerVerificationGuessBoundsAfterIteration[s]);
-                        }
-                        allDown = false;
-                    }
-                }
-
-                if (allDown) {
-                    // bound is inductive counter-bound, everything stayed or went down
-                    done = true;
-                    System.out.println("The induced bound from L was an upper bound so we are finished. Happened in iteration " + iters + " after " + lowerVerifIters + " iterations in the verification phase.");
-                    // Set result
-                    log("Lower: "+lowerBounds[initialState]);
-                    log("Guess: "+lowerVerificationGuessBounds[initialState]);
-                    log("G+Ite: "+lowerVerificationGuessBoundsAfterIteration[initialState]);
-                    for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
-                        upperBounds[s] = lowerVerificationGuessBoundsAfterIteration[s];
-                    }
-                } else if (allUp) {
-                    abort = true;
-                    // bound is improvment to current bound. Go on with verification, but use this bound
-                    lowerBounds = Arrays.copyOf(lowerVerificationGuessBoundsAfterIteration, lowerVerificationGuessBoundsAfterIteration.length);
-                    lowerJumps++;
-                    System.out.println("[Iteration "+iters+"]: The induced bound from L was a lower bound, so we use it now");
-                }
-                if (abort) {
-                    System.out.println("Aborting verification phase after " + lowerVerifIters + " iterations.");
-                    System.out.println("Lower bound induction happened in iteration " + iters + " but was unsuccessful");
-                    lowerVerificationPhase = false;
-                    epsPrimeLower/=2.0;
-                    totalLowerVerifIters +=lowerVerifIters;
-                    lowerVerifIters = 0;
-                }
-                if (!allUp && !allDown && !abort){
-
-                    log("LowerVerifIters: "+lowerVerifIters);
-
-                    // Guess should take the new computed values
-                    tmpsoln = lowerVerificationGuessBoundsAfterIteration;
-                    lowerVerificationGuessBoundsAfterIteration = lowerVerificationGuessBounds;
-                    lowerVerificationGuessBounds = tmpsoln;
-                }
-            }
-
-            // ------- VERIFICATION FROM THE UPPER BOUND -------
-            if (!done && !upperVerificationPhase) {
-                boolean upperBoundEpsClose = PrismUtils.doublesAreClose(upperBounds, upperBoundsNew, epsPrimeUpper, modelChecker.termCrit == ProbModelChecker.TermCrit.ABSOLUTE);
-
-                if (upperBoundEpsClose) {
-                    counterUpperboundsDidNotImproveMuch++;
-                }
-                else {
-                    // Reset counter
-                    counterUpperboundsDidNotImproveMuch = 0;
-                }
-
-                // Only start upper verification phase if there wasn't any big change to upper bound for n times
-                // This ensures that it's not because the better value hasn't reached any state so far
-                // furthermore, waiting n iterations too long is probably not too horrible
-                if (upperBoundEpsClose && counterUpperboundsDidNotImproveMuch >= stpg.getNumStates()) {
-                    System.out.println("Starting Upper Verification Phase in Iteration " + iters);
-
-                    // Guess the bounds that are above upperBounds and hopefully above the solution
-                    upperVerificationPhase = true;
-                    upperVerificationGuessBounds = diffMinus(upperBounds, upperVerificationGuessBounds, subset);
-                    log("Upperbounds: "+Arrays.toString(upperBounds));
-                    log("UpperGuess : "+Arrays.toString(upperVerificationGuessBounds));
-                }
-            }
-            else if (!done && upperVerificationPhase) {
-                // Try to find whether we
-                boolean allUp = true;
-                boolean allDown = true;
-                boolean abort = upperVerifIters>(1.0/epsPrimeUpper);
-
-                for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
-                    boolean wentDown = upperVerificationGuessBoundsAfterIteration[s] < upperVerificationGuessBounds[s];
-                    boolean wentUp = upperVerificationGuessBoundsAfterIteration[s] > upperVerificationGuessBounds[s];
-
-                    if (wentDown) {
-                        upperVerificationGuessBoundsAfterIteration[s] = upperVerificationGuessBounds[s]; //May not improve (Termination Proof of OVI?)
-                        if (allUp) {
-                            log("[U-Verification] Not all go up. In state "+s+" value before iter is: "+upperVerificationGuessBounds[s]+", after iteration: "+upperVerificationGuessBoundsAfterIteration[s]);
-                        }
-                        allUp = false;
-                    }
-                    else if (wentUp) {
-                        if (allDown) {
-                            log("[U-Verification] Not all go down. In state "+s+" value before iter is: "+upperVerificationGuessBounds[s]+", after iteration: "+upperVerificationGuessBoundsAfterIteration[s]);
-                        }
-                        allDown = false;
-                    }
-                }
-
-                if (allDown) {
-                    // bound is improvment to current bound. Go on with verification, but use this bound
-                    upperBounds = Arrays.copyOf(upperVerificationGuessBoundsAfterIteration, upperVerificationGuessBoundsAfterIteration.length);
-                    abort = true;
-                    System.out.println("[Iteration "+iters+"]: The induced bound from U was a upper bound, so we use it now");
-                    upperJumps++;
-                } else if (allUp) {
-                    // bound is inductive counter-bound, everything stayed or went down
-                    done = true;
-                    System.out.println("The induced bound from U was a lower bound so we are finished. Happened in iteration " + iters + " after " + upperVerifIters + " iterations in the verification phase.");
-                    // Set result
-                    for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
-                        lowerBounds[s] = (upperBounds[s] + upperVerificationGuessBoundsAfterIteration[s])/2;
-                    }
-                } if (abort) {
-                    System.out.println("Upper bound induction happened in iteration " + iters + " but was unsuccessful.");
-                    upperVerificationPhase = false;
-                    epsPrimeUpper/=2.0;
-                    totalUpperVerifIters+=upperVerifIters;
-                    upperVerifIters = 0;
-                }
-                else if (!allUp && !allDown && !abort){
-
-                    // Guess should take the new computed values
-                    tmpsoln = upperVerificationGuessBoundsAfterIteration;
-                    upperVerificationGuessBoundsAfterIteration = upperVerificationGuessBounds;
-                    upperVerificationGuessBounds = tmpsoln;
-                }
-            }
-
-            /*
-            System.out.println("Iteration: "+iters);
-            System.out.println("LOWER: \t\t"+Arrays.toString(lowerBounds));
-            System.out.println("LOWER OLD: \t"+Arrays.toString(lowerBoundsNew));
-
-            System.out.println("UPPER: \t\t"+Arrays.toString(upperBounds));
-            System.out.println("UPPER_OLD: \t"+Arrays.toString(upperBoundsNew));
-            */
         }
 
 
@@ -660,11 +384,6 @@ public class STPGOptimisticIntervalIteration2 {
         if(initialState!=-1)
             System.out.println("Resulting interval: ["+lowerBounds[initialState]+","+((upperBounds!=null) ? upperBounds[initialState] : "none")+"]");
 
-        System.out.println("Lowerjumps: "+lowerJumps+", upperJumps: "+upperJumps);
-        System.out.println("Eps' Lower: "+epsPrimeLower);
-        System.out.println("Eps' Upper: "+epsPrimeUpper);
-        System.out.println("Total Lower Verification Iterations: "+totalLowerVerifIters);
-        System.out.println("Total Upper Verification Iterations: "+totalUpperVerifIters);
         System.out.println("Time spent Deflating: "+(((double)timeSpentDeflating) / 1000.0)+"s");
         return new double[][]{lowerBounds,upperBounds,{iters}};
     }
@@ -733,48 +452,6 @@ public class STPGOptimisticIntervalIteration2 {
         }
 
         return bestUpperBoundSoFar;
-    }
-
-    /**
-     * Method for guessing the upper bound for OVI from L. See definition of diff^+ in original OVI paper or the new one.
-     * @param lowerBounds The lower bound which is the basis of the guess
-     * @param upperBoundsGuess The upper bounds which is filled on the considered subset and kept unchanged outside the subset
-     * @param subset The subset that we are currently working on (S? or the current SCC)
-     * @return upperBounds, since I don't want to rely on side effects anymore. Sometimes they don't work.
-     * On subset, UpperBounds are now set to sth that is epsilon (termcritparam) greater than vector, relatively or absolutely.
-     * Corner case: 0 stays 0, nothing greater than 1
-     */
-    private double[] diffPlus(double[] lowerBounds, double[] upperBoundsGuess, BitSet subset) {
-        for(int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s+1)){
-            if(modelChecker.termCrit == ProbModelChecker.TermCrit.ABSOLUTE){
-                upperBoundsGuess[s] = Math.min(1,lowerBounds[s] == 0 ? 0 : lowerBounds[s] + this.modelChecker.termCritParam);
-            }
-            else{ //if(modelChecker.termCrit == TermCrit.RELATIVE){
-                upperBoundsGuess[s] = Math.min(1,lowerBounds[s] * (1+modelChecker.termCritParam));
-            }
-        }
-        return upperBoundsGuess;
-    }
-
-    /**
-     * Method for guessing the lower bound for OVI from U. See definition of diff^+ in original OVI paper or the new one.
-     * @param upperBounds The upper bound which is the basis of the guess
-     * @param lowerBoundsGuess The lower bounds which is filled on the considered subset and kept unchanged outside the subset
-     * @param subset The subset that we are currently working on (S? or the current SCC)
-     * @return lowerBounds, since I don't want to rely on side effects anymore. Sometimes they don't work.
-     * On subset, UpperBounds are now set to sth that is epsilon (termcritparam) greater than vector, relatively or absolutely.
-     * Corner case: 0 stays 0, nothing greater than 1
-     */
-    private double[] diffMinus(double[] upperBounds, double[] lowerBoundsGuess, BitSet subset){
-        for(int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s+1)){
-            if(modelChecker.termCrit == ProbModelChecker.TermCrit.ABSOLUTE){
-                lowerBoundsGuess[s] = Math.max(0,upperBounds[s] == 1 ? 1 : upperBounds[s] - this.modelChecker.termCritParam);
-            }
-            else{ //if(modelChecker.termCrit == TermCrit.RELATIVE){
-                lowerBoundsGuess[s] = Math.max(0,upperBounds[s] * (1-modelChecker.termCritParam));
-            }
-        }
-        return lowerBoundsGuess;
     }
 
     private void log(String s) {

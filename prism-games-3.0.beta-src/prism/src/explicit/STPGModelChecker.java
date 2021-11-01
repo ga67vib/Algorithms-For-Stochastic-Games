@@ -71,6 +71,9 @@ public class STPGModelChecker extends ProbModelChecker
 	 */
 	public static final int R_ZERO = 2;
 
+
+	public static final int SOLN_METHOD_OPTION_DEFLATE_WITH_WP = 20;
+
 	/**
 	 * Create a new STPGModelChecker, inherit basic state from parent (unless null).
 	 */
@@ -308,6 +311,10 @@ public class STPGModelChecker extends ProbModelChecker
 			case BOOSTER_VALUE_ITERATION:
 				STPGBoosterIntervalIteration boosterVI = new STPGBoosterIntervalIteration(this);
 				res = boosterVI.computeReachProbsValIter(stpg, no, yes, min1, min2, init, known, solnMethod);
+				break;
+				case WIDEST_PATH_INTERVAL_ITERATION:
+				STPGWidestPathIntervalIteration wpIteration = new STPGWidestPathIntervalIteration(this);
+				res = wpIteration.computeReachProbsValIter(stpg, no, yes, min1, min2, init, known, solnMethod);
 				break;
 			case ANALYSE_MODEL:
 				res = analyse_model(stpg, no, yes, min1, min2, init, known, target);
@@ -936,7 +943,7 @@ public class STPGModelChecker extends ProbModelChecker
 						statesForSCC.set(state);
 					}
 					//Solve the SCC until all states are close (initialState argument is -1 to ensure all states are solved, not just initial)
-					double[][] subres = iterateOnSubset((STPGExplicit) stpg, min1, min2, upperBounds, upperBounds2, lowerBounds2, lowerBounds, genAdv, adv, itersInSCC, variant, mecs, ec, statesForSCC, statesForSCCIntSet, -1);
+					double[][] subres = iterateOnSubset((STPGExplicit) stpg, min1, min2, upperBounds, upperBounds2, lowerBounds2, lowerBounds, genAdv, adv, itersInSCC, variant, mecs, ec, statesForSCC, statesForSCCIntSet, -1, yes);
 					itersInSCC = (int) subres[2][0];
 					lowerBounds = subres[0];
 					upperBounds = subres[1];
@@ -975,7 +982,7 @@ public class STPGModelChecker extends ProbModelChecker
 			}
 		}
 		else{
-			double[][] subres = iterateOnSubset((STPGExplicit) stpg, min1, min2, upperBounds, upperBounds2, lowerBounds2, lowerBounds, genAdv, adv, iters, variant, mecs, ec, unknown, null, initialState);
+			double[][] subres = iterateOnSubset((STPGExplicit) stpg, min1, min2, upperBounds, upperBounds2, lowerBounds2, lowerBounds, genAdv, adv, iters, variant, mecs, ec, unknown, null, initialState, yes);
 			iters = (int) subres[2][0];
 			lowerBounds = subres[0];
 			upperBounds = subres[1];
@@ -1049,7 +1056,7 @@ public class STPGModelChecker extends ProbModelChecker
 	 */
 	private double[][] iterateOnSubset(STPGExplicit stpg, boolean min1, boolean min2, double[] upperBounds, double[] upperBoundsNew, double[] lowerBoundsNew, double[] lowerBounds,
 								boolean genAdv, int[] adv, int iters, SolnMethod variant, List<BitSet> mecs, explicit.ECComputerDefault ec,
-								BitSet subset, IntSet subsetAsIntSet, int initialState) throws PrismException{
+								BitSet subset, IntSet subsetAsIntSet, int initialState, BitSet yes) throws PrismException{
 		iters = 0;
 		boolean done = false;
 		double tmpsoln[];
@@ -1213,11 +1220,16 @@ public class STPGModelChecker extends ProbModelChecker
 			}
 			//For OVI: If in verification phase, deflate using the precomputed set of SECs
 			//We *must* deflate every iteration, because otherwise we might have some mixed thing (smaller everywhere but in some best exit), and without deflating we conclude inductive lower bound. With deflating, we realize that the best exit became smaller and it is not inductive lower bound.
-			if(variant==SolnMethod.OPTIMISTIC_VALUE_ITERATION && verifPhase) {
-				for (BitSet sec : OVI_SECs) {
-					upperBoundsNew = deflate(stpg, min1, min2, lowerBoundsNew, upperBoundsNew, sec, ec)[0];
+				if(variant==SolnMethod.OPTIMISTIC_VALUE_ITERATION && verifPhase) {
+					if (this.solnMethodOptions != SOLN_METHOD_OPTION_DEFLATE_WITH_WP) {
+						for (BitSet sec : OVI_SECs) {
+							upperBoundsNew = deflate(stpg, min1, min2, lowerBoundsNew, upperBoundsNew, sec, ec)[0];
+						}
+					}
+					else if (this.solnMethodOptions == SOLN_METHOD_OPTION_DEFLATE_WITH_WP) {
+						STPGValueIterationUtils.widestPathDeflating(stpg, iters, 1, yes, lowerBounds, lowerBoundsNew, upperBoundsNew);
+					}
 				}
-			}
 
 			// Swap vectors for next iter
 			// Now lowerBounds is the most up-to-date approximation, while the lowerBoundsNew contains the previous iteration

@@ -1176,6 +1176,103 @@ public class STPGValueIterationUtils {
         return distances;
     }
 
+    /**
+     * Implements Widest Path Deflating as presented in Widest Paths and Global Propagation in Bounded Value Iteration for Stochastic Games
+     * (https://link.springer.com/chapter/10.1007%2F978-3-030-53291-8_19)
+     * Put this method BEFORE swapping lowerBoundsNew and lowerBounds and BEFORE swapping upperBounds and upperBoundsNew
+     * 
+     * NOTE: CURRENTLY DOES NOT (!!!) SUPPORT GAUSS-SEIDEL OPTIONS OR TOPOLOGICAL!
+     * @param stpg
+     * @param iters
+     * @param numberOfIterationsBeforeApplication : How many iterations to wait before applying deflating (In paper by default 5)
+     * @param yes
+     * @param lowerBounds
+     * @param lowerBoundsNew
+     * @param upperBoundsNew
+     * @return {lowerBoundsNew, lowerBounds, upperBoundsNew}
+     */
+    public static double[][] widestPathDeflating(STPGExplicit stpg, int iters, int numberOfIterationsBeforeApplication, BitSet yes, double[] lowerBounds, double[] lowerBoundsNew, double[] upperBoundsNew) {
+        int n = stpg.getNumStates();
+        // New Algo from WP
+        if (iters % numberOfIterationsBeforeApplication == 0) {
+
+            // create new graph
+            LinkedList<Pair<Double, Integer>> G[] = new LinkedList[n];
+            int visit[] = new int[n];
+            Heap heap = new Heap(n);
+
+            for (int s = 0; s < n; s++) {
+                G[s] = new LinkedList<>();
+                heap.pointer[s] = -1;
+            }
+
+            for (int s = 0; s < n; s++) {
+                // Maximizer
+                if (stpg.getPlayer(s) == 1) {
+                    for (int a = 0; a < stpg.getNumChoices(s); a++) {
+                        Distribution distr = ((SMG) stpg).trans.get(s).get(a);
+                        double up_val = 0.0;
+                        for (Map.Entry<Integer, Double> e : distr) {
+                            int t = e.getKey();
+                            double prob = e.getValue();
+                            up_val += prob * upperBoundsNew[t];
+                        }
+                        for (Map.Entry<Integer, Double> e : distr) {
+                            int t = e.getKey();
+                            G[t].add(new Pair(up_val, s));
+                        }
+                    }
+                }
+                // Minimizer
+                else {
+                    for (int a = 0; a < stpg.getNumChoices(s); a++) {
+                        Distribution distr = ((SMG) stpg).trans.get(s).get(a);
+                        double up_val = 0.0, low_val = 0.0;
+                        for (Map.Entry<Integer, Double> e : distr) {
+                            int t = e.getKey();
+                            double prob = e.getValue();
+                            up_val += prob * upperBoundsNew[t];
+                            low_val += prob * lowerBounds[t];
+                        }
+                        if (low_val <= lowerBoundsNew[s]) {
+                            for (Map.Entry<Integer, Double> e : distr) {
+                                int t = e.getKey();
+                                G[t].add(new Pair(up_val, s));
+                            }
+                        }
+                    }
+                }
+            }
+
+            // mainLog.println("finish creating graph in itr "+iters);
+
+            for (int s = yes.nextSetBit(0); s >= 0; s = yes.nextSetBit(s + 1))
+                heap.append(1.0, s);
+
+            while (heap.heap_size > 0) {
+                Pair<Double, Integer> top = heap.pop();
+                double v = top.x;
+                int t = top.y;
+                visit[t] = 1;
+                upperBoundsNew[t] = v;
+
+                for (Pair<Double, Integer> p : G[t]) {
+                    double w = p.x;
+                    int s = p.y;
+                    if (visit[s] == 0) {
+                        heap.update(min(v, w, upperBoundsNew[s]), s);
+                    }
+                }
+            }
+
+            for (int s = 0; s < n; s++) {
+                if (visit[s] == 0)
+                    upperBoundsNew[s] = 0;
+            }
+        }
+
+        return new double[][]{lowerBounds, lowerBoundsNew, upperBoundsNew};
+    }
     private static class LocalMDPResult {
         MDP mdp;
         BitSet targets;
@@ -1192,5 +1289,119 @@ public class STPGValueIterationUtils {
         HashMap<Integer, Integer> stpgStatesToDtmcStates;
         HashMap<Integer, Integer> dtmcStatesToStpgStates;
         double[] upperboundsInDTMC;
+    }
+
+    // Widest Path Stuff
+
+    public static class Pair<X, Y> {
+        public X x;
+        public Y y;
+        public Pair(X x, Y y) {
+            this.x = x;
+            this.y = y;
+        }
+    }
+
+    public static class Heap {
+        public Pair<Double, Integer>[] heap;
+        public int[] pointer;
+        public int heap_size;
+
+        public Heap(int n) {
+            heap = new Pair[n];
+            pointer = new int[n];
+            heap_size = 0;
+        }
+
+        public void append(double p, int s) {
+            heap[heap_size] = new Pair(p,s);
+            pointer[s] = heap_size;
+            heap_size++;
+        }
+
+        public Pair<Double, Integer> pop() {
+            Pair<Double, Integer> top = heap[0];
+            heap[0] = heap[heap_size-1];
+            heap_size--;
+            down(0);
+            return top;
+        }
+
+        public void update(double p, int s) {
+            if(pointer[s] == -1) {
+                append(p,s);
+                up(heap_size-1);
+            }
+            else if(heap[pointer[s]].x < p){
+                heap[pointer[s]].x = p;
+                up(pointer[s]);
+            }
+        }
+
+        private void swap(int i,int j) {
+            pointer[heap[i].y] = j;
+            pointer[heap[j].y] = i;
+
+            Pair tmp;
+            tmp = heap[i];
+            heap[i] = heap[j];
+            heap[j] = tmp;
+        }
+
+        private void up(int i) {
+            while(i > 0) {
+                int p = (i-1)/2;
+                double v_i = heap[i].x;
+                double v_p = heap[p].x;
+                if(v_i > v_p) {
+                    swap(i,p);
+                    i = p;
+                }
+                else
+                    break;
+            }
+        }
+
+        private void down(int i) {
+            while(true) {
+                int left = 2*i+1;
+                int right = 2*i+2;
+
+                if(left >= heap_size)
+                    break;
+
+                if(right >= heap_size) {
+                    double v_left = heap[left].x;
+                    double v_i = heap[i].x;
+                    if(v_i < v_left) {
+                        swap(i,left);
+                        i = left;
+                    }
+                    else
+                        break;
+                }
+                else {
+                    double v_left = heap[left].x;
+                    double v_right = heap[right].x;
+                    double v_i = heap[i].x;
+                    if (v_left >= v_right && v_i < v_left) {
+                        swap(i, left);
+                        i = left;
+                    }
+                    else if (v_right > v_left && v_i < v_right) {
+                        swap(i, right);
+                        i = right;
+                    }
+                    else
+                        break;
+                }
+            }
+        }
+    }
+
+    private static double min(double a,double b,double c) {
+        if(a <= b && a <= c) return a;
+        if(b <= a && b <= c) return b;
+        return c;
     }
 }
