@@ -1,6 +1,7 @@
 package explicit;
 
 import common.IntSet;
+import prism.Pair;
 import prism.PrismException;
 
 import java.util.*;
@@ -178,6 +179,8 @@ public class STPGModelAnalyser {
         log("Smallest SCC has size: "+minimalCardinalitySCC);
         log("Average SCC has size: "+avgSCCsize);
 
+        int maximumSCCDepth = getLongestSCCChain(stpg, sccs);
+        log("Longest Chain of SCC has length: "+maximumSCCDepth);
 
         cycleFreeAnalysis(stpg, yes, no, target);
 
@@ -331,6 +334,51 @@ public class STPGModelAnalyser {
         }
 
         return attractorDistances;
+    }
+
+    /**
+     * Do a BFS over each SCC from SCC of initialState and see what the maximum from there is
+     * @param stpg
+     * @param sccInfo
+     * @return
+     */
+    public int getLongestSCCChain(STPG stpg, SCCInfo sccInfo) {
+        int maximumSCCChainLength = 1;
+
+        PriorityQueue<int[]> priorityQueue = new PriorityQueue<>(Comparator.comparingInt(a -> a[1]));
+        HashMap<Integer, Integer> sccIndexToMaximumLength = new HashMap<>();
+        int currentSCCIndex = sccInfo.getSCCIndex(stpg.getFirstInitialState());
+
+        sccIndexToMaximumLength.put(currentSCCIndex, 1);
+
+        IntSet currentSCC;
+
+        LinkedList<Integer> sccIndexQueue = new LinkedList<>();
+        sccIndexQueue.add(currentSCCIndex);
+        while (!sccIndexQueue.isEmpty()) {
+            currentSCCIndex = sccIndexQueue.poll();
+            currentSCC = sccInfo.getStatesForSCC(currentSCCIndex);
+            int chainLengthForCurrentSCC = sccIndexToMaximumLength.get(currentSCCIndex);
+
+            // Go over every state of the SCC and see which other SCC it can reach
+            for (Integer state : currentSCC) {
+                for (int choice = 0; choice < stpg.getNumChoices(state); choice++) {
+                    for (Iterator<Map.Entry<Integer, Double>> it = stpg.getTransitionsIterator(state, choice); it.hasNext(); ) {
+                        Map.Entry<Integer, Double> tr = it.next();
+                        int sccIndexOfNextState = sccInfo.getSCCIndex(tr.getKey());
+
+                        // If we discovered a new SCC, add it to the Queue and set it's length to + 1 of where we are now
+                        if (!sccIndexToMaximumLength.containsKey(sccIndexOfNextState)) {
+                            sccIndexToMaximumLength.put(sccIndexOfNextState, chainLengthForCurrentSCC + 1);
+                            maximumSCCChainLength = Math.max(maximumSCCChainLength, chainLengthForCurrentSCC + 1);
+                            sccIndexQueue.add(sccIndexOfNextState);
+                        }
+                    }
+                }
+            }
+        }
+
+        return maximumSCCChainLength;
     }
 
     /**
