@@ -154,7 +154,7 @@ public class STPGModelAnalyser {
 
         SCCInfo sccs = null;
         System.out.println("Getting topologically ordered SCCs...");
-        sccs = SCCComputer.computeTopologicalOrdering(this.modelChecker, stpg, true, unknown::get);
+        sccs = SCCComputer.computeTopologicalOrdering(this.modelChecker, stpg, true, null);
         System.out.println("Number of SCCs: " + sccs.getNumSCCs());
         int numSCCs = sccs.getNumSCCs();
         long maximalCardinalitySCC=0;
@@ -245,7 +245,12 @@ public class STPGModelAnalyser {
             medianCyclefreeDistance = sortedTargetCyclefreeDistances.get(medianCyclefreeDistanceIndex);
         }
         else {
-            medianCyclefreeDistance = (sortedTargetCyclefreeDistances.get(medianCyclefreeDistanceIndex) + sortedTargetCyclefreeDistances.get(medianCyclefreeDistanceIndex+1))/2.0;
+            try {
+                medianCyclefreeDistance = (sortedTargetCyclefreeDistances.get(medianCyclefreeDistanceIndex) + sortedTargetCyclefreeDistances.get(medianCyclefreeDistanceIndex + 1)) / 2.0;
+            }
+            catch (Exception e) {
+                medianCyclefreeDistance = 0;
+            }
         }
 
         log("Nearest Target from any Initial State: "+nearestTarget);
@@ -347,7 +352,7 @@ public class STPGModelAnalyser {
 
         PriorityQueue<int[]> priorityQueue = new PriorityQueue<>(Comparator.comparingInt(a -> a[1]));
         HashMap<Integer, Integer> sccIndexToMaximumLength = new HashMap<>();
-        int currentSCCIndex = sccInfo.getSCCIndex(stpg.getFirstInitialState());
+        int currentSCCIndex = sccInfo.getSCCIndex(stpg.getFirstInitialState() != -1 ? stpg.getFirstInitialState() : 0);
 
         sccIndexToMaximumLength.put(currentSCCIndex, 1);
 
