@@ -833,7 +833,7 @@ public class STPGModelChecker extends ProbModelChecker
 		// For guaranteed VI, we need MECs and an EC computer to find SECs
 		List<BitSet> mecs = null;
 		explicit.ECComputerDefault ec =null;
-		if (needsUpperBounds){
+		if (needsUpperBounds && solnMethodOptions != SOLN_METHOD_OPTION_DEFLATE_WITH_WP){
 			mainLog.println("Getting MECs...");
 			//compute MECs one time, use the decomposition in every iteration; SECs still have to be recomputed
 			ec = (ECComputerDefault) ECComputer.createECComputer(this, stpg);
