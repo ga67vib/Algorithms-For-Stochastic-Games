@@ -1210,7 +1210,7 @@ public class STPGModelChecker extends ProbModelChecker
 //								svi_deflate(stpg, min1, min2, lowerBoundsNew, upperBoundsNew, mec, ec, upperBound);
 //								double[][] reachNstay = svi_deflate(stpg, min1, min2, lowerBoundsNew, upperBoundsNew, mec, ec, lowerBound, upperBound);
 //								double[][] reachNstay = svi_deflateAllBestExits(stpg, min1, min2, lowerBoundsNew, upperBoundsNew, mec, ec, lowerBound, upperBound);
-                double[][] reachNstay = svi_deflate_recursive(stpg, min1, min2, lowerBoundsNew, upperBoundsNew, mec, ec, lowerBound, upperBound);
+                double[][] reachNstay = svi_deflate_mec(stpg, min1, min2, lowerBoundsNew, upperBoundsNew, mec, ec, lowerBound, upperBound);
 								lowerBoundsNew = reachNstay[1];
 								upperBoundsNew = reachNstay[0];
 							}
@@ -1271,8 +1271,10 @@ public class STPGModelChecker extends ProbModelChecker
 						//When we are done, we have to insert the smarter values
 						if(initialState != -1){
 							//Only in initial state
-							lowerBounds[initialState] = lowerBounds[initialState] + upperBounds[initialState]*lowerBound;
-							upperBounds[initialState] = lowerBounds[initialState] + upperBounds[initialState]*upperBound;
+							double lb_i = lowerBounds[initialState] + upperBounds[initialState]*lowerBound;
+							double ub_i = lowerBounds[initialState] + upperBounds[initialState]*upperBound;
+              lowerBounds[initialState] = lb_i;
+              upperBounds[initialState] = ub_i;
 						}
 						else{
 							//in all states, for topological VI. Need the second thing as temp, since meaning of content switches from reach/stayVal to actual lower/upper bound
@@ -1283,6 +1285,8 @@ public class STPGModelChecker extends ProbModelChecker
 								upperBounds = upperBoundsNew;
 							}
 						}
+
+
 					}
 					break;
 				case OPTIMISTIC_VALUE_ITERATION:
@@ -1492,6 +1496,43 @@ public class STPGModelChecker extends ProbModelChecker
     } else{
       return svi_deflate_recursive(stpg, min1, min2, stepBoundReach, stepBoundStay, mecMinusAttractor, ec, lowerbound, upperbound);
     }
+  }
+
+
+
+
+  /**
+   * SVI deflate mec.
+   */
+  private double[][] svi_deflate_mec(STPGExplicit stpg, boolean min1, boolean min2, double[] stepBoundReach, double[] stepBoundStay, BitSet mec, explicit.ECComputerDefault ec, double lowerbound, double upperbound) throws PrismException {
+    BitSet mecMinusBestExit = new  BitSet();
+    mecMinusBestExit.or(mec);
+    System.out.println("mecMinusBestExit.isEmpty()"+mecMinusBestExit.isEmpty());
+
+    while (!mecMinusBestExit.isEmpty()) {
+      System.out.println(mecMinusBestExit.length()+" mecMinusBestExit.size()");
+      int maxPlayer = min1 ? (min2 ? -1 : 2) : (min2 ? 1 : 3);
+      int[] bestExitStateAndAction = getBestExitDeflate(mecMinusBestExit, stpg, stepBoundReach, stepBoundStay, maxPlayer, upperbound);
+      int bestExitState = bestExitStateAndAction[0];
+      int bestExitAction = bestExitStateAndAction[1];
+      System.out.println("bestExitState:"+bestExitState+" BestExitAction:" + bestExitAction);
+      if(bestExitState!=-1 && bestExitAction!=-1) {
+        // in some cases where best exit state and action is -1; for example: mec with all min states
+        double reachVal = stpg.mvMultSingle(bestExitState, bestExitAction, stepBoundReach);
+        double stayVal = stpg.mvMultSingle(bestExitState, bestExitAction, stepBoundStay);
+        stepBoundReach[bestExitState] = Math.max(stepBoundReach[bestExitState], reachVal);
+        stepBoundStay[bestExitState] = Math.min(stepBoundStay[bestExitState], stayVal);
+        mecMinusBestExit.clear(bestExitState);
+      }
+      else{
+        for (int s = mecMinusBestExit.nextSetBit(0); s >= 0; s = mecMinusBestExit.nextSetBit(s+1)) {
+          //stepBoundStay[s] = 0;
+        }
+        mecMinusBestExit.andNot(mecMinusBestExit);
+      }
+
+    }
+    return new double[][]{stepBoundStay,stepBoundReach};
   }
 
 
@@ -1752,6 +1793,7 @@ public class STPGModelChecker extends ProbModelChecker
         //mainLog.println("Searching for best leaving value; state belongs to maximizer");
         for (int i = 0; i < stpg.getNumChoices(s); i++) {
             boolean all = stpg.allSuccessorsInSet(s, i, sec);
+
             if (!all) {
               double val = 0;
               for (int succ : stpg.getChoice(s, i).keySet()) {
@@ -1768,6 +1810,7 @@ public class STPGModelChecker extends ProbModelChecker
         }
 
       }
+
       if(bestValSoFar==1.0) break;
       //TODO: We might want to deflate minimizer stuff to 0. Should be handled by prob0 though.
     }
