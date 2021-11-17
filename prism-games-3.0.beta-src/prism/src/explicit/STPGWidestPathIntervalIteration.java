@@ -88,22 +88,6 @@ public class STPGWidestPathIntervalIteration {
             upperBounds[s] = upperBounds2[s] = no.get(s) ? 0.0 : 1.0;
 
 
-
-
-        // For guaranteed VI, we need MECs and an EC computer to find SECs
-        List<BitSet> mecs = null;
-        ECComputerDefault ec =null;
-
-        System.out.println("Getting MECs...");
-        //compute MECs one time, use the decomposition in every iteration; SECs still have to be recomputed
-        ec = (ECComputerDefault) ECComputer.createECComputer(modelChecker, stpg);
-        //need a copy of unknown, since EC computation empties the set as a side effect
-        BitSet unknownForEC = new BitSet();
-        unknownForEC.or(unknown);
-        ec.computeMECStates(unknownForEC);
-        mecs = ec.getMECStates();
-        System.out.println("Number of MECs: " + mecs.size());
-
         SCCInfo sccs = null;
 
         if (modelChecker.getDoTopologicalValueIteration()){
@@ -201,7 +185,7 @@ public class STPGWidestPathIntervalIteration {
                         statesForSCC.set(state);
                     }
                     //Solve the SCC until all states are close (initialState argument is -1 to ensure all states are solved, not just initial)
-                    double[][] subres = iterateOnSubset((STPGExplicit) stpg, min1, min2, upperBounds, upperBounds2, lowerBounds2, lowerBounds, genAdv, adv, itersInSCC, variant, mecs, ec, statesForSCC, statesForSCCIntSet, -1, yes);
+                    double[][] subres = iterateOnSubset((STPGExplicit) stpg, min1, min2, upperBounds, upperBounds2, lowerBounds2, lowerBounds, genAdv, adv, itersInSCC, variant, statesForSCC, statesForSCCIntSet, -1, yes);
                     itersInSCC = (int) subres[2][0];
                     lowerBounds = subres[0];
                     upperBounds = subres[1];
@@ -239,7 +223,10 @@ public class STPGWidestPathIntervalIteration {
             }
         }
         else{
-            double[][] subres = iterateOnSubset((STPGExplicit) stpg, min1, min2, upperBounds, upperBounds2, lowerBounds2, lowerBounds, genAdv, adv, iters, variant, mecs, ec, unknown, null, initialState, yes);
+            long t1 = System.currentTimeMillis();
+            double[][] subres = iterateOnSubset((STPGExplicit) stpg, min1, min2, upperBounds, upperBounds2, lowerBounds2, lowerBounds, genAdv, adv, iters, variant, unknown, null, initialState, yes);
+            long t2 = System.currentTimeMillis();
+            log("Time Spent on Iterate on Subset: "+((t2-t1)/1000.0));
             iters = (int) subres[2][0];
             lowerBounds = subres[0];
             upperBounds = subres[1];
@@ -312,13 +299,14 @@ public class STPGWidestPathIntervalIteration {
      * Thus we return an array of double arrays: LowerBounds, UpperBounds and an array containing only iters
      */
     private double[][] iterateOnSubset(STPGExplicit stpg, boolean min1, boolean min2, double[] upperBounds, double[] upperBoundsNew, double[] lowerBoundsNew, double[] lowerBounds,
-                                       boolean genAdv, int[] adv, int iters, ProbModelChecker.SolnMethod variant, List<BitSet> mecs, ECComputerDefault ec,
+                                       boolean genAdv, int[] adv, int iters, ProbModelChecker.SolnMethod variant,
                                        BitSet subset, IntSet subsetAsIntSet, int initialState, BitSet yes) throws PrismException{
         iters = 0;
         boolean done = false;
         double tmpsoln[];
 
-
+        long totalDeflating = 0;
+        long t1;
         // Gauss-Seidel
         boolean doGS = ((modelChecker.solnMethodOptions%2)==1);
         if (doGS){System.out.println("Doing Gauss Seidel variant");}
@@ -334,12 +322,10 @@ public class STPGWidestPathIntervalIteration {
             //Bellman Updates
 
             // Update lower and upper bounds for classical Interval Iteration
-            // TODO Sasha: Since verification can create a better bound, we should stop normal iterations of the bounds while in verification
             if (!doGS) {
                 //Non-Gauss Seidel - Save the result in distinct array
                 stpg.mvMultMinMax(lowerBounds, min1, min2, lowerBoundsNew, subset, false, genAdv ? adv : null);
                 stpg.mvMultMinMax(upperBounds, min1, min2, upperBoundsNew, subset, false, genAdv ? adv : null);
-                stpg.mvMultGSMinMax(upperBoundsNew, min1, min2, subset, false, modelChecker.termCrit == ProbModelChecker.TermCrit.ABSOLUTE);
 
             } else {
                 //Gauss Seidel - Do operations in-place
@@ -347,7 +333,9 @@ public class STPGWidestPathIntervalIteration {
                 stpg.mvMultGSMinMax(upperBoundsNew, min1, min2, subset, false, modelChecker.termCrit == ProbModelChecker.TermCrit.ABSOLUTE);
             }
 
+            t1 = System.currentTimeMillis();
             double[][] wpDeflatingResult = STPGValueIterationUtils.widestPathDeflating(stpg, iters, 5, yes, lowerBounds, lowerBoundsNew, upperBoundsNew);
+            totalDeflating += (System.currentTimeMillis() - t1);
             lowerBounds = wpDeflatingResult[0];
             lowerBoundsNew = wpDeflatingResult[1];
             upperBoundsNew = wpDeflatingResult[2];
@@ -384,6 +372,7 @@ public class STPGWidestPathIntervalIteration {
         if(initialState!=-1)
             System.out.println("Resulting interval: ["+lowerBounds[initialState]+","+((upperBounds!=null) ? upperBounds[initialState] : "none")+"]");
 
+        timeSpentDeflating = totalDeflating;
         System.out.println("Time spent Deflating: "+(((double)timeSpentDeflating) / 1000.0)+"s");
         return new double[][]{lowerBounds,upperBounds,{iters}};
     }

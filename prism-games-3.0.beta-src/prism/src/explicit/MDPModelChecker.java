@@ -353,8 +353,6 @@ public class MDPModelChecker extends ProbModelChecker
 
 		// Switch to a supported method, if necessary
 		if (mdpSolnMethod == MDPSolnMethod.LINEAR_PROGRAMMING) {
-			mdpSolnMethod = MDPSolnMethod.GAUSS_SEIDEL;
-			mainLog.printWarning("Switching to MDP solution method \"" + mdpSolnMethod.fullName() + "\"");
 		}
 
 		// Check for some unsupported combinations
@@ -571,6 +569,9 @@ public class MDPModelChecker extends ProbModelChecker
 				throw new PrismNotSupportedException("Interval iteration currently not supported for policy iteration");
 			}
 			res = computeReachProbsPolIter(mdp, no, yes, min, strat);
+			break;
+		case LINEAR_PROGRAMMING:
+			res = computeReachProbsLinearProgrammingGurobi(mdp, no, yes, min, strat, null);
 			break;
 		case MODIFIED_POLICY_ITERATION:
 			if (doIntervalIteration) {
