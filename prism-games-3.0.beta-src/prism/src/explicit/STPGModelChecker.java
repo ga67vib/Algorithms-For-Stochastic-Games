@@ -1227,7 +1227,10 @@ public class STPGModelChecker extends ProbModelChecker
 						}
 					}
 					else if (this.solnMethodOptions == SOLN_METHOD_OPTION_DEFLATE_WITH_WP) {
-						STPGValueIterationUtils.widestPathDeflating(stpg, iters, 1, yes, lowerBounds, lowerBoundsNew, upperBoundsNew);
+						double[][] wpDeflatingResult = STPGValueIterationUtils.widestPathDeflating(stpg, iters, 1, yes, lowerBounds, lowerBoundsNew, upperBoundsNew);
+						lowerBounds = wpDeflatingResult[0];
+						lowerBoundsNew = wpDeflatingResult[1];
+						upperBoundsNew = wpDeflatingResult[2];
 					}
 				}
 

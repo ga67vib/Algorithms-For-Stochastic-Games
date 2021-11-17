@@ -107,15 +107,19 @@ public class STPGOptimisticIntervalIteration2 {
         List<BitSet> mecs = null;
         ECComputerDefault ec =null;
 
-        System.out.println("Getting MECs...");
-        //compute MECs one time, use the decomposition in every iteration; SECs still have to be recomputed
-        ec = (ECComputerDefault) ECComputer.createECComputer(modelChecker, stpg);
-        //need a copy of unknown, since EC computation empties the set as a side effect
-        BitSet unknownForEC = new BitSet();
-        unknownForEC.or(unknown);
-        ec.computeMECStates(unknownForEC);
-        mecs = ec.getMECStates();
-        System.out.println("Number of MECs: " + mecs.size());
+
+        // Need MECs regardless of WP or not, since we need them for the OVI-Verification
+        if (this.modelChecker.solnMethodOptions != STPGModelChecker.SOLN_METHOD_OPTION_DEFLATE_WITH_WP) {
+            System.out.println("Getting MECs...");
+            //compute MECs one time, use the decomposition in every iteration; SECs still have to be recomputed
+            ec = (ECComputerDefault) ECComputer.createECComputer(modelChecker, stpg);
+            //need a copy of unknown, since EC computation empties the set as a side effect
+            BitSet unknownForEC = new BitSet();
+            unknownForEC.or(unknown);
+            ec.computeMECStates(unknownForEC);
+            mecs = ec.getMECStates();
+            System.out.println("Number of MECs: " + mecs.size());
+        }
 
         SCCInfo sccs = null;
 
@@ -214,7 +218,7 @@ public class STPGOptimisticIntervalIteration2 {
                         statesForSCC.set(state);
                     }
                     //Solve the SCC until all states are close (initialState argument is -1 to ensure all states are solved, not just initial)
-                    double[][] subres = iterateOnSubset((STPGExplicit) stpg, min1, min2, upperBounds, upperBounds2, lowerBounds2, lowerBounds, genAdv, adv, itersInSCC, variant, mecs, ec, statesForSCC, statesForSCCIntSet, -1);
+                    double[][] subres = iterateOnSubset((STPGExplicit) stpg, min1, min2, upperBounds, upperBounds2, lowerBounds2, lowerBounds, genAdv, adv, itersInSCC, variant, mecs, ec, statesForSCC, statesForSCCIntSet, -1, yes);
                     itersInSCC = (int) subres[2][0];
                     lowerBounds = subres[0];
                     upperBounds = subres[1];
@@ -252,7 +256,7 @@ public class STPGOptimisticIntervalIteration2 {
             }
         }
         else{
-            double[][] subres = iterateOnSubset((STPGExplicit) stpg, min1, min2, upperBounds, upperBounds2, lowerBounds2, lowerBounds, genAdv, adv, iters, variant, mecs, ec, unknown, null, initialState);
+            double[][] subres = iterateOnSubset((STPGExplicit) stpg, min1, min2, upperBounds, upperBounds2, lowerBounds2, lowerBounds, genAdv, adv, iters, variant, mecs, ec, unknown, null, initialState, yes);
             iters = (int) subres[2][0];
             lowerBounds = subres[0];
             upperBounds = subres[1];
@@ -326,7 +330,7 @@ public class STPGOptimisticIntervalIteration2 {
      */
     private double[][] iterateOnSubset(STPGExplicit stpg, boolean min1, boolean min2, double[] upperBounds, double[] upperBoundsNew, double[] lowerBoundsNew, double[] lowerBounds,
                                        boolean genAdv, int[] adv, int iters, ProbModelChecker.SolnMethod variant, List<BitSet> mecs, ECComputerDefault ec,
-                                       BitSet subset, IntSet subsetAsIntSet, int initialState) throws PrismException{
+                                       BitSet subset, IntSet subsetAsIntSet, int initialState, BitSet yes) throws PrismException{
         iters = 0;
         boolean done = false;
         double tmpsoln[];
@@ -431,21 +435,37 @@ public class STPGOptimisticIntervalIteration2 {
 
             // Compute deflated upperbounds as in II (KKKW18)
             long t1 = System.currentTimeMillis();
-            if (iters % modelChecker.maxIters == 0) {
-                for (BitSet mec : mecs) {
-                    if (subset.intersects(mec)) {
-                        upperBoundsNew = deflate(stpg, min1, min2, lowerBoundsNew, upperBoundsNew, mec, ec)[0];
+            if (this.modelChecker.solnMethodOptions != STPGModelChecker.SOLN_METHOD_OPTION_DEFLATE_WITH_WP) {
+                if (iters % modelChecker.maxIters == 0) {
+                    for (BitSet mec : mecs) {
+                        if (subset.intersects(mec)) {
+                            upperBoundsNew = deflate(stpg, min1, min2, lowerBoundsNew, upperBoundsNew, mec, ec)[0];
+                        }
                     }
                 }
+            }
+            else {
+                double[][] wpDeflatingResult = STPGValueIterationUtils.widestPathDeflating(stpg, iters, modelChecker.maxIters, yes, lowerBounds, lowerBoundsNew, upperBoundsNew);
+                lowerBounds = wpDeflatingResult[0];
+                lowerBoundsNew = wpDeflatingResult[1];
+                upperBoundsNew = wpDeflatingResult[2];
             }
 
             //For OVI: If in verification phase, deflate using the precomputed set of SECs
             //We *must* deflate every iteration, because otherwise we might have some mixed thing (smaller everywhere but in some best exit), and without deflating we conclude inductive lower bound. With deflating, we realize that the best exit became smaller and it is not inductive lower bound.
             //For now, always deflate
-            if (lowerVerificationPhase) {
-                for (BitSet sec : OVI_Lower_SECs) {
-                    lowerVerificationGuessBoundsAfterIteration = deflate(stpg, min1, min2, lowerBoundsNew, lowerVerificationGuessBoundsAfterIteration, sec, ec)[0];
+            if (this.modelChecker.solnMethodOptions != STPGModelChecker.SOLN_METHOD_OPTION_DEFLATE_WITH_WP) {
+                if (lowerVerificationPhase) {
+                    for (BitSet sec : OVI_Lower_SECs) {
+                        lowerVerificationGuessBoundsAfterIteration = deflate(stpg, min1, min2, lowerBoundsNew, lowerVerificationGuessBoundsAfterIteration, sec, ec)[0];
+                    }
                 }
+            }
+            else {
+                double[][] wpDeflatingResult = STPGValueIterationUtils.widestPathDeflating(stpg, iters, modelChecker.maxIters, yes, lowerBounds, lowerBoundsNew, lowerVerificationGuessBoundsAfterIteration);
+                lowerBounds = wpDeflatingResult[0];
+                lowerBoundsNew = wpDeflatingResult[1];
+                lowerVerificationGuessBoundsAfterIteration = wpDeflatingResult[2];
             }
             long t2 = System.currentTimeMillis();
             timeSpentDeflating+= (t2-t1);
