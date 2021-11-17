@@ -1510,15 +1510,12 @@ public class STPGModelChecker extends ProbModelChecker
   private double[][] svi_deflate_mec(STPGExplicit stpg, boolean min1, boolean min2, double[] stepBoundReach, double[] stepBoundStay, BitSet mec, explicit.ECComputerDefault ec, double lowerbound, double upperbound) throws PrismException {
     BitSet mecMinusBestExit = new  BitSet();
     mecMinusBestExit.or(mec);
-    System.out.println("mecMinusBestExit.isEmpty()"+mecMinusBestExit.isEmpty());
 
     while (!mecMinusBestExit.isEmpty()) {
-      System.out.println(mecMinusBestExit.length()+" mecMinusBestExit.size()");
       int maxPlayer = min1 ? (min2 ? -1 : 2) : (min2 ? 1 : 3);
       int[] bestExitStateAndAction = getBestExitDeflate(mecMinusBestExit, stpg, stepBoundReach, stepBoundStay, maxPlayer, upperbound);
       int bestExitState = bestExitStateAndAction[0];
       int bestExitAction = bestExitStateAndAction[1];
-      System.out.println("bestExitState:"+bestExitState+" BestExitAction:" + bestExitAction);
       if(bestExitState!=-1 && bestExitAction!=-1) {
         // in some cases where best exit state and action is -1; for example: mec with all min states
         double reachVal = stpg.mvMultSingle(bestExitState, bestExitAction, stepBoundReach);
@@ -1528,9 +1525,6 @@ public class STPGModelChecker extends ProbModelChecker
         mecMinusBestExit.clear(bestExitState);
       }
       else{
-        for (int s = mecMinusBestExit.nextSetBit(0); s >= 0; s = mecMinusBestExit.nextSetBit(s+1)) {
-          //stepBoundStay[s] = 0;
-        }
         mecMinusBestExit.andNot(mecMinusBestExit);
       }
 
