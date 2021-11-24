@@ -21,7 +21,7 @@ public class STPGOptimisticIntervalIteration2 {
     int totalLowerVerifIters = 0;
     int totalUpperVerifIters = 0;
 
-    boolean debug = false;
+    boolean debug = true;
 
     double precision = 1e-12;
     boolean absolute = true;
@@ -104,7 +104,7 @@ public class STPGOptimisticIntervalIteration2 {
 
 
         // For guaranteed VI, we need MECs and an EC computer to find SECs
-        List<BitSet> mecs = null;
+        List<BitSet> mecs = new ArrayList<>();
         ECComputerDefault ec =null;
 
 
@@ -354,6 +354,8 @@ public class STPGOptimisticIntervalIteration2 {
         double[] upperVerificationGuessBounds = new double[stpg.getNumStates()];
         double[] upperVerificationGuessBoundsAfterIteration = new double[stpg.getNumStates()];
 
+        log(Arrays.toString(upperBounds));
+
         for (int state = 0; state < stpg.getNumStates(); state++) {
             if (upperBounds[state] == 0) {
                 lowerVerificationGuessBounds[state] = 0;
@@ -446,9 +448,6 @@ public class STPGOptimisticIntervalIteration2 {
             }
             else {
                 double[][] wpDeflatingResult = STPGValueIterationUtils.widestPathDeflating(stpg, iters, modelChecker.maxIters, yes, lowerBounds, lowerBoundsNew, upperBoundsNew);
-                lowerBounds = wpDeflatingResult[0];
-                lowerBoundsNew = wpDeflatingResult[1];
-                upperBoundsNew = wpDeflatingResult[2];
             }
 
             //For OVI: If in verification phase, deflate using the precomputed set of SECs
@@ -462,10 +461,7 @@ public class STPGOptimisticIntervalIteration2 {
                 }
             }
             else {
-                double[][] wpDeflatingResult = STPGValueIterationUtils.widestPathDeflating(stpg, iters, modelChecker.maxIters, yes, lowerBounds, lowerBoundsNew, lowerVerificationGuessBoundsAfterIteration);
-                lowerBounds = wpDeflatingResult[0];
-                lowerBoundsNew = wpDeflatingResult[1];
-                lowerVerificationGuessBoundsAfterIteration = wpDeflatingResult[2];
+                double[][] wpDeflatingResult = STPGValueIterationUtils.widestPathDeflating(stpg, iters, 1, yes, lowerBounds, lowerBoundsNew, lowerVerificationGuessBoundsAfterIteration);
             }
             long t2 = System.currentTimeMillis();
             timeSpentDeflating+= (t2-t1);
