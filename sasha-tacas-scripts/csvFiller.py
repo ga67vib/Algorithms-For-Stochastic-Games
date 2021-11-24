@@ -16,7 +16,7 @@ def main():
         '-inputDirPath', type=str, default="./", help='Where are the csv-files? Default: ./'
     )
     parser.add_argument(
-        '-referenceConf', type=str, default="D_BVI", help='If a conf violates by too much from the referenceConf, we consider it to be an Error. Default: D_BVI'
+        '-referenceConf', type=str, default="T_LP_SI", help='If a conf violates by too much from the referenceConf, we consider it to be an Error. Default: D_BVI'
     )
 
     arguments = parser.parse_args()

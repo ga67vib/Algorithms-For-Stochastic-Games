@@ -1,6 +1,9 @@
 from randomStateGetter import *
+import dataclasses
 
+@dataclasses.dataclass
 class GraphGenerationParameters:
+
     def __init__(self,
     num_states : int,
     minimum_incoming_edges : int = 1, 
@@ -14,6 +17,7 @@ class GraphGenerationParameters:
     choice_permutator : Permutation = Permutation(),
     denominator_range : int = 2,
     force_unknown : bool = False,
+    verbose : int = 1
     ) -> None:
         self.num_states = num_states
         self.minimum_incoming_edges = minimum_incoming_edges 
@@ -27,3 +31,4 @@ class GraphGenerationParameters:
         self.choice_permutator = choice_permutator
         self.denominator_range = denominator_range
         self.force_unknown = force_unknown
+        self.verbose = verbose

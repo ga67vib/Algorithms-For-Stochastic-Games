@@ -60,7 +60,7 @@ def main():
     backwards_probability = arguments.backwardsProb
     branching_probability = arguments.branchingProb
     force_unknown = arguments.forceUnknown
-
+    verbose = num_states >= 100000
 
     choice_permutator=Permutation_AllStatesPossible()
     transition_permutator=Permutation_AllStatesPossible()
@@ -107,6 +107,9 @@ def main():
         # Could have changed to subvert trivial targets
         num_states = generation_parameters.num_states
 
+        if verbose:
+            print("The Graph is generated. Next we need to create a PRISM File from it...")
+
         max_num_actions_player1 = graph.max_player_1_actions
         max_num_actions_player2 = graph.max_player_2_actions
 
@@ -137,18 +140,32 @@ def main():
         file_string+=player1_actions_header+"\n"
         file_string+=player2_actions_header+EMPTY_LINE
 
+
+        if verbose:
+            print("Header is generated. Now we create the player modules...")
+
+        # For efficiency, build a map from state to player
+        state_to_player = dict()
+        for state in graph.states_of_player1:
+            state_to_player[state] = 1
+        for state in graph.states_of_player2:
+            state_to_player[state] = 2
+
         # Modules
         player_1_actions = ""
         player_2_actions = ""
         for state in graph.actions_map:
+            if verbose and state % 100000 == 0:
+                print(f'Processing actions of state {state} / {len(graph.actions_map)}')
+
             player_identifier = ""
             player_actions = ""
-            if (state in graph.states_of_player1):
+
+            # We extend either the actions of player 1 or player 2, depending on who the state belongs to
+            if (state_to_player[state] == 1):
                 player_identifier = "a"
-                player_actions = player_1_actions
             else:
                 player_identifier = "b"
-                player_actions = player_2_actions
 
             action_index = 0
             for action in graph.actions_map[state]:
@@ -165,11 +182,18 @@ def main():
                 action_string+=transition_string+";\n"
 
                 player_actions+=action_string
-                if (state in graph.states_of_player1):
-                    player_1_actions = player_actions
-                else:
-                    player_2_actions = player_actions
+
                 action_index+=1
+            
+            # Extend the actions of the corresponding player
+            if (state_to_player[state] == 1):
+                player_1_actions += player_actions
+            else:
+                player_2_actions += player_actions
+
+
+        if (verbose):
+            print("Modules done! Next create the labels...")
 
         file_string+="module player1\n"
         file_string+=player_1_actions
@@ -192,6 +216,8 @@ def main():
 
         file_string+=label
 
+        if verbose:
+            print("PRISM Model is Generated. Saving it...")
 
         # Write to file
         if (not os.path.isdir(output_dir)):
