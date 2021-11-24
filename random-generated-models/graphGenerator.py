@@ -2,6 +2,7 @@ import random
 
 from seaborn import distributions
 from graphGenParams import GraphGenerationParameters
+from typing import Dict, List
 class GeneratedGraph:
     def generateGraph(
         self,
@@ -45,7 +46,7 @@ class GeneratedGraph:
     def _initVars(self, params : GraphGenerationParameters):
         self.states_of_player1 = []
         self.states_of_player2 = []
-        self.actions_map = dict() #Each state has a List of dicts, where each dict is mapping of states to probabilities 
+        self.actions_map : Dict[int, List[Dict[int, str]]] = dict() #Each state has a List of dicts, where each dict is mapping of states to probabilities 
 
         self.params : GraphGenerationParameters = params
 
@@ -53,11 +54,24 @@ class GeneratedGraph:
         #Compute maximal number of actions used
         self.max_player_1_actions = 0
         self.max_player_2_actions = 0
-        for state in self.actions_map:
-            if (state in self.states_of_player1):
-                self.max_player_1_actions = max(len(self.actions_map[state]),self.max_player_1_actions)
-            else:
-                self.max_player_2_actions = max(len(self.actions_map[state]),self.max_player_2_actions)
+
+        counter = 0
+
+        for state in self.states_of_player1:
+
+            if (counter % 100000 == 0 and self.params.verbose >= 1):
+                print(f"Count the maximum number of actions. Processed: {counter} / {self.params.num_states }")
+            counter+=1
+
+            self.max_player_1_actions = max(len(self.actions_map[state]), self.max_player_1_actions)
+
+        for state in self.states_of_player2:
+
+            if (counter % 100000 == 0 and self.params.verbose >= 1):
+                print(f"Count the maximum number of actions. Processed: {counter} / {self.params.num_states }")
+            counter+=1
+
+            self.max_player_2_actions = max(len(self.actions_map[state]),self.max_player_2_actions)
 
     def _reduceTrivialStates(self):
         """ Add after the old target a new target with 90% chance to go to a sink """
@@ -93,6 +107,10 @@ class GeneratedGraph:
     def _ensureDeadlockFreedom(self):
         #Every state that has no action should have self-loop
         for state in range(self.params.num_states):
+
+            if (state % 100000 == 0 and self.params.verbose >= 1):
+                print(f"Ensure Deadlock Freedom for State {state} / {self.params.num_states }")
+
             if (len(self.actions_map[state]) == 0):
                 distribution = dict()
                 distribution[state] = self._probabilityToFractionString(1,1)
@@ -100,7 +118,9 @@ class GeneratedGraph:
 
     def _generateChoices(self):
         for state in range(self.params.num_states):
-            # Connect backwards to states
+            if (state % 100000 == 0 and self.params.verbose >= 1):
+                print(f"Generate Choices for State {state} / {self.params.num_states }")
+            # Random-number generator
             choice_targets_permutation = self.params.choice_permutator
 
             # Cannot have more actions leading into a state than overall available states
@@ -127,7 +147,11 @@ class GeneratedGraph:
                 distribution = self._generateChoice(state, target_state, self.params.probability_to_branch)
                 self.actions_map[state].append(distribution)
 
-    def _generateChoice(self, source_state, target_state, probability_to_branch):
+    def _generateChoice(self, source_state, target_state, probability_to_branch) -> Dict[int, str]:
+        """ 
+        Generates a Choice from source_state to target_state with probability_to_branch.
+        Returns a mapping State -> Probability to reach as fraction 
+        """
         distribution = dict()
         if (self._meetsThreshhold(probability_to_branch)):
             distribution = self._getProbabilityDistributionForBranchingAction(target_state)
@@ -145,11 +169,12 @@ class GeneratedGraph:
         denominator = self.params.denominator_range
         maximal_branch_count = 10
 
-        #Assign a sure branch to the target state
+        # Create a transition to the target state to ensure that this action can reach it
         probability = random.randint(1, denominator)
         intDistribution[target_state] = probability
         totalProbability = probability
 
+        # Decide if you want to have more transitions in this action leading to random states
         while (counter < maximal_branch_count and self._meetsThreshhold(self.params.probability_to_branch) and totalProbability < denominator):
             other_state = transition_targets_permutation.next(target_state)
             probability = random.randint(1, denominator-totalProbability)
@@ -180,3 +205,15 @@ class GeneratedGraph:
             return "1"
         else:
             return str(numerator)+"/"+str(denominator)
+
+    def __str__(self):
+        s = ""
+        for state in range(self.params.num_states):
+            s+=(f'State {state}:\n')
+            index = 0
+            for action in self.actions_map[state]:
+                s+=(f'\tAction {index}:\n')
+                for key in action:
+                    s+=(f'\t\t{key} : {action[key]}\n')
+                index += 1
+        return s
