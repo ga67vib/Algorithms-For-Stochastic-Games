@@ -4,6 +4,12 @@
 # Log file
 *.log
 
+# AMPL usage filed
+*.mod
+
+# IntelliJ-related
+*.idea
+
 # BlueJ files
 *.ctxt
 
