@@ -1180,7 +1180,7 @@ public class STPGValueIterationUtils {
      * Implements Widest Path Deflating as presented in Widest Paths and Global Propagation in Bounded Value Iteration for Stochastic Games
      * (https://link.springer.com/chapter/10.1007%2F978-3-030-53291-8_19)
      * Put this method BEFORE swapping lowerBoundsNew and lowerBounds and BEFORE swapping upperBounds and upperBoundsNew
-     * 
+     *
      * NOTE: CURRENTLY DOES NOT (!!!) SUPPORT GAUSS-SEIDEL OPTIONS OR TOPOLOGICAL!
      * @param stpg
      * @param iters

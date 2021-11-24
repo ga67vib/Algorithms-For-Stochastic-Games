@@ -831,7 +831,7 @@ public class STPGModelChecker extends ProbModelChecker
 
 
 		// For guaranteed VI, we need MECs and an EC computer to find SECs
-		List<BitSet> mecs = null;
+		List<BitSet> mecs = new ArrayList<>();
 		explicit.ECComputerDefault ec =null;
 		if (needsUpperBounds && solnMethodOptions != SOLN_METHOD_OPTION_DEFLATE_WITH_WP){
 			mainLog.println("Getting MECs...");
