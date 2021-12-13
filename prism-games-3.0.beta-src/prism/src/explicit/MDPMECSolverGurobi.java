@@ -33,6 +33,11 @@ public class MDPMECSolverGurobi {
         }
     }
 
+    public void solve(BitSet mec, HashMap<Integer, Integer> map) throws PrismException, GRBException {
+        this.map = map;
+        createStrategyTable(mec);
+    }
+
     protected void createStrategyTable(BitSet mec) throws PrismException, GRBException {
         if (this.min) {
             setMECtoZero(mec);
@@ -52,7 +57,7 @@ public class MDPMECSolverGurobi {
         int state=mec.nextSetBit(0);
         for (int i=0; i<numECStates; i++) {
             lhs[i] = new GRBLinExpr();
-            lhs[i].addTerm(1.0, stateVars[state]);
+            lhs[i].addTerm(1.0, stateVars[getStateIndex(state)]);
             state=mec.nextSetBit(state+1);
         }
         lp.addConstrs(lhs, senses, rhs, null);
@@ -99,7 +104,7 @@ public class MDPMECSolverGurobi {
                         lhs[i].addConstant(-1.0*tr.getValue()/divisor * knownValues[tr.getKey()]);
                     }
                     else {
-                        lhs[i].addTerm(-1.0*tr.getValue()/divisor, stateVars[tr.getKey()]);
+                        lhs[i].addTerm(-1.0*tr.getValue()/divisor, stateVars[getStateIndex(tr.getKey())]);
                     }
                 }
             }
@@ -115,7 +120,7 @@ public class MDPMECSolverGurobi {
                 break;
             }
             //lp.addGenConstrMax(stateVars[state], extraVars, 0.0, ""); //Creates Max constraint
-            vars[i]=stateVars[state];
+            vars[i]=stateVars[getStateIndex(state)];
             i++;
         }
         createMinMaxConstraint(vars, extraVars, true);
@@ -222,5 +227,9 @@ public class MDPMECSolverGurobi {
             }
         }
         return exits;
+    }
+
+    private int getStateIndex(int index) {
+        return (map != null) ? map.get(index) : index;
     }
 }

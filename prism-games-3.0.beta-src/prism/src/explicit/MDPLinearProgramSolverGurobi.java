@@ -1,5 +1,6 @@
 package explicit;
 
+import common.IntSet;
 import gurobi.*;
 import prism.PrismException;
 import prism.PrismSettings;
@@ -19,6 +20,7 @@ public class MDPLinearProgramSolverGurobi {
     BitSet remain;
     BitSet target;
 
+    long buildTimeStart;
     boolean mecDetected;
     //TOPOLOGICAL
     HashMap<Integer, Integer> mdpIndexToSCCIndex;
@@ -39,8 +41,14 @@ public class MDPLinearProgramSolverGurobi {
     }
     public ModelCheckerResult solve() throws PrismException{
         ModelCheckerResult res = new ModelCheckerResult();
+        buildTimeStart = System.nanoTime();
         try {
-            res = this.computeReachProbsLinearProgrammingGurobi(mdp, no, yes, this.min, null, init);
+            if (this.modelChecker.solnMethodOptions != 1) {
+                res = this.computeReachProbsLinearProgrammingGurobi(mdp, no, yes, this.min, null, init);
+            }
+            else {
+                res = this.computerReachProbsLinearProgrammingGurobiTopologically(mdp, no, yes, this.min, null, init);
+            }
         }
         catch (GRBException e) {
             e.printStackTrace();
@@ -110,11 +118,94 @@ public class MDPLinearProgramSolverGurobi {
     }
 
     public ModelCheckerResult computeReachProbsLinearProgrammingGurobi (MDP mdp, BitSet no, BitSet yes, boolean min, int strat[], double[] preRes) throws GRBException, PrismException {
+        List<BitSet> mecs = getMECs(mdp, no, yes);
+        return computeReachProbsLinearProgrammingGurobi(mdp, no, yes, min, strat, preRes, mecs, null, null, null);
+    }
+
+    public ModelCheckerResult computerReachProbsLinearProgrammingGurobiTopologically(MDP mdp, BitSet no, BitSet yes, boolean min, int strat[], double[] preRes) throws GRBException, PrismException {
+        long tranformTime = System.nanoTime() - buildTimeStart;
+        long buildAndSolveTime = System.nanoTime();
+
+        BitSet unknown;
+        SCCInfo sccs;
+        unknown = new BitSet();
+        unknown.set(0, mdp.getNumStates()); // what does this do?
+        unknown.andNot(yes);
+        unknown.andNot(no);
+
+        BitSet statesInSCC;
+        known = new BitSet(); //I suppose I know nothing
+        double[] values = new double[mdp.getNumStates()];
+        initializeYesValues(values, yes);
+        known.or(yes);
+        known.or(no);
+
+        System.out.println("Getting topologically ordered SCCs...");
+        sccs = SCCComputer.computeTopologicalOrdering(modelChecker, mdp, true, unknown::get);
+
+        List<BitSet> mecs = getMECs(mdp, no, yes);
+
+        ModelCheckerResult res = new ModelCheckerResult();
+        res.soln = new double[mdp.getNumStates()];
+        ModelCheckerResult tmpRes = new ModelCheckerResult();
+        for (int scc=0; scc<sccs.getNumSCCs(); scc++) {
+            if (sccs.isSingletonSCC(scc)) {
+                int state = sccs.getStatesForSCC(scc).iterator().nextInt();
+                computeSingletonSCC(mdp, state, values, min);
+                known.set(state);
+            }
+            else {
+                IntSet sccIntset = sccs.getStatesForSCC(scc);
+                statesInSCC = new BitSet();
+                for (int state : sccIntset) {
+                    statesInSCC.set(state);
+                }
+                mdpIndexToSCCIndex = new HashMap<>();
+                int i=0;
+                for (int state=statesInSCC.nextSetBit(0); state>=0; state=statesInSCC.nextSetBit(state+1)) {
+                    mdpIndexToSCCIndex.put(state, i);
+                    i++;
+                }
+                tmpRes = computeReachProbsLinearProgrammingGurobi(mdp, no, yes, min, strat, preRes, mecs, known, values, statesInSCC);
+                i=0;
+                for (int state = statesInSCC.nextSetBit(0); state>=0; state=statesInSCC.nextSetBit(state+1)) {
+                    values[state]=tmpRes.soln[i];
+                    i++;
+                }
+                known.or(statesInSCC);
+
+                //We can pass on the same STPG, but just care for the interesting set
+                //=> For not-topological just pass on everything
+            }
+        }
+
+        buildAndSolveTime = System.nanoTime() - buildAndSolveTime;
+        res.soln = values;
+        res.timeTaken = buildAndSolveTime + tranformTime;
+        return res;
+    }
+
+    public ModelCheckerResult computeReachProbsLinearProgrammingGurobi (MDP mdp, BitSet no, BitSet yes, boolean min, int strat[], double[] preRes,
+                                                                        List<BitSet> mecs,
+                                                                        BitSet known, double[] knownValues, BitSet compute) throws GRBException, PrismException {
+        // Null Checks
+        boolean topological=true;
+        if (compute==null) {
+            topological = false;
+            compute = new BitSet();
+            compute.set(0,mdp.getNumStates());
+        }
+        if (known==null) {
+            known = new BitSet();
+        }
+        if (mecs==null) {
+            mecs = new ArrayList<>();
+        }
+
+
         int numStates = mdp.getNumStates();
         GRBEnv grbEnv = new GRBEnv();
         GRBModel linearProgram = new GRBModel(grbEnv);
-
-        List<BitSet> mecs = getMECs(mdp, no, yes);
 
         //=================CREATE VARIABLES===============================
         double lb[] = new double[numStates]; // also initializes array to 0
@@ -135,7 +226,7 @@ public class MDPLinearProgramSolverGurobi {
                 if (preResArr.length < stateVars.length) {
                     //System.out.println("Initial solution has less states than QP model. Additional states won't have initial value");
                 }
-                for (int state = 0; state< mdp.getNumStates(); state++) {
+                for (int state=compute.nextSetBit(0); state>=0; state = compute.nextSetBit(state+1)) {
                     if (state < preRes.length) {
                         stateVars[state].set(GRB.DoubleAttr.Start, preResArr[state]);
                     }
@@ -147,13 +238,21 @@ public class MDPLinearProgramSolverGurobi {
         }
 
         //======================CREATE CONSTRAINTS=======================
-        int numChoices = mdp.getNumChoices();
+        int numChoices = 0;
+        if (topological) {
+            for (int state=compute.nextSetBit(0); state>=0; state = compute.nextSetBit(state+1)) {
+                numChoices+= mdp.getNumChoices(state);
+            }
+        }
+        else {
+            numChoices = mdp.getNumChoices();
+        }
         GRBLinExpr[] lhs = new GRBLinExpr[numChoices];
         double[] rhs = new double[numChoices];
         char[] senses = new char[numChoices];
 
         int k = 0; //constraint counter
-        for (int state = 0; state < numStates; state++) {
+        for (int state=compute.nextSetBit(0); state>=0; state = compute.nextSetBit(state+1)) {
             //Skip all MEC-states because their constraints are built differently
             boolean skip = false;
             for (BitSet mec : mecs) {
@@ -192,7 +291,10 @@ public class MDPLinearProgramSolverGurobi {
                 for (Iterator<Map.Entry<Integer, Double>> it = mdp.getTransitionsIterator(state, choice); it.hasNext(); ) {
                     Map.Entry<Integer, Double> tr = it.next();
 
-                    if (yes.get(tr.getKey())) { //The transition leads to a yes-sink
+                    if (known.get(tr.getKey())) {
+                        lhs[k].addConstant(-1.0 * tr.getValue() * knownValues[tr.getKey()]);
+                    }
+                    else if (yes.get(tr.getKey())) { //The transition leads to a yes-sink
                         lhs[k].addConstant(-1.0 * tr.getValue());
                     } else if (!no.get(tr.getKey())) { //neither yes/no -> normal vertex
                         lhs[k].addTerm(-1.0 * tr.getValue(), stateVars[tr.getKey()]);
@@ -238,13 +340,27 @@ public class MDPLinearProgramSolverGurobi {
         linearProgram.addConstrs(lhsWithoutMEC, sensesWithoutMEC, rhsWithoutMEC, null);
 
         //MEC-Solving - also adds the constraints
-        MDPMECSolverGurobi mecSolver = new MDPMECSolverGurobi(linearProgram, stateVars, mecs, mdp, min, new BitSet(), null);
-        mecSolver.solve(); //we have to treat everything
+        MDPMECSolverGurobi mecSolver = new MDPMECSolverGurobi(linearProgram, stateVars, mecs, mdp, min, known, knownValues);
+        if (!topological) mecSolver.solve(); //we have to treat everything
+        else {
+            for (BitSet mec : mecs) {
+                //only solve mecs of which at least one states appears in the compute set
+                if (compute.get(mec.nextSetBit(0))) {
+                    mecSolver.solve(mec, mdpIndexToSCCIndex);
+                }
+
+            }
+        }
 
         //-----------------Objective Function---------------------
         GRBLinExpr objExpr = new GRBLinExpr();
-        for (int state = 0; state < numStates; state++) {
-            objExpr.addTerm(1.0, stateVars[state]);
+        for (int state = compute.nextSetBit(0); state>=0; state=compute.nextSetBit(state+1)) {
+            if (!known.get(state)) {
+                objExpr.addTerm(1.0, stateVars[state]);
+            }
+            else {
+                objExpr.addConstant(knownValues[state]);
+            }
         }
 
         linearProgram.setObjective(objExpr, min ? GRB.MAXIMIZE : GRB.MINIMIZE);
@@ -279,5 +395,12 @@ public class MDPLinearProgramSolverGurobi {
             res.soln[i] = stateVars[i].get(GRB.DoubleAttr.X);
         }
         return res;
+    }
+
+    protected void initializeYesValues(double[] values, BitSet yes) {
+        for (int state = yes.nextSetBit(0); state>=0; state=yes.nextSetBit(state+1)) {
+            values[state]=1.0;
+        }
+        //No just stays actually 0 and is not necessary
     }
 }
