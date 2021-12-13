@@ -142,6 +142,8 @@ public class MDPLinearProgramSolverGurobi {
 
         System.out.println("Getting topologically ordered SCCs...");
         sccs = SCCComputer.computeTopologicalOrdering(modelChecker, mdp, true, unknown::get);
+        int totalSCCs = sccs.getNumSCCs();
+        int nonSingletonSCCs = totalSCCs;
 
         List<BitSet> mecs = getMECs(mdp, no, yes);
 
@@ -150,6 +152,7 @@ public class MDPLinearProgramSolverGurobi {
         ModelCheckerResult tmpRes = new ModelCheckerResult();
         for (int scc=0; scc<sccs.getNumSCCs(); scc++) {
             if (sccs.isSingletonSCC(scc)) {
+                nonSingletonSCCs--;
                 int state = sccs.getStatesForSCC(scc).iterator().nextInt();
                 computeSingletonSCC(mdp, state, values, min);
                 known.set(state);
@@ -179,6 +182,7 @@ public class MDPLinearProgramSolverGurobi {
             }
         }
 
+        System.out.println("SCCs: "+totalSCCs+", of which :"+nonSingletonSCCs+" are not singletons");
         buildAndSolveTime = System.nanoTime() - buildAndSolveTime;
         res.soln = values;
         res.timeTaken = buildAndSolveTime + tranformTime;
