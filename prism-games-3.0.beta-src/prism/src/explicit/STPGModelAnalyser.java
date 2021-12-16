@@ -157,12 +157,14 @@ public class STPGModelAnalyser {
         sccs = SCCComputer.computeTopologicalOrdering(this.modelChecker, stpg, true, null);
         System.out.println("Number of SCCs: " + sccs.getNumSCCs());
         int numSCCs = sccs.getNumSCCs();
+        int numNonSingleton = numSCCs;
         long maximalCardinalitySCC=0;
         long minimalCardinalitySCC=Long.MAX_VALUE;
         double avgSCCsize = 0.0;
         if (numSCCs > 0) {
             for (int i = 0; i < sccs.getNumSCCs(); i++) {
                 IntSet scc = sccs.getStatesForSCC(i);
+                if (scc.cardinality() == 1) numNonSingleton--;
                 maximalCardinalitySCC = Math.max(scc.cardinality(), maximalCardinalitySCC);
                 minimalCardinalitySCC = Math.min(scc.cardinality(), minimalCardinalitySCC);
                 avgSCCsize += scc.cardinality();
@@ -175,6 +177,7 @@ public class STPGModelAnalyser {
             avgSCCsize = 0;
         }
 
+        log("Number of non-singleton SCCs: "+(numNonSingleton));
         log("Biggest SCC has size: "+maximalCardinalitySCC);
         log("Smallest SCC has size: "+minimalCardinalitySCC);
         log("Average SCC has size: "+avgSCCsize);
