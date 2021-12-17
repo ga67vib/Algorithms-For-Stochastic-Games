@@ -160,14 +160,21 @@ public class STPGModelAnalyser {
         int numNonSingleton = numSCCs;
         long maximalCardinalitySCC=0;
         long minimalCardinalitySCC=Long.MAX_VALUE;
+        long minimalCardinalitySCCNonSingleton=Long.MAX_VALUE;
+        double avgSCCsizeNonSingleton = 0.0;
         double avgSCCsize = 0.0;
         if (numSCCs > 0) {
             for (int i = 0; i < sccs.getNumSCCs(); i++) {
                 IntSet scc = sccs.getStatesForSCC(i);
-                if (scc.cardinality() == 1) numNonSingleton--;
-                maximalCardinalitySCC = Math.max(scc.cardinality(), maximalCardinalitySCC);
-                minimalCardinalitySCC = Math.min(scc.cardinality(), minimalCardinalitySCC);
-                avgSCCsize += scc.cardinality();
+                long cardinality = scc.cardinality();
+                if (cardinality == 1) numNonSingleton--;
+                else {
+                    minimalCardinalitySCCNonSingleton = Math.min(cardinality, minimalCardinalitySCCNonSingleton);
+                    avgSCCsizeNonSingleton += cardinality;
+                }
+                maximalCardinalitySCC = Math.max(cardinality, maximalCardinalitySCC);
+                minimalCardinalitySCC = Math.min(cardinality, minimalCardinalitySCC);
+                avgSCCsize += cardinality;
             }
             avgSCCsize /= sccs.getNumSCCs();
         }
@@ -177,10 +184,17 @@ public class STPGModelAnalyser {
             avgSCCsize = 0;
         }
 
-        log("Number of non-singleton SCCs: "+(numNonSingleton));
+        if(numNonSingleton > 0) {
+            avgSCCsizeNonSingleton /= numNonSingleton;
+        }
+
         log("Biggest SCC has size: "+maximalCardinalitySCC);
         log("Smallest SCC has size: "+minimalCardinalitySCC);
         log("Average SCC has size: "+avgSCCsize);
+
+        log("Number of non-Singleton SCCs: "+(numNonSingleton));
+        log("Smallest non-Singleton SCC has size: "+(numNonSingleton > 0 ? minimalCardinalitySCC : 0));
+        log("Average non-Singleton SCC has size: "+(avgSCCsizeNonSingleton));
 
         int maximumSCCDepth = getLongestSCCChain(stpg, sccs);
         log("Longest Chain of SCC has length: "+maximumSCCDepth);
