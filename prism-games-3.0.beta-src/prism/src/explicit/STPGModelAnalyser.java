@@ -167,7 +167,7 @@ public class STPGModelAnalyser {
             for (int i = 0; i < sccs.getNumSCCs(); i++) {
                 IntSet scc = sccs.getStatesForSCC(i);
                 long cardinality = scc.cardinality();
-                if (cardinality == 1) numNonSingleton--;
+                if (cardinality <= 1) numNonSingleton--;
                 else {
                     minimalCardinalitySCCNonSingleton = Math.min(cardinality, minimalCardinalitySCCNonSingleton);
                     avgSCCsizeNonSingleton += cardinality;
@@ -193,7 +193,7 @@ public class STPGModelAnalyser {
         log("Average SCC has size: "+avgSCCsize);
 
         log("Number of non-Singleton SCCs: "+(numNonSingleton));
-        log("Smallest non-Singleton SCC has size: "+(numNonSingleton > 0 ? minimalCardinalitySCC : 0));
+        log("Smallest non-Singleton SCC has size: "+(numNonSingleton > 0 ? minimalCardinalitySCCNonSingleton : 0));
         log("Average non-Singleton SCC has size: "+(avgSCCsizeNonSingleton));
 
         int maximumSCCDepth = getLongestSCCChain(stpg, sccs);
