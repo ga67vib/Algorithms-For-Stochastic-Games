@@ -13,7 +13,8 @@ public class STPGModelAnalyser {
         this.modelChecker = modelChecker;
     }
 
-    protected ModelCheckerResult analyse_model(STPG stpg, BitSet no, BitSet yes, boolean min1, boolean min2, double init[], BitSet known, BitSet target)
+    protected ModelCheckerResult analyse_model(STPG stpg, BitSet no, BitSet yes, boolean min1, boolean min2, double init[],
+                                               BitSet known, BitSet target, long timerProb0, long timerProb1)
             throws PrismException {
 
         System.out.println("You called the model analysis method which doesn't solve the problem, but tells you more about it!");
@@ -75,6 +76,9 @@ public class STPGModelAnalyser {
                 }
             }
         }
+
+        log("Prob0 Time in s: "+(timerProb0/1000.0));
+        log("Prob1 Time in s: "+(timerProb1/1000.0));
 
         log("Number of maximal choices per state: " + maxChoices);
         log("Number of maximal transitions per choice: " + maxTransitions);
@@ -154,8 +158,11 @@ public class STPGModelAnalyser {
 
         SCCInfo sccs = null;
         System.out.println("Getting topologically ordered SCCs...");
+        long timeBeforeSCCComp = System.currentTimeMillis();
         sccs = SCCComputer.computeTopologicalOrdering(this.modelChecker, stpg, true, null);
+        long timeAfterSCCComp = System.currentTimeMillis();
         System.out.println("Number of SCCs: " + sccs.getNumSCCs());
+        System.out.println("SCC computation took (s): " + ((timeAfterSCCComp-timeBeforeSCCComp)/1000.0));
         int numSCCs = sccs.getNumSCCs();
         int numNonSingleton = numSCCs;
         long maximalCardinalitySCC=0;

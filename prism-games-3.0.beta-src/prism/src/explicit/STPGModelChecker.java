@@ -317,7 +317,7 @@ public class STPGModelChecker extends ProbModelChecker
 				res = wpIteration.computeReachProbsValIter(stpg, no, yes, min1, min2, init, known, solnMethod);
 				break;
 			case ANALYSE_MODEL:
-				res = analyse_model(stpg, no, yes, min1, min2, init, known, target);
+				res = analyse_model(stpg, no, yes, min1, min2, init, known, target, timerProb0, timerProb1);
 				break;
 			default:
 				throw new PrismException("Unknown STPG solution method " + solnMethod);
@@ -3780,10 +3780,10 @@ public class STPGModelChecker extends ProbModelChecker
 	}
 
 
-	protected ModelCheckerResult analyse_model(STPG stpg, BitSet no, BitSet yes, boolean min1, boolean min2, double init[], BitSet known, BitSet target)
+	protected ModelCheckerResult analyse_model(STPG stpg, BitSet no, BitSet yes, boolean min1, boolean min2, double init[], BitSet known, BitSet target, long timerProb0, long timerProb1)
 			throws PrismException {
 		STPGModelAnalyser analyser = new STPGModelAnalyser(this);
-		return analyser.analyse_model(stpg, no, yes, min1, min2, init, known, target);
+		return analyser.analyse_model(stpg, no, yes, min1, min2, init, known, target, timerProb0, timerProb1);
 	}
 	/**
 	 * Simple test program.
