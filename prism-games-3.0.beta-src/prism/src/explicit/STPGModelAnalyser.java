@@ -104,13 +104,16 @@ public class STPGModelAnalyser {
         List<BitSet> mecs = null;
         ECComputerDefault ec =null;
         System.out.println("Getting MECs...");
+        long timeBeforeMECCompute = System.currentTimeMillis();
         ec = (ECComputerDefault) ECComputer.createECComputer(this.modelChecker, stpg);
         //need a copy of unknown, since EC computation empties the set as a side effect
         BitSet unknownForEC = new BitSet();
         unknownForEC.or(unknown);
         ec.computeMECStates(unknownForEC);
         mecs = ec.getMECStates();
+        long timeAfterMECCompute = System.currentTimeMillis();
         log("Number of MECs: " + mecs.size());
+        log("Time to compute MECs (s): "+((timeAfterMECCompute-timeBeforeMECCompute)/1000.0));
 
         Collections.sort(mecs, (Comparator.comparingInt(BitSet::cardinality)));
         long maximalCardinalityMEC=0;
