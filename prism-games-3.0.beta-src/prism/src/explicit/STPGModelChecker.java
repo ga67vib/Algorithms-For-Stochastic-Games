@@ -2489,6 +2489,11 @@ public class STPGModelChecker extends ProbModelChecker
                 }
             }
 		}
+		// This case can only happen if we use no-precomp
+		if (factor <= 0) {
+			return 0;
+		}
+		
 		expectedReturn = expectedReturn / factor; //factor can never be 0, since targets and sinks are not given to this method
 		return expectedReturn;
 	}

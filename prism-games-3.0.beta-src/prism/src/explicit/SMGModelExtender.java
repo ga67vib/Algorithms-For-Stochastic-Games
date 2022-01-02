@@ -69,6 +69,7 @@ public class SMGModelExtender {
                         config.probExtension_probabilityToGoBackToIntialState,
                         config.probExtension_probabilityLeadingToSink,
                         sink),
+                /* Use the settings for the SCC Tree instead
                 new SMGModelExtension_ActionTree(
                         newStpg,
                         remain,
@@ -80,6 +81,19 @@ public class SMGModelExtender {
                         config.actionTreeExtension_probabilityToGoBackToIntialState,
                         config.actionTreeExtension_probabilityLeadingToSink,
                         sink)
+                 */
+                new SMGModelExtension_SCCTree(
+                        newStpg,
+                        remain,
+                        statesList,
+                        config.extendWithActionTrees,
+                        config.actionTreeExtension_numComponents,
+                        config.actionTreeExtension_componentNumStates,
+                        config.actionTreeExtension_componentBranchingFactor,
+                        config.actionTreeExtension_probabilityToGoBackToIntialState,
+                        config.actionTreeExtension_probabilityLeadingToSink,
+                        sink
+                )
         };
 
         ArrayList<Integer> newInitialStates = new ArrayList<>();
