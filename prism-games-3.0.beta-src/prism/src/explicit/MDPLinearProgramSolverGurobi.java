@@ -396,7 +396,12 @@ public class MDPLinearProgramSolverGurobi {
         ModelCheckerResult res = new ModelCheckerResult();
         res.soln = new double[numStates];
         for (int i = 0; i < numStates; i++) {
-            res.soln[i] = stateVars[i].get(GRB.DoubleAttr.X);
+            try {
+                res.soln[i] = stateVars[i].get(GRB.DoubleAttr.X);
+            }
+            catch (GRBException e) {
+                System.out.println("There was an error while reading the value of state: " + i +", replacing the value with 0");
+            }
         }
         return res;
     }
