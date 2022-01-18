@@ -93,6 +93,18 @@ public class SMGModelExtender {
                         config.actionTreeExtension_probabilityToGoBackToIntialState,
                         config.actionTreeExtension_probabilityLeadingToSink,
                         sink
+                ),
+                new SMGModelExtension_SCCSuperConnected(
+                        newStpg,
+                        remain,
+                        statesList,
+                        config.extendWithSCCSuperConnect,
+                        config.sccSuperConnected_numComponents,
+                        config.sccSuperConnected_componentNumStates,
+                        config.sccSuperConnected_numActionsPerState,
+                        config.sccSuperConnected_transitionsPerAction,
+                        config.sccSuperConnected_probabilityLeadingToSink,
+                        sink
                 )
         };
 
@@ -201,6 +213,7 @@ public class SMGModelExtender {
                 config.probExtension_probabilityLeadingToSink = Double.parseDouble(extensionProbabilistic.get("probabilityLeadingToSink").toString());
                 config.probExtension_probabilityToGoBackToIntialState = Double.parseDouble(extensionProbabilistic.get("probabilityToGoBackToInitialState").toString());
 
+
                 JSONObject extensionActionTree = (JSONObject) extensions.get("ActionTreeModel");
 
                 config.extendWithActionTrees = Boolean.parseBoolean(extensionActionTree.get("use").toString());
@@ -210,6 +223,19 @@ public class SMGModelExtender {
                 config.actionTreeExtension_probabilityLeadingToSink = Double.parseDouble(extensionActionTree.get("probabilityLeadingToSink").toString());
                 config.actionTreeExtension_probabilityToGoBackToIntialState = Double.parseDouble(extensionActionTree.get("probabilityToGoBackToInitialState").toString());
 
+
+                try {
+                    JSONObject extensionSCCSuperConnect = (JSONObject) extensions.get("SCCSuperConnect");
+                    config.extendWithSCCSuperConnect = Boolean.parseBoolean(extensionSCCSuperConnect.get("use").toString());
+                    config.sccSuperConnected_numComponents = Integer.parseInt(extensionSCCSuperConnect.get("numComponents").toString());
+                    config.sccSuperConnected_numActionsPerState = Integer.parseInt(extensionSCCSuperConnect.get("numActionsPerState").toString());
+                    config.sccSuperConnected_componentNumStates = Integer.parseInt(extensionSCCSuperConnect.get("componentNumberOfStates").toString());
+                    config.sccSuperConnected_probabilityLeadingToSink = Double.parseDouble(extensionSCCSuperConnect.get("probabilityLeadingToSink").toString());
+                    config.sccSuperConnected_transitionsPerAction = Integer.parseInt(extensionSCCSuperConnect.get("transitionsPerAction").toString());
+                }
+                catch (Exception e) {
+                    config.extendWithSCCSuperConnect = false;
+                }
 
             } catch (Exception e) {
                 e.printStackTrace();

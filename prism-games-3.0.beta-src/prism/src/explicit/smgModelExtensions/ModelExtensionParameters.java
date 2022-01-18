@@ -4,6 +4,8 @@ public class ModelExtensionParameters {
     public boolean extendWithBigMECs;
     public boolean extendWithProbabilityTrees;
     public boolean extendWithActionTrees;
+    public boolean extendWithSCCSuperConnect;
+
 
     //BigMEC Parameters
     public int mecExtension_numMECs;
@@ -25,4 +27,11 @@ public class ModelExtensionParameters {
     public int actionTreeExtension_componentNumStates;
     public double actionTreeExtension_probabilityLeadingToSink;
     public double actionTreeExtension_probabilityToGoBackToIntialState;
+
+    //SCC Super Connected
+    public int sccSuperConnected_numComponents;
+    public int sccSuperConnected_numActionsPerState;
+    public int sccSuperConnected_componentNumStates;
+    public int sccSuperConnected_transitionsPerAction;
+    public double sccSuperConnected_probabilityLeadingToSink;
 }
