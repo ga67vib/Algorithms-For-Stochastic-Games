@@ -101,6 +101,8 @@ public class SMGModelExtension_SCCSuperConnected extends SMGModelExtension{
                         stateToReach += currentInitialState; // offset
                         transitionDistribution.add(stateToReach, restProb / transitionsPerAction);
                     }
+
+                    stpg.addChoice(currentState, transitionDistribution);
                 }
             }
             currentInitialState = nextInitialState;
