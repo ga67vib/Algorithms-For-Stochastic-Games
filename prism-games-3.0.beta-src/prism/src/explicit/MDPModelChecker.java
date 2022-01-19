@@ -39,6 +39,7 @@ import java.util.Vector;
 
 import common.IterableStateSet;
 import common.StopWatch;
+import gurobi.GRBException;
 import parser.VarList;
 import parser.ast.Declaration;
 import parser.ast.DeclarationIntUnbounded;
@@ -1215,7 +1216,7 @@ public class MDPModelChecker extends ProbModelChecker
 			if (iterativeSolution)
 				res = mcDTMC.computeReachProbsGaussSeidel(dtmc, no, yes, reUseSoln ? soln : null, null, backwardsGS);
 			else
-				res = dtmcNonIterativeSolutionMethods.solveMarkovChain(dtmc, yes, initVector, termCritParam);
+				res = dtmcNonIterativeSolutionMethods.solveMarkovChainPerLP(dtmc, yes, initVector, termCritParam);
 			soln = res.soln;
 			totalIters += res.numIters;
 			// Check if optimal, improve non-optimal choices

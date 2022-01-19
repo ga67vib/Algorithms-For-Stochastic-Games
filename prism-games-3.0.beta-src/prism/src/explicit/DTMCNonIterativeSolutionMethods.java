@@ -2,6 +2,7 @@ package explicit;
 
 import Jama.Matrix;
 import explicit.rewards.MCRewards;
+import gurobi.*;
 import prism.Pair;
 import prism.PrismException;
 
@@ -149,12 +150,138 @@ public class DTMCNonIterativeSolutionMethods {
         return result;
     }
 
+    protected ModelCheckerResult solveMarkovChainPerLP(DTMC dtmc, BitSet targets, double[] upperbounds, double precision) {
+        try {
+            // Null Checks
+            boolean topological = true;
+
+
+            int numStates = dtmc.getNumStates();
+            GRBEnv grbEnv = new GRBEnv();
+            GRBModel linearProgram = new GRBModel(grbEnv);
+
+            //=================CREATE VARIABLES===============================
+            double lb[] = new double[numStates]; // also initializes array to 0
+            double ub[] = new double[numStates];
+
+            // Initialize all upper bounds to 1
+            Arrays.fill(ub, 1.0);
+
+            // Create state variables, type = null implies all variables are of continuous type
+            GRBVar[] stateVars = linearProgram.addVars(lb, ub, null, null, null);
+
+            //======================CREATE CONSTRAINTS=======================
+            int numChoices = dtmc.getNumStates();
+
+            GRBLinExpr[] lhs = new GRBLinExpr[numChoices];
+            double[] rhs = new double[numChoices];
+            char[] senses = new char[numChoices];
+
+            int k = 0; //constraint counter
+            for (int state = 0; state < dtmc.getNumStates(); state++) {
+                int numStateChoices = 1;
+                for (int choice = 0; choice < numStateChoices; choice++) {
+                    // Add v(i)
+                    lhs[k] = new GRBLinExpr();
+                    lhs[k].addTerm(1.0, stateVars[state]);
+
+                    //putting the correct sense. ToDo HAS TO BE ADJUSTED TO min1, min2
+                    if (numStateChoices == 1) {
+                        senses[k] = GRB.EQUAL;
+                    }
+
+                    //If this is a yes-state, just model it as a state with a self-loop
+                    if (targets.get(state)) {
+                        lhs[k].addConstant(-1.0);
+                        k++;
+                        continue;
+                    }
+
+                    for (Iterator<Map.Entry<Integer, Double>> it = dtmc.getTransitionsIterator(state); it.hasNext(); ) {
+                        Map.Entry<Integer, Double> tr = it.next();
+
+                        if (targets.get(tr.getKey())) { //The transition leads to a yes-sink
+                            lhs[k].addConstant(-1.0 * tr.getValue());
+                        }
+                        else if (tr.getKey() == state && tr.getValue() == 1) {
+                            // Sinks are here. Do nothing
+                        }
+                        else {
+                            lhs[k].addTerm(-1.0 * tr.getValue(), stateVars[tr.getKey()]);
+                        }
+
+                    }
+                    k++;
+                }
+            }
+
+            //All Constraints that are reserved for states in MECs are innecessary
+            //We cut them out since there we will set up special constraints for them
+            GRBLinExpr[] lhsWithoutMEC;
+            double[] rhsWithoutMEC;
+            char[] sensesWithoutMEC;
+
+            lhsWithoutMEC = lhs;
+            rhsWithoutMEC = rhs;
+            sensesWithoutMEC = senses;
+
+            // Add non-MEC-constaints to LP
+            linearProgram.addConstrs(lhsWithoutMEC, sensesWithoutMEC, rhsWithoutMEC, null);
+
+            //-----------------Objective Function---------------------
+            GRBLinExpr objExpr = new GRBLinExpr();
+            objExpr.addTerm(1.0, stateVars[0]);
+
+            linearProgram.setObjective(objExpr, GRB.MAXIMIZE);
+
+            linearProgram.set(GRB.DoubleParam.FeasibilityTol, 1e-9);
+            linearProgram.set(GRB.DoubleParam.IntFeasTol, 1e-9);
+            linearProgram.set(GRB.DoubleParam.OptimalityTol, 1e-9);
+
+            linearProgram.set(GRB.DoubleParam.BarQCPConvTol, 0);
+            linearProgram.set(GRB.DoubleParam.BarConvTol, 0);
+            linearProgram.set(GRB.DoubleParam.MarkowitzTol, 1e-4);
+            linearProgram.set(GRB.DoubleParam.MIPGap, 0);
+            linearProgram.set(GRB.DoubleParam.MIPGapAbs, 0);
+            linearProgram.set(GRB.DoubleParam.PSDTol, 0);
+
+            linearProgram.optimize();
+
+            int optimstatus = linearProgram.get(GRB.IntAttr.Status);
+
+            if (optimstatus == GRB.Status.INFEASIBLE) {
+                System.out.println("Model is infeasible");
+
+                // Compute and write out IIS
+                linearProgram.computeIIS();
+                linearProgram.write("model.ilp");
+            }
+
+            // Process result and put it in res
+            ModelCheckerResult res = new ModelCheckerResult();
+            res.soln = new double[numStates];
+            for (int i = 0; i < numStates; i++) {
+                try {
+                    res.soln[i] = stateVars[i].get(GRB.DoubleAttr.X);
+                } catch (GRBException e) {
+                    System.out.println("There was an error while reading the value of state: " + i + ", replacing the value with 0");
+                }
+            }
+            return res;
+        }
+        catch (Exception e) {
+            System.out.println("ERROR IN GUROBI");
+            return new ModelCheckerResult();
+        }
+    }
+
     /**
      * Note that due to Floating Point Arithmetics, this is also not 100% exact.
      * @return
      */
     public ModelCheckerResult computeReachProbsExact(DTMC dtmc, MCRewards mcRewards, BitSet target, BitSet inf, double init[], BitSet known, double roundFrom) throws PrismException {
-        return solveMarkovChain(dtmc, target, init, roundFrom);
+        //return solveMarkovChain(dtmc, target, init, roundFrom);
+        return solveMarkovChainPerLP(dtmc, target, init, roundFrom);
     }
 
     protected ArrayList<Integer> getRemovableRowsFast(HashMap<Integer, Integer> normalStateToMatrixColumnIndex, double[] upperBounds, double roundFrom) {

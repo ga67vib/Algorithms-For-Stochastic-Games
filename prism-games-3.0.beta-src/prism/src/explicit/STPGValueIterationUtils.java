@@ -378,7 +378,7 @@ public class STPGValueIterationUtils {
         // Solve the created MarkovChain
         t1 = System.currentTimeMillis();
         DTMCNonIterativeSolutionMethods dtmcNonIterativeSolutionMethods = new DTMCNonIterativeSolutionMethods();
-        ModelCheckerResult dtmcSolution = dtmcNonIterativeSolutionMethods.solveMarkovChain(suggestedLocalDTMC.dtmc, suggestedLocalDTMC.targets, suggestedLocalDTMC.upperboundsInDTMC, precision);
+        ModelCheckerResult dtmcSolution = dtmcNonIterativeSolutionMethods.solveMarkovChainPerLP(suggestedLocalDTMC.dtmc, suggestedLocalDTMC.targets, suggestedLocalDTMC.upperboundsInDTMC, precision);
         t2 = System.currentTimeMillis();
         inverseCalcTime = DTMCNonIterativeSolutionMethods.inverseCalcTime;
         dtmcSolvingTime += (t2-t1);
