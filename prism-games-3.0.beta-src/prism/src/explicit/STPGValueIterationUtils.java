@@ -14,6 +14,7 @@ public class STPGValueIterationUtils {
     public static long getAllowedActionsTime = 0;
     public static long verificationTime = 0;
     public static long assignmentTime = 0;
+    public static long totalTOPTime = 0;
 
     /**
      * Computes a strategy from the currently given bounds on the values of the states.
@@ -299,6 +300,8 @@ public class STPGValueIterationUtils {
 
 
     public static double[] getValueFromStrategiesWithoutAttractor(PrismComponent prismComponent, STPG stpg, BitSet yes, BitSet no, BitSet relevantStates, BitSet alreadyComputedStates, double[] fixedValues, double precision, double[] lowerBounds, double[] upperBounds) throws PrismException {
+
+        long totalTime1 = System.currentTimeMillis();
         // Compute all Action Possibilities
         if (relevantStates == null) {
             relevantStates = new BitSet();
@@ -408,6 +411,8 @@ public class STPGValueIterationUtils {
         t2 = System.currentTimeMillis();
         assignmentTime += (t2-t1);
 
+        long totalTime2 = System.currentTimeMillis();
+        totalTOPTime+=(totalTime2-totalTime1);
         return fixedValues;
     }
 

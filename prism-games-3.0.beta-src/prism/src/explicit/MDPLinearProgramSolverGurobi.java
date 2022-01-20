@@ -22,6 +22,9 @@ public class MDPLinearProgramSolverGurobi {
 
     long buildTimeStart;
     boolean mecDetected;
+
+
+    long totalComputationTime = 0;
     //TOPOLOGICAL
     HashMap<Integer, Integer> mdpIndexToSCCIndex;
 

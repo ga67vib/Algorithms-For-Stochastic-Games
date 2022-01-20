@@ -74,6 +74,8 @@ public class STPGModelChecker extends ProbModelChecker
 
 	public static final int SOLN_METHOD_OPTION_DEFLATE_WITH_WP = 20;
 
+	public static long timeToSolveLP = 0;
+
 	/**
 	 * Create a new STPGModelChecker, inherit basic state from parent (unless null).
 	 */
@@ -293,6 +295,7 @@ public class STPGModelChecker extends ProbModelChecker
 				break;
 			case POLICY_ITERATION:
 				res = computeReachProbsPolIter(stpg, no, yes, min1, min2, init, known);
+				System.out.println("TIME TO SOLVE LP ONLY: "+timeToSolveLP);
 				break;
 			case QUADRATIC_PROGRAMMING:
 				res = computeReachProbsQuadProg(stpg, no, yes, min1, min2, init, known);
@@ -833,6 +836,7 @@ public class STPGModelChecker extends ProbModelChecker
 		// For guaranteed VI, we need MECs and an EC computer to find SECs
 		List<BitSet> mecs = new ArrayList<>();
 		explicit.ECComputerDefault ec =null;
+		long mecTimeComp1 = System.currentTimeMillis();
 		if (needsUpperBounds && solnMethodOptions != SOLN_METHOD_OPTION_DEFLATE_WITH_WP){
 			mainLog.println("Getting MECs...");
 			//compute MECs one time, use the decomposition in every iteration; SECs still have to be recomputed
@@ -844,6 +848,8 @@ public class STPGModelChecker extends ProbModelChecker
 			mecs = ec.getMECStates();
 			mainLog.println("Number of MECs: " + mecs.size());
 		}
+		long mecTimeComp2 = System.currentTimeMillis();
+		long mecTimeComp = mecTimeComp2 - mecTimeComp1;
 
 		SCCInfo sccs = null;
 		if (getDoTopologicalValueIteration()){
@@ -873,7 +879,7 @@ public class STPGModelChecker extends ProbModelChecker
 
 		// Need initstate to determine whether done in bounded case
 		int initialState = stpg.getFirstInitialState();
-
+		long timeForIters = 0;
 
 		// Start iterations
 		if (getDoTopologicalValueIteration()) {
@@ -892,7 +898,8 @@ public class STPGModelChecker extends ProbModelChecker
 			}
 
 			for (int scc = 0; scc < sccs.getNumSCCs(); scc++) {
-				if (sccs.isSingletonSCC(scc)) {
+				if (sccs.isSingletonSCC(scc) && false) {
+					long iterOnSubSet1 = System.currentTimeMillis();
 					// get the single state in this SCC and finish it. Trivial.
 					int state = sccs.getStatesForSCC(scc).iterator().nextInt();
 					// finish doing that state in all vectors
@@ -902,6 +909,8 @@ public class STPGModelChecker extends ProbModelChecker
 						upperBounds[state] = stpg.mvMultJacMinMaxSingle(state, upperBounds, min1, min2);
 						upperBounds2[state] = stpg.mvMultJacMinMaxSingle(state, upperBounds2, min1, min2);
 					}
+					long iterOnSubSet2 = System.currentTimeMillis();
+					timeForIters+=(iterOnSubSet2 - iterOnSubSet1);
 
 					BitSet statesForSCC = new BitSet();
 					statesForSCC.set(state);
@@ -916,7 +925,7 @@ public class STPGModelChecker extends ProbModelChecker
 							values = STPGValueIterationUtils.getValueFromStrategies(this, stpg, sigma, tau, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam, lowerBounds, upperBounds);
 							alreadyComputedAttractorDistances = startegyComputationResult[2];
 						} else {
-							if (useLP) values = STPGValueIterationUtils.getValueFromStrategiesWithoutAttractor(this, stpg, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam, lowerBounds, upperBounds);
+							if (!useLP) values = STPGValueIterationUtils.getValueFromStrategiesWithoutAttractor(this, stpg, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam, lowerBounds, upperBounds);
 							else values = STPGValueIterationUtils.getValueFromStrategiesWithoutAttractorWithLP(this, stpg, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam, lowerBounds, upperBounds);
 						}
 
@@ -936,6 +945,7 @@ public class STPGModelChecker extends ProbModelChecker
 				} else {
 					// complex SCC: do VI
 					int itersInSCC = 0;
+					long iterOnSubSet1 = System.currentTimeMillis();
 
 					IntSet statesForSCCIntSet = sccs.getStatesForSCC(scc);
 					BitSet statesForSCC = new BitSet(n);
@@ -948,6 +958,8 @@ public class STPGModelChecker extends ProbModelChecker
 					lowerBounds = subres[0];
 					upperBounds = subres[1];
 
+					long iterOnSubSet2 = System.currentTimeMillis();
+					timeForIters+=(iterOnSubSet2 - iterOnSubSet1);
 					double[] values;
 					if (useTOP) {
 						if (useAttractorToGetDTMC) {
@@ -958,8 +970,10 @@ public class STPGModelChecker extends ProbModelChecker
 							values = STPGValueIterationUtils.getValueFromStrategies(this, stpg, sigma, tau, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam, lowerBounds, upperBounds);
 							alreadyComputedAttractorDistances = startegyComputationResult[2];
 						} else {
-							if (useLP) values = STPGValueIterationUtils.getValueFromStrategiesWithoutAttractor(this, stpg, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam, lowerBounds, upperBounds);
-							else values = STPGValueIterationUtils.getValueFromStrategiesWithoutAttractor(this, stpg, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam, lowerBounds, upperBounds);
+							if (!useLP)
+								values = STPGValueIterationUtils.getValueFromStrategiesWithoutAttractor(this, stpg, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam, lowerBounds, upperBounds);
+							else
+								values = STPGValueIterationUtils.getValueFromStrategiesWithoutAttractorWithLP(this, stpg, yes, no, statesForSCC, haveAlreadyFixedValues, lowerBounds, this.termCritParam, lowerBounds, upperBounds);
 
 						}
 						// Fix value of states
@@ -982,7 +996,10 @@ public class STPGModelChecker extends ProbModelChecker
 			}
 		}
 		else{
+			long itersTime1 = System.currentTimeMillis();
 			double[][] subres = iterateOnSubset((STPGExplicit) stpg, min1, min2, upperBounds, upperBounds2, lowerBounds2, lowerBounds, genAdv, adv, iters, variant, mecs, ec, unknown, null, initialState, yes);
+			long itersTime2 = System.currentTimeMillis();
+			timeForIters += itersTime2 - itersTime1;
 			iters = (int) subres[2][0];
 			lowerBounds = subres[0];
 			upperBounds = subres[1];
@@ -993,7 +1010,9 @@ public class STPGModelChecker extends ProbModelChecker
 		timer = System.currentTimeMillis() - timer;
 		if (verbosity >= 1) {
 			mainLog.print("Value iteration variant "+ variant + "(" + (min1 ? "min" : "max") + (min2 ? "min" : "max") + ")");
+			System.out.println("Time to compute MECs: " + mecTimeComp);
 			mainLog.println(" took " + iters + " iterations and " + timer / 1000.0 + " seconds.");
+			mainLog.println("Time only for iterOnSubset: "+timeForIters);
 			if (doTopologicalValueIteration) {
 				mainLog.println("--TOP Stats--");
 				mainLog.println("Get Suggested Actions: "+STPGValueIterationUtils.getAllowedActionsTime);
@@ -1002,6 +1021,8 @@ public class STPGModelChecker extends ProbModelChecker
 				mainLog.println("Inverse Calc Time: "+STPGValueIterationUtils.inverseCalcTime);
 				mainLog.println("Verify Value: "+STPGValueIterationUtils.verificationTime);
 				mainLog.println("Assign SCC Result : "+STPGValueIterationUtils.assignmentTime);
+				mainLog.println("Total time for TOP stuff : "+STPGValueIterationUtils.totalTOPTime);
+
 			}
 		}
 
@@ -1017,6 +1038,8 @@ public class STPGModelChecker extends ProbModelChecker
 		res.soln = lowerBounds;
 		res.numIters = iters;
 		res.timeTaken = timer / 1000.0;
+
+		System.out.println("TIME TAKEN: "+res.timeTaken);
 
 		if (generateStrategy) {
 			BitSet allStates = new BitSet();
@@ -1340,6 +1363,11 @@ public class STPGModelChecker extends ProbModelChecker
 						if(allDown){
 							//upper bound is inductive, everything stayed or went down
 							done=true;
+							mainLog.println("Lower: "+Arrays.toString(lowerBounds));
+							mainLog.println("Upper: "+Arrays.toString(upperBounds));
+							for(int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s+1)) {
+								//lowerBounds[s] = (lowerBounds[s] + upperBounds[s])/2.0;
+							}
 							mainLog.println("Proved U to be inductive upper bound in iteration " + iters + " after " + verifIters + " iterations in the verification phase.");
 						}
 						else if(allUp){
@@ -2129,7 +2157,10 @@ public class STPGModelChecker extends ProbModelChecker
 				simpleCaseResult = mdpModelChecker.computeReachProbsPolIter(mdp, no, yes, min2, null, false, null, null);
 			}
 			else if (solnMethodOptions == 13 || solnMethodOptions == 14) {
+				long t1 = System.currentTimeMillis();
 				simpleCaseResult = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(mdp, no, yes, min2, null, null);
+				long t2 = System.currentTimeMillis();
+				timeToSolveLP+=(t2-t1);
 			}
 			else {
 				simpleCaseResult = mdpModelChecker.computeReachProbsPolIter(mdp, no, yes, min2, null);
@@ -2383,7 +2414,10 @@ public class STPGModelChecker extends ProbModelChecker
 				counter = mdpModelChecker.computeReachProbsPolIter(mdp, no, yes, min2, tau, false, null, null);
 			}
 			else if (this.solnMethodOptions == 13 || this.solnMethodOptions == 14) {
+				long t1 = System.currentTimeMillis();
 				counter = mdpModelChecker.computeReachProbsLinearProgrammingGurobi(mdp, no, yes, min2, tau, null);
+				long t2 = System.currentTimeMillis();
+				timeToSolveLP+=(t2-t1);
 			}
 			else if((this.solnMethodOptions / 4) % 4 == 1)
 				counter = mdpModelChecker.doIntervalIterationReachProbs(mdp, no, yes, min2, null, null, new IterationMethodGS(true, 0.001, false), false, tau);
