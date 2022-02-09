@@ -1,16 +1,11 @@
-InC-G:
-- check topological problems really are what I claim
-- Write to Sasha about random model generation => Get a model with many actions
-
-- Run on many action model
-- Update tables with new info on many action model, select top-algos (wins most often?)
-- Mem tests (require answer from Steffi and top-algos):
-	- Merge the fsttcs runscript (pueue) with the rr runscript (/usr/bin/time(
-	- Check that /usr/bin/time is installed
-	- check that rr.py does what it should (creates the time files additionally to the others)
-	- write time file reader for mem reading
-	- select right algos (from gandalf_runscript)
-	- run rr.py to get mems, analyze
-- create graphics (time vs. #bench and vice versa)
-- update algo selection text to include graphics and used metric
-Check
+Update README:
+	- List all algos we have and which are new with sources (GandALF, OVI-paper etc.)
+	- Make proper install script and clean up
+	- Have a big comparison table in repo (and make sure it makes sense)
+	- Have visualization scripts
+	
+For the ongoing document:
+	- Prelims describing all algos high level
+	- Big comparison table and visualizations
+		In particular, for some examples have a "how did the bounds evolve over time" graph, so we see how normal VI from above gets stuck, how OVI guesses upper bounds and how SVI makes intuitive jumps etc.
+	- References
