@@ -1,0 +1,4 @@
+Model,#States,BVI
+RANDOM_Size_10000_MinAct_10_MinTransProb_0.0001_Model_30,10000,2207.286
+RANDOM_Size_10000_MinAct_10_MinTransProb_0.0001_Model_74,10000,21.006
+RANDOM_Size_10000_MinAct_10_MinTransProb_0.0001_Model_89,10000,19.526

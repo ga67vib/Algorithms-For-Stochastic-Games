@@ -1,0 +1,15 @@
+Model,#States,OVI,WP_P3
+simple,3,3,1
+simple_100000_1_SCC,3,57,42
+simple_100000_1_SCCsuperConnect,3,49,31
+simple_100000_2_SCC,3,42,27
+simple_10000_1_SCC,3,58,36
+simple_10000_1_SCCsuperConnect,3,3,
+simple_10000_2_SCC,3,175,121
+simple_20000_1_SCCsuperConnect,3,3,
+simple_500000_1_SCC,3,49,31
+simple_500000_1_SCCsuperConnect,3,,
+simple_500000_2_SCC,3,734,267
+simple_50000_1_SCC,3,42,27
+simple_50000_1_SCCsuperConnect,3,,
+simple_50000_2_SCC,3,85,49

@@ -1,0 +1,17 @@
+Conf,Model,Verification Time,Number Of Verif. Phases,Iterations in Verif Phase,NumAborted,NumInduceLowerBound,NumFailedVerif
+OVI,RANDOM_Size_10000_MinAct_10_MinTransProb_0.0001_Model_30,20,9,30,8,8,0
+OVI,RANDOM_Size_10000_MinAct_10_MinTransProb_0.0001_Model_30_1000000_1_SCC,934,9,30,8,8,0
+OVI,RANDOM_Size_10000_MinAct_10_MinTransProb_0.0001_Model_30_10000_1_SCC,112,9,30,8,8,0
+OVI,RANDOM_Size_10000_MinAct_10_MinTransProb_0.0001_Model_30_10000_2_SCC,115,9,37,8,8,0
+OVI,RANDOM_Size_10000_MinAct_10_MinTransProb_0.0001_Model_74,8,7,53,6,6,0
+OVI,RANDOM_Size_10000_MinAct_10_MinTransProb_0.0001_Model_74_1000000_1_SCC,412,7,53,6,6,0
+OVI,RANDOM_Size_10000_MinAct_10_MinTransProb_0.0001_Model_74_10000_1_SCC,50,7,53,6,6,0
+OVI,RANDOM_Size_10000_MinAct_10_MinTransProb_0.0001_Model_74_10000_2_SCC,49,7,53,6,6,0
+OVI,RANDOM_Size_10000_MinAct_10_MinTransProb_0.0001_Model_89,8,7,30,6,6,0
+OVI,RANDOM_Size_10000_MinAct_10_MinTransProb_0.0001_Model_89_1000000_1_SCC,407,7,30,6,6,0
+OVI,RANDOM_Size_10000_MinAct_10_MinTransProb_0.0001_Model_89_10000_1_SCC,46,7,30,6,6,0
+OVI,RANDOM_Size_10000_MinAct_10_MinTransProb_0.0001_Model_89_10000_2_SCC,52,7,30,6,6,0
+OVI,simple,0,1,1,0,0,0
+OVI,simple_1000000_1_SCC,29,1,2,0,0,0
+OVI,simple_10000_1_SCC,2,1,12,0,0,0
+OVI,simple_10000_2_SCC,7,1,33,0,0,0

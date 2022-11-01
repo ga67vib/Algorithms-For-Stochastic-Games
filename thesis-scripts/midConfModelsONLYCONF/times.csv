@@ -1,0 +1,6 @@
+Model,#States,BVI
+simple,3,0.01
+simple_1000000_1_SCC,3,39.731
+simple_10000_1_SCC,3,3.238
+simple_10000_2_SCC,3,10.195
+simple_20000_1_SCCsuperConnect,3,
