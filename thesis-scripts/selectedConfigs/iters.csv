@@ -1,9 +1,0 @@
-Model,#States,BVI,LP_SI,OVI,T_BVI,T_LP_SI,T_OVI
-dice50,96295,101,,105,844,,844
-dice50_bigMecConf,96295,,,39024,,,43567
-dice50_hmConf,96295,234,,718,859,,859
-dice50_manyMecConf,96295,1447,,2643,,,
-simple,3,1,,3,1,,1
-simple_bigMecConf,3,,,38393,,,42724
-simple_hmConf,3,145,,541,16,,16
-simple_manyMecConf,3,1427,,2552,21230,,
