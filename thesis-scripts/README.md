@@ -1,12 +1,21 @@
+
+
 Usually, to each result folder there exists a python file with the same name.
 The python file contains the timeout and memory settings and provides information about which models where used:
-    - `random_input_dir` contains the path to the random models that were used
-        - Random models are only used if the random model code block in around line 165 or 175 is not commented out
-    - `extension_config_folder_path` contains the path to the folder of configs used to create the models that are extended during Java runtime
-        - Configs are only used if the code block around the `extension_config_folder_path` is not commented out
-    - Paths to handcrafted and real models are hardcoded in the python file. Thus they are used iff they are not commented out
+- `random_input_dir` contains the path to the random models that were used
+    - Random models are only used if the random model code block in around line 165 or 175 is not commented out
+- `extension_config_folder_path` contains the path to the folder of configs used to create the models that are extended during Java runtime
+    - Configs are only used if the code block around the `extension_config_folder_path` is not commented out
+- Paths to handcrafted and real models are hardcoded in the python file. Thus they are used iff they are not commented out
 
-Next, we provide a short overview of the result folders. Result folders that we have used in publications are marked in bold
+### Result Folders
+
+Next, we provide a short overview of the result folders. Result folders that we have used in publications are marked in bold.
+[A] and [M] indicate in which publication we have used which folder.
+
+[A]: Atva Paper - "Optimistic and Topological Value Iteration for Simple Stochastic Games"
+[M]: Alexander Slivinskiys Master Thesis - "Facilitating Experimental Analysis of Algorithms for Stochastic Games: Random Model Generation and Mining the Results"
+
 - **bigConfModels**: simple tree-like models with many states that are grouped either into one or multiple SCCs
     - [A] Used in Table 1, Figs. 3b, 
     - [M] Used in Figures 7.6a, 7.6b, 7.7, 7.8, 7.9, 7.13b
@@ -49,6 +58,3 @@ Next, we provide a short overview of the result folders. Result folders that we 
 - selectedConfigs: dice and simple extended with different MEC configs
 - veryBigButEasy: simple but large randomly generated models that show that prism is unable to handle large, explicit models
 - WPBetterThanOVI: randomly generated models where WP is better than OVI
-
-[A]: Atva Paper - "Optimistic and Topological Value Iteration for Simple Stochastic Games"
-[M]: Master Thesis - "Facilitating Experimental Analysis of Algorithms for Stochastic Games: Random Model Generation and Mining the Results"
