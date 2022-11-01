@@ -36,7 +36,7 @@ JAVAMAXMEM = "5g" # "Free: 36g Processes: 6 -> 5g MaxMem and 1g JavaStack"
 JAVASTACK = "1g"
 reps=1 #Repetitions. If set to 1, it will not appear in filename of log.    
 output_dir="randomRandom10Act"
-random_input_dir = "../random-generated-models/newScc/"
+random_input_dir = "../random-generated-models/randomRandom10Act/"
 proc_output = namedtuple('proc_output', 'stdout stderr') #Is needed for the pipeline (i suppose)
 
 #Had to add in these extra commands since subrocess.output seems to make trouble with "|"
