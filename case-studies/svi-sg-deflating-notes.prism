@@ -1,0 +1,31 @@
+// Simple game based on MDP in svi paper
+
+
+smg
+
+
+global state: [0..3] init 0;
+
+
+player P1 player1, [alpha1], [beta1] endplayer
+//player P1 player1, [beta1] endplayer
+player P2 player2, [alpha2], [beta2] endplayer
+
+
+module player1
+	[alpha1] state=1 -> (state'=0);	
+	[beta1] state=1 -> 8/10 : (state'=1) + 1/10 : (state'=2) + 1/10 : (state'=3);
+	[] state=3 -> (state'=3);	
+endmodule
+
+module player2
+	[alpha2] state=0 -> 8/10 : (state'=3) + 2/10 : (state'=2);
+	[beta2] state=0 -> (state'= 1);
+	[] state=2 -> (state'=2);
+endmodule
+
+//Labels
+formula done = state=2 | state=3;
+label "done" = done;
+label "p1win" = done & state=3;
+label "p2win" = done & state=2;

@@ -1,0 +1,28 @@
+//toy example written for OVI/PTVI paper to show when TVI is bad
+
+smg
+
+player p1
+  main
+endplayer
+
+
+const int N;
+
+module main
+
+	x : [0..N+2] init 2;
+
+	[] x=0 | x=1 -> 1 : true;
+	
+	[] x>1 & x<N+2 -> 0.5 : (x'=x) + 0.5 : (x'=x+1);
+	
+	[] x=N+2 -> (1/3) : (x'=x) + (1/3) : (x'=0) + (1/3) : (x'=1);
+
+endmodule
+
+
+
+label "Target" = x=1;
+
+

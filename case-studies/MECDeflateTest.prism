@@ -1,0 +1,27 @@
+smg
+
+global state: [0..10];
+
+player P1 player1, [a1] endplayer
+player P2 player2, [b1], [b2] endplayer
+
+module player1
+	[a1] state=0 -> 1 : (state'=1);
+	[a1] state=1 -> 1 : (state'=2);
+	[a1] state=3 -> 1 : (state'=4);
+	[a1] state=4 -> 1 : (state'=5);
+	[a1] state=5 -> 1 : (state'=6);
+	[a1] state=6 -> 1 : (state'=7);
+	[] state=9 -> 1 : (state'=9);
+endmodule
+
+module player2
+	[b1] state=2 -> 1 : (state'=3);
+	[b2] state=2 -> 9/10 : (state'=8) + 1/10 : (state'=9);
+	[b1] state=7 -> 1 : (state'=1);
+	[b2] state=7 -> 1/2 : (state'=8) + 1/2 : (state'=9);
+	[] state=8 -> 1 : (state'=8);
+endmodule
+
+//Labels
+label "p2win" = state=9;

@@ -1,0 +1,45 @@
+smg
+
+global state: [0..11];
+
+player P1 player1, [a1], [a2], [a3], [a4] endplayer
+player P2 player2, [b1], [b2], [b3] endplayer
+
+module player1
+	[a1] state=1 -> 1 : (state'=4);
+	[a2] state=1 -> 1 : (state'=5);
+	[a3] state=1 -> 1/2 : (state'=6) + 1/2 : (state'=2);
+	[a1] state=2 -> 1 : (state'=7);
+	[a2] state=2 -> 1 : (state'=8);
+	[a3] state=2 -> 1/2 : (state'=9) + 1/2 : (state'=1);
+	[a1] state=7 -> 1 : (state'=1);
+	[a2] state=7 -> 1 : (state'=2);
+	[a3] state=7 -> 1 : (state'=5);
+	[a1] state=8 -> 1 : (state'=2);
+	[a2] state=8 -> 1 : (state'=6);
+	[a1] state=9 -> 1 : (state'=7);
+	[a2] state=9 -> 1 : (state'=1);
+	[a3] state=9 -> 1 : (state'=8);
+	[a4] state=9 -> 9/10 : (state'=11) + 1/10 : (state'=10);
+	[] state=11 -> 1 : (state'=11);
+endmodule
+
+module player2
+	[b1] state=0 -> 1 : (state'=1);
+	[b2] state=0 -> 1/2 : (state'=2) + 1/2 : (state'=6);
+	[b3] state=0 -> 1 : (state'=3);
+	[b1] state=3 -> 1 : (state'=2);
+	[b2] state=3 -> 1 : (state'=1);
+	[b1] state=4 -> 1 : (state'=0);
+	[b2] state=4 -> 1 : (state'=1);
+	[b1] state=5 -> 1 : (state'=4);
+	[b2] state=5 -> 1 : (state'=0);
+	[b3] state=5 -> 1 : (state'=2);
+	[b1] state=6 -> 1 : (state'=0);
+	[b2] state=6 -> 1 : (state'=3);
+	[b3] state=6 -> 1 : (state'=2);
+	[] state=10 -> 1 : (state'=10);
+endmodule
+
+//Labels
+label "p1win" = state=11;

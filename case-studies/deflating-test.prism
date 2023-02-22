@@ -1,0 +1,35 @@
+smg
+
+
+global state: [0..8] init 0;
+
+
+player P1 player1, [a1], [b1], [c1], [d1], [e1], [f1], [g1] endplayer
+player P2 player2, [a2], [b2], [c2], [d2], [e2] endplayer
+
+
+module player1 // maximizer
+	[a1] state=3 -> 4/10 : (state'=7) + 6/10 : (state'=8);	
+	[b1] state=3 -> (state'=1);
+	[c1] state=4 -> (state'=0);
+	[d1] state=4 -> 7/10 : (state'=5) + 3/10 : (state'=6);
+	[e1] state=4 -> 3/10 : (state'=6) + 7/10 : (state'=7);
+	[f1] state=5 -> 8/10 : (state'=4) + 2/10 : (state'=6);
+	[g1] state=6 -> 2/10 : (state'=7) + 8/10 : (state'=8);
+	[] state=8 -> (state'=8);	
+endmodule
+
+module player2 // minimizer
+	[a2] state=0 -> (state'= 1);
+	[b2] state=0 -> (state'= 4);
+	[c2] state=1 -> 4/10 : (state'=2) + 6/10 : (state'=3);
+	[d2] state=2 -> 6/10 : (state'=0) + 4/10 : (state'=1);
+	[e2] state=2 -> 9/10 : (state'=3) + 1/10 : (state'=8);
+	[] state=7 -> (state'=7);
+endmodule
+
+//Labels
+formula done = state=7 | state=8;
+label "done" = done;
+label "p1win" = done & state=8;
+label "p2win" = done & state=7;
