@@ -1380,8 +1380,10 @@ public class STPGModelChecker extends ProbModelChecker
 
 
 
-	/*************** SVI TO TEST EXAMPLES *****************
-	* */
+	/***************
+   * SVI TO TEST EXAMPLES *
+   * **********************
+	 */
   /**
    * Compute reachability probabilities using value iteration.
    * @param stpg The STPG
@@ -1407,14 +1409,9 @@ public class STPGModelChecker extends ProbModelChecker
     BitSet unknown;
     int s, n, iters;
     iters=0;
-    // Note: For SVI, lowerBounds are stepBoundReach-values (x) and upperBounds are the stepBoundStay-values (y)
-    double stepBoundReach[], stepBoundReach2[], stepBoundStay[], stepBoundStay2[], initVal;
-    int adv[] = null;
-    boolean genAdv;
+    // Note: For SVI, we keep all stepbound- reach and stay, lowerbounds and upperbounds
+    double lowerbounds[], lowerbounds2[],upperbounds[], upperbounds2[], stepBoundReach[], stepBoundReach2[], stepBoundStay[], stepBoundStay2[], initVal;
     long timer;
-
-    // Are we generating an optimal adversary?
-    genAdv = exportAdv || generateStrategy;
 
     // Start value iteration
     timer = System.currentTimeMillis();
@@ -1431,6 +1428,10 @@ public class STPGModelChecker extends ProbModelChecker
     unknown.andNot(no);
 
     // Create solution vector(s)
+    lowerbounds = new double[n];
+    lowerbounds2 = new double[n];
+    upperbounds = new double[n];
+    upperbounds2 = new double[n];
     stepBoundReach = new double[n];
     stepBoundReach2 = new double[n];
     stepBoundStay = new double[n];
@@ -1441,22 +1442,25 @@ public class STPGModelChecker extends ProbModelChecker
     // initVal = needsUpperBounds ? 0 : ((valIterDir == ValIterDir.BELOW) ? 0.0 : 1.0);
     if (init != null) {
       if (known != null) {
-        for (s = 0; s < n; s++)
+        for (s = 0; s < n; s++){
+          lowerbounds[s] = lowerbounds2[s] = known.get(s) ? init[s] : yes.get(s) ? 1.0 : no.get(s) ? 0.0 : init[s];
           stepBoundReach[s] = stepBoundReach2[s] = known.get(s) ? init[s] : yes.get(s) ? 1.0 : no.get(s) ? 0.0 : init[s];
+          }
       } else {
-        for (s = 0; s < n; s++)
-          stepBoundStay[s] = stepBoundStay2[s] = yes.get(s) ? 1.0 : no.get(s) ? 0.0 : init[s];
+        for (s = 0; s < n; s++) {
+          stepBoundStay[s] = stepBoundStay2[s] = yes.get(s) ? 0.0 : no.get(s) ? 0.0 : init[s];
+          stepBoundStay[s] = stepBoundStay2[s] = yes.get(s) ? 0.0 : no.get(s) ? 0.0 : init[s];
+        }
       }
     } else {
       for (s = 0; s < n; s++)
+        lowerbounds[s] = lowerbounds2[s] = yes.get(s) ? 1.0 : 0.0;
         stepBoundReach[s] = stepBoundReach2[s] = yes.get(s) ? 1.0 : 0.0;
 
       for (s = 0; s < n; s++)
+        upperbounds[s] = upperbounds2[s] = no.get(s) ? 0.0 : 1.0;
         stepBoundStay[s] = stepBoundStay2[s] = unknown.get(s) ? 1.0 : 0.0;
     }
-
-
-
     // For guaranteed VI, we need MECs and an EC computer to find SECs
     List<BitSet> mecs = null;
     explicit.ECComputerDefault ec =null;
@@ -1677,66 +1681,26 @@ public class STPGModelChecker extends ProbModelChecker
 	 */
 	private double[][] deflate(STPGExplicit stpg, boolean min1, boolean min2, double[] lowerBounds, double[] upperBounds, BitSet mec, explicit.ECComputerDefault ec) throws PrismException {
 
-		//TODO: I might turn on repeated adjustment again
-		//TODO: I might optimize for MDP handling again (i.e. not recompute SECs and stuff)
+    //TODO: I might turn on repeated adjustment again
+    //TODO: I might optimize for MDP handling again (i.e. not recompute SECs and stuff)
 
-		// Find all SECs in given MEC
-		List<BitSet> SECs = ec.getSECs(mec, lowerBounds,min1,min2);
-		for (int j = 0; j < SECs.size(); j++) {
-			// Get best Maximizer exit from SEC
-			BitSet sec = SECs.get(j);
-			int maxPlayer = min1 ? (min2 ? -1 : 2) : (min2 ? 1 : 3);
-			double bestLeavingUpperBound = getBestLeavingValue(sec, stpg, upperBounds, maxPlayer);
-			// And deflate all states in SEC
-			for (int s = sec.nextSetBit(0); s >= 0; s = SECs.get(j).nextSetBit(s+1)) {
-				double formerValue = upperBounds[s];
-				if(formerValue>bestLeavingUpperBound) {//monotonic: only decrease if new value smaller
-					upperBounds[s]=bestLeavingUpperBound;
-				}
-			}
-		}
-		return new double[][]{upperBounds,lowerBounds};
-	}
-
-
-  /**
-   * SVI deflate operation.
-   */
-//  private double[][] svi_deflate(STPGExplicit stpg, boolean min1, boolean min2, double[] stepBoundReach, double[] stepBoundStay, BitSet mec, explicit.ECComputerDefault ec, double lowerbound, double upperbound) throws PrismException {
-//
-//    double [] currentValReachAndStay = new double[stpg.numStates];
-//    for(int s=0; s < stpg.numStates; s++){
-//          currentValReachAndStay[s] = stepBoundReach[s] + stepBoundStay[s] * lowerbound;
-//    }
-//    // Find all MSECs in given MEC
-//    List<BitSet> SECs = ec.getSECs(mec,currentValReachAndStay,min1,min2);
-//    for (int j = 0; j < SECs.size(); j++) {
-//      // Get best Maximizer exit from SEC
-//      BitSet sec = SECs.get(j);
-//      BitSet subset = (BitSet) sec.clone();
-//      int maxPlayer = min1 ? (min2 ? -1 : 2) : (min2 ? 1 : 3);
-//      int[] bestExitStateAndAction = getBestExitDeflate(sec, stpg, stepBoundReach, stepBoundStay, maxPlayer, upperbound);
-//      int bestExitState = bestExitStateAndAction[0];
-//      int bestExitAction = bestExitStateAndAction[1];
-//      double reachVal = stpg.mvMultSingle(bestExitState, bestExitAction, stepBoundReach);
-//      double stayVal = stpg.mvMultSingle(bestExitState, bestExitAction, stepBoundStay);
-//
-//      int numStates = stpg.numStates;
-//      BitSet allStates = new BitSet();
-//      for (int i = 0; i < numStates; i++) {
-//        allStates.set(i);
-//      }
-//      // compute the attractor set for the best exit
-//      BitSet attractor = computeAlmostSureAttractor(stpg, bestExitState, sec, maxPlayer);
-//      //deflate every state in the attractor
-//      for (int s = attractor.nextSetBit(0); s >= 0; s = attractor.nextSetBit(s+1)) {
-//        stepBoundReach[s] = Math.max(stepBoundReach[s], reachVal);
-//        stepBoundStay[s] = Math.min(stepBoundStay[s], stayVal);
-//      }
-//    }
-//
-//    return new double[][]{stepBoundStay,stepBoundReach};
-//  }
+    // Find all SECs in given MEC
+    List<BitSet> SECs = ec.getSECs(mec, lowerBounds, min1, min2);
+    for (int j = 0; j < SECs.size(); j++) {
+      // Get best Maximizer exit from SEC
+      BitSet sec = SECs.get(j);
+      int maxPlayer = min1 ? (min2 ? -1 : 2) : (min2 ? 1 : 3);
+      double bestLeavingUpperBound = getBestLeavingValue(sec, stpg, upperBounds, maxPlayer);
+      // And deflate all states in SEC
+      for (int s = sec.nextSetBit(0); s >= 0; s = SECs.get(j).nextSetBit(s + 1)) {
+        double formerValue = upperBounds[s];
+        if (formerValue > bestLeavingUpperBound) {//monotonic: only decrease if new value smaller
+          upperBounds[s] = bestLeavingUpperBound;
+        }
+      }
+    }
+    return new double[][] {upperBounds, lowerBounds};
+  }
 
 
 
@@ -1745,7 +1709,7 @@ public class STPGModelChecker extends ProbModelChecker
   /**
    * SVI deflate operation.
    */
-  private double[][] svi_deflate_recursive(STPGExplicit stpg, boolean min1, boolean min2, double[] stepBoundReach, double[] stepBoundStay, BitSet mec, explicit.ECComputerDefault ec, double lowerbound, double upperbound) throws PrismException {
+  private double[][] svi_deflate_recursive(STPGExplicit stpg, boolean min1, boolean min2, double[] stepBoundReach, double[] stepBoundStay, double[] upperbounds, BitSet mec, explicit.ECComputerDefault ec, double lowerbound, double upperbound) throws PrismException {
 
     double [] currentValReachAndStay = new double[stpg.numStates];
     for(int s=0; s < stpg.numStates; s++){
@@ -1760,7 +1724,7 @@ public class STPGModelChecker extends ProbModelChecker
       BitSet sec = SECs.get(j);
       BitSet subset = (BitSet) sec.clone();
       int maxPlayer = min1 ? (min2 ? -1 : 2) : (min2 ? 1 : 3);
-      List bestExitStateAndAction = getBestExitDeflate(subset, stpg, stepBoundReach, stepBoundStay, maxPlayer, upperbound);
+      List bestExitStateAndAction = getBestExitDeflate(subset, stpg, stepBoundReach, stepBoundStay, upperbounds, maxPlayer, upperbound);
 //      int bestExitState = bestExitStateAndAction[0];
 //      int bestExitAction = bestExitStateAndAction[1];
       int bestExitState=-1;
@@ -2139,7 +2103,7 @@ public class STPGModelChecker extends ProbModelChecker
    * @param upperbound
    * @return
    */
-  private static List<Pair<Integer, Integer>> getBestExitDeflate(BitSet ec, STPGExplicit stpg, double[] stepBoundReach, double[] stepBoundStay, int maxPlayer, double upperbound){
+  private static List<Pair<Integer, Integer>> getBestExitDeflate(BitSet ec, STPGExplicit stpg, double[] stepBoundReach, double[] stepBoundStay, double[] upperbounds, int maxPlayer, double upperbound){
     double bestValSoFar = 0; //min possible
     double [] exitValues = new double[ec.size()];
     Hashtable<Pair<Integer,Integer>, Double> allExits = new Hashtable<>();
@@ -2147,6 +2111,7 @@ public class STPGModelChecker extends ProbModelChecker
 //    int bestAction = -1;
 //    int exitState = -1;
     //find best stay props bound belonging to maxPlayer that does not let stuck
+    ///TODO: global upper bound is the max of the upperbound of all the states of EC
     for (int s = ec.nextSetBit(0); s >= 0; s = ec.nextSetBit(s+1)) {
       Pair<Integer,Integer> stateActionPair = null;
       if (stpg.getPlayer(s)==maxPlayer || maxPlayer == 3) {
