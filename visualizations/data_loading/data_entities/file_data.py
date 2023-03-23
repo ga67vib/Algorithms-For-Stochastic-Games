@@ -20,10 +20,11 @@ class FileData:
         other_keys = file_data_to_aggregate.data.keys()
 
         if (self_keys != other_keys):
-            raise Exception(f"Expected that file_data_to_aggregate would have keys {self_keys}, but has keys {other_keys}")
+            print(f"WARNING: Expected that file_data_to_aggregate would have keys {self_keys}, but has keys {other_keys}")
 
         for key in file_data_to_aggregate:
-            self.data[key] = self.data[key] + file_data_to_aggregate[key]
+            if (key in self.data):
+                self.data[key] = self.data[key] + file_data_to_aggregate[key]
 
     # Implement some quality-of-life features 
     def __getitem__(self, k : str):

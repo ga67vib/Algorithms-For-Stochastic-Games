@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Any, Dict, List
+import numpy as np
 import copy
 
 if __name__ != '__main__':
@@ -55,10 +56,10 @@ class DataUnion:
 
         for file_data_input in data_union_file_input:
             # Check if we need to prepend the file_data_prefix
-            keys_contained_in_both = [key for key in self.data.keys() if key in file_data_input.file_data_object.data.keys()]
+            prefix = file_data_input.file_data_prefix
+            keys_contained_in_both = [(prefix+key) for key in self.data.keys() if (prefix+key) in file_data_input.file_data_object.data.keys()]
             if (len(keys_contained_in_both) > 0):
                 raise Exception(f'When adding {file_data_input.file_data_prefix} to the Data, {keys_contained_in_both} are already provided keys. To not override these, please provide another prefix')
-            prefix = file_data_input.file_data_prefix
 
             # Add keys to the data union
             file_data_keys : List = list(file_data_input.file_data_object.data.keys())
@@ -81,6 +82,10 @@ class DataUnion:
 
                 for key in file_data_keys:
                     self.data[prefix+key].append(file_data.data[key][index_mapping[i]])
+
+        #Translate to numpy
+        for key in self.data.keys():
+            self.data[key] = list(map(lambda x : (float(x) if self._isInt(x) else float(x)), self.data[key]))
 
     def _indexOf(self, list : List, element):
         """Return index of element, else -1"""
@@ -105,6 +110,13 @@ class DataUnion:
                 if (self.data[key][i] == placeholder):
                     self.data[key][i] = replacement
 
+    def _isInt(self, val):
+        try:
+            return int(val)%1 == int(val)
+        except ValueError:
+            return False
+
+"""
 #Test Code:
 x_dict = dict()
 x_dict['a'] = [1,2]
@@ -124,3 +136,4 @@ print(z.data)
 
 z.replace_values_for_input_object(y_input, 4, 6)
 print(z.data)
+"""

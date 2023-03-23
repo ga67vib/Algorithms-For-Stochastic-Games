@@ -1,0 +1,11 @@
+Model,#States,BVI,OVI,T_LP_SI,WP_P3
+RANDOM_Size_10002_MinAct_10_MinTransProb_0.0001_Model_1,10002,,,,469
+RANDOM_Size_10002_MinAct_10_MinTransProb_0.0001_Model_10,10002,,,,162
+RANDOM_Size_10002_MinAct_10_MinTransProb_0.0001_Model_2,10002,,1444,,193
+RANDOM_Size_10002_MinAct_10_MinTransProb_0.0001_Model_3,10002,,,,240
+RANDOM_Size_10002_MinAct_10_MinTransProb_0.0001_Model_4,10002,,,,227
+RANDOM_Size_10002_MinAct_10_MinTransProb_0.0001_Model_5,10002,,2307,,139
+RANDOM_Size_10002_MinAct_10_MinTransProb_0.0001_Model_6,10002,,1777,,563
+RANDOM_Size_10002_MinAct_10_MinTransProb_0.0001_Model_7,10002,,3065,,283
+RANDOM_Size_10002_MinAct_10_MinTransProb_0.0001_Model_8,10002,,994,,394
+RANDOM_Size_10002_MinAct_10_MinTransProb_0.0001_Model_9,10002,,1310,,130

@@ -12,14 +12,7 @@ else:
     from file_loader_utils import is_float, is_property_defined, transpose_array_of_dicts
 
 def normalization(row, analysis_keys):
-        if (is_property_defined("NumStates", analysis_keys, row)):
-            for value_to_normalize in [
-                "NumTargets",
-                "NumSinks",
-                "NumUnknown",
-            ]:
-                if (value_to_normalize in analysis_keys and float(row["NumStates"] != 0)):
-                    row[value_to_normalize] = float(row[value_to_normalize]) / float(row["NumStates"]) 
+    pass
 
 def load_file(property_keys : List[str], paths_to_csv_files : Union[List[str], str], primary_key_name : str = "Model", filter_function : Callable[..., bool] = None) -> FileData:
     file_data = None

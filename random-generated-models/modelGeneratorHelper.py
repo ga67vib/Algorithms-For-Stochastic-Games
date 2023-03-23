@@ -1,9 +1,9 @@
 from argparse import ArgumentError
-from modelGenerator import model_types
+from modelGenerator import model_guidelines
 
 def checkModelType(value):
-    if value not in model_types:
-        raise ArgumentError("There is no graph template "+value+" but only "+str(model_types))
+    if value not in model_guidelines:
+        raise ArgumentError("There is no graph template "+value+" but only "+str(model_guidelines))
     return value
 
 # Helper Functions

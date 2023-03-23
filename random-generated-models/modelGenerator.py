@@ -3,23 +3,26 @@ from genericpath import isdir
 import os, os.path
 import glob
 from graphGenerator import GeneratedGraph
+from sccGraphGenerator import SCCGraphGenerator
 from treeGraphGenerator import TreeGraphGenerator
 from graphGenParams import GraphGenerationParameters
 from randomStateGetter import *
 import modelGeneratorHelper as helper
 
-model_types = ["tree", "random"]
+model_guidelines = ["tree", "random", "scc"]
 
 def main():
     output_dir = "generatedModels"
 
     #Default parameters
     num_min_actions_default = 2
-    model_type_default = "random"
+    num_max_transitions_default = 10
+    model_guideline_default = "random"
     smallest_transition_probability_default = 0.5
     backwards_probability_default = 0.5
     branching_probability_default = 0.8
-    force_unknown_default = False
+    maximizer_prob_default = 0.5
+    generate_transitions_fast = False
 
     parser = argparse.ArgumentParser(description = 'Generate PRISM models randomly')
     parser.add_argument(
@@ -35,19 +38,34 @@ def main():
         '-numMinActions', type=int, default=num_min_actions_default, help='How many actions should (almost) all states have at least'
     )
     parser.add_argument(
-        '-type', type=helper.checkModelType, default=model_type_default, help="Which model template should be used? Available: "+str(model_types)
+        '-guideline', type=helper.checkModelType, default=model_guideline_default, help="Which model template should be used? Available: "+str(model_guidelines)
     )
     parser.add_argument(
         '-smallestProb', type=float, default = smallest_transition_probability_default, help = 'What is the smallest transition probability allowed in the graph?'
     )
     parser.add_argument(
-        '-backwardsProb', type = float, default = backwards_probability_default, help=argparse.SUPPRESS#"probability to have backwards actions"
+        '-backwardsProb', type = float, default = backwards_probability_default, help="probability to have backwards actions"
     )
     parser.add_argument(
         '-branchingProb', type = float, default = branching_probability_default, help="probability to add a branch in an action. There can be maximal 10 transitions per action"
     )
     parser.add_argument(
-        '-forceUnknown', type = bool, default = force_unknown_default, help='Try to minimize the number of yes- and no-states. This can lead to every state having a small probability of reaching the target.'
+        '--forceUnknown', default = False, action='store_true', help='Try to minimize the number of yes- and no-states. This can lead to every state having a small probability of reaching the target.'
+    )
+    parser.add_argument(
+        '-numMaxTransitions', type=int, default = num_max_transitions_default, help='How many distinct transitions may an action have at most'
+    )
+    parser.add_argument(
+        '-maximizerProb', type=float, default = maximizer_prob_default, help='Probability of a state belonging to Maximizer'
+    )
+    parser.add_argument(
+        '-maximumBackwardsActions', type=int, default = 1, help='How many actions to create during backwards phase per state atmost'
+    )
+    parser.add_argument(
+        '--fastTransitions', default = False, action='store_true', help='If set to true, transitions generated randomly are assigned along a random shuffle of the state-space. This reduces the randomness slightly, but also reduces the time required to create an action.'
+    )
+    parser.add_argument(
+        '-verbose', type=bool, default = False, help='Do you want info during model generation?'
     )
 
     arguments = parser.parse_args()
@@ -55,20 +73,28 @@ def main():
     num_states = arguments.size
     num_models = arguments.numModels
     num_min_actions = arguments.numMinActions
-    model_type_name = arguments.type
+    model_guideline_name = arguments.guideline
     smallest_transition_probability = arguments.smallestProb
     backwards_probability = arguments.backwardsProb
     branching_probability = arguments.branchingProb
     force_unknown = arguments.forceUnknown
-    verbose = num_states >= 100000
+    verbose = arguments.verbose
+    num_max_transitions = arguments.numMaxTransitions
+    maximizer_prob = arguments.maximizerProb
+    maximum_outgoing_actions = arguments.maximumBackwardsActions
+    generate_transitions_fast = arguments.fastTransitions
 
-    choice_permutator=Permutation_AllStatesPossible()
-    transition_permutator=Permutation_AllStatesPossible()
+    choice_permutator=Permutation_AllStatesPossible(fast_transitions=generate_transitions_fast)
+    transition_permutator=Permutation_AllStatesPossible(fast_transitions=generate_transitions_fast)
     graph_model = GeneratedGraph()
-    if (model_type_name == "tree"):
+    if (model_guideline_name == "tree"):
         graph_model = TreeGraphGenerator()
-        choice_permutator=Permutation_AllStatesPossible()
-        transition_permutator=Permutation_AllStatesPossible()
+        choice_permutator=Permutation_AllStatesPossible(fast_transitions=generate_transitions_fast)
+        transition_permutator=Permutation_AllStatesPossible(fast_transitions=generate_transitions_fast)
+    elif (model_guideline_name == "scc"):
+        graph_model = SCCGraphGenerator()
+        choice_permutator=Permutation_AllStatesPossible(fast_transitions=generate_transitions_fast)
+        transition_permutator=Permutation_AllStatesPossible(fast_transitions=generate_transitions_fast)
 
     # Constants
     EMPTY_LINE = "\n\n"
@@ -80,7 +106,8 @@ def main():
     num_states_before_iters = num_states #num_states could be overriden to add extra sinks/targets. Need to reset after every modelIteration
 
     for modelNumber in range(num_models):
-        print("Generating Model Number: "+(str(modelNumber+1))+"...")
+        if (num_models > 1):
+            print("Generating Model Number: "+(str(modelNumber+1))+"...")
 
         num_states = num_states_before_iters
 
@@ -92,12 +119,15 @@ def main():
                 maximum_incoming_edges=num_min_actions + 2,
                 probability_to_branch=branching_probability,
                 probability_for_backwards_action=backwards_probability,
-                probability_to_be_maximizer_state=0.5,
+                probability_to_be_maximizer_state=maximizer_prob,
                 minimum_outgoing_edges=num_min_actions,
+                maximum_outgoing_edges=maximum_outgoing_actions,
                 choice_permutator=choice_permutator,
                 transition_permutator=transition_permutator,
                 denominator_range=int(1/smallest_transition_probability),
-                force_unknown=force_unknown
+                force_unknown=force_unknown,
+                maximum_transitions_per_action=num_max_transitions,
+                verbose=(1 if verbose else 0)
             )
 
         graph.generateGraph(
@@ -116,8 +146,8 @@ def main():
         output_file_name = "RANDOM_Size_"+str(num_states)
         if (num_min_actions != num_min_actions_default):
             output_file_name += "_MinAct_"+str(num_min_actions)
-        if (model_type_name != model_type_default):
-            output_file_name += "_Type-"+model_type_name
+        if (model_guideline_name != model_guideline_default):
+            output_file_name += "_Type-"+model_guideline_name
         if (smallest_transition_probability != smallest_transition_probability_default):
             output_file_name += "_MinTransProb_"+str(smallest_transition_probability)
         output_file_name += "_Model_"
