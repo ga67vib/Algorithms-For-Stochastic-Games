@@ -1324,7 +1324,7 @@ public class STPGModelChecker extends ProbModelChecker
 							break; //if we are not done yet, continue VI from below
 						}
 						else{
-							mainLog.println("Starting a verification phase in iteration " + iters);
+							//mainLog.println("Starting a verification phase in iteration " + iters);
 							//If we look close, guess a candidate upper bound, which we will then verify
 							//Since we only work on subset (S? or the current SCC) we have to keep values from outside subset as they were when coming in
 							upperBounds = diffPlus(lowerBounds,upperBounds,subset);
@@ -1355,7 +1355,7 @@ public class STPGModelChecker extends ProbModelChecker
 								//If we still iterate on L, we can check whether L has passed U
 								if (lowerBounds[s] > upperBounds[s]){
 									abort=true;
-									mainLog.println("L has passed U in some state. Aborting verification phase.");
+									//mainLog.println("L has passed U in some state. Aborting verification phase.");
 									break;
 								}
 							}
@@ -1363,8 +1363,8 @@ public class STPGModelChecker extends ProbModelChecker
 						if(allDown){
 							//upper bound is inductive, everything stayed or went down
 							done=true;
-							mainLog.println("Lower: "+Arrays.toString(lowerBounds));
-							mainLog.println("Upper: "+Arrays.toString(upperBounds));
+							//mainLog.println("Lower: "+Arrays.toString(lowerBounds));
+							//mainLog.println("Upper: "+Arrays.toString(upperBounds));
 							for(int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s+1)) {
 								//lowerBounds[s] = (lowerBounds[s] + upperBounds[s])/2.0;
 							}
@@ -1376,13 +1376,13 @@ public class STPGModelChecker extends ProbModelChecker
 							for(int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s+1)) {
 								lowerBounds[s] = upperBounds[s];
 							}
-							mainLog.println("U is inductive lower bound. Using it as new L, stopping verification phase.");
+							//mainLog.println("U is inductive lower bound. Using it as new L, stopping verification phase.");
 						}
 						if(abort){
 							//Either allUp or L passed U or the initialization of abort, namely:
 							//we tried for too long, let's just stop for now.
 							// Try again with a stricter epsPrime unguaranteed stopping criterion
-							mainLog.println("Aborting verification phase after " + verifIters + " iterations.");
+							//mainLog.println("Aborting verification phase after " + verifIters + " iterations.");
 							verifPhase=false;
 							verifIters=0;
 							epsPrime = epsPrime/2.0;
