@@ -1512,8 +1512,6 @@ public class STPGModelChecker extends ProbModelChecker
     decisionValueMax = 0;
     decisionValueMin = 1;
 
-
-
     while (!done) {
       iters++;
 
@@ -1551,13 +1549,30 @@ public class STPGModelChecker extends ProbModelChecker
         // Matrix-vector multiply and min/max ops (Monotonic Bellman update); monotonic thing is needed, since deflating can make weird values occur
 
         // keep old bounds as they are and update new bounds object
-        stepBoundReachNew[s] = Math
-            .max(stpg.mvMultSingle(s, a, stepBoundReach), stepBoundReachNew[s]);
-        stepBoundStayNew[s] = Math.min(stpg.mvMultSingle(s, a, stepBoundStay), stepBoundStayNew[s]);
+//        stepBoundReachNew[s] = Math
+//            .max(stpg.mvMultSingle(s, a, stepBoundReach), stepBoundReachNew[s]);
+//        stepBoundStayNew[s] = Math.min(stpg.mvMultSingle(s, a, stepBoundStay), stepBoundStayNew[s]);
+//        lowerboundsNew[s] = Math
+//            .max(stepBoundReachNew[s] + stepBoundStayNew[s] * lowerBound, lowerbounds[s]);
+//        upperboundsNew[s] = Math
+//            .min(stepBoundReachNew[s] + stepBoundStayNew[s] * upperBound, upperbounds[s]);
+        double reachVal = 0.0;
+        double stayVal = 0.0;
+        for (int succ : stpg.getChoice(s, a).keySet()) {
+          //System.out.println("state: " + s + " action: " + i + " succ: " + succ);
+          //System.out.println("stpg.getChoice(s,i).get(succ): " + stpg.getChoice(s,i).get(succ) + "\nstepBoundReach[succ]: " + stepBoundReach[succ] + "\nstepBoundStay[succ]: "+ stepBoundStay[succ] +"\nupperbound: "+ upperbound);
+          // val += stpg.getChoice(s,i).get(succ)* (stepBoundReach[succ] + stepBoundStay[succ] * upperbound);
+          reachVal += stpg.getChoice(s,a).get(succ)* (stepBoundReach[succ]);
+          stayVal += stpg.getChoice(s,a).get(succ)* (stepBoundStay[succ]);
+        }
+        stepBoundReachNew[s] = reachVal;
+        stepBoundStayNew[s] = stayVal;
         lowerboundsNew[s] = Math
             .max(stepBoundReachNew[s] + stepBoundStayNew[s] * lowerBound, lowerbounds[s]);
         upperboundsNew[s] = Math
             .min(stepBoundReachNew[s] + stepBoundStayNew[s] * upperBound, upperbounds[s]);
+
+        /**Update: If s is in MEC then reach and stay will remain the old one*/
       }
 
       //Can only to smart stuff for SVI if every stayVal is less than 1 (else we would divide by 0)
@@ -1598,21 +1613,21 @@ public class STPGModelChecker extends ProbModelChecker
 
       // Swap vectors for next iter
       // Now lowerBounds is the most up-to-date approximation, while the lowerBoundsNew contains the previous iteration
-      //tmpsoln = stepBoundReach;
+      tmpsoln = stepBoundReach;
       stepBoundReach = stepBoundReachNew;
-      //stepBoundReachNew = tmpsoln;
+      stepBoundReachNew = tmpsoln;
 
-      //tmpsoln = stepBoundStay;
+      tmpsoln = stepBoundStay;
       stepBoundStay = stepBoundStayNew;
-      //stepBoundStayNew = tmpsoln;
+      stepBoundStayNew = tmpsoln;
 
-      //tmpsoln = lowerbounds;
+      tmpsoln = lowerbounds;
       lowerbounds = lowerboundsNew;
-      //lowerboundsNew = tmpsoln;
+      lowerboundsNew = tmpsoln;
 
-      //tmpsoln = upperbounds;
+      tmpsoln = upperbounds;
       upperbounds = upperboundsNew;
-      //lowerboundsNew = tmpsoln;
+      upperboundsNew = tmpsoln;
 
       /**
        * Check termination
@@ -1645,11 +1660,11 @@ public class STPGModelChecker extends ProbModelChecker
           stepBoundStay = stepBoundStayNew;
         }
       } else{
-
+        System.out.println("Reach: " + Arrays.toString(stepBoundReach) + "\nStay: " + Arrays.toString(stepBoundStay) + "\nLBVec: " + Arrays.toString(lowerbounds) + "\nUBVec: " + Arrays.toString(upperbounds));
         for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
           double lbprint = stepBoundReach[s] + stepBoundStay[s] * lowerBound;
           double ubprint =stepBoundReach[s] + stepBoundStay[s] * upperBound;
-          System.out.println("bounds for state "+ s + " are: [" + lbprint +", "+ ubprint +"]");
+          ///System.out.println("bounds for state "+ s + " are: [" + lbprint +", "+ ubprint +"]");
         }
       }
     }
@@ -1789,9 +1804,7 @@ public class STPGModelChecker extends ProbModelChecker
     List<BitSet> bottomMecs = ec.getMECStates();
     if (!bottomMecs.isEmpty()) {
       for (BitSet bottomMec : bottomMecs) {
-        Hashtable exitSubsequence = ComputeBestExitSequence(stpg, min1, min2, stepBoundReach,
-            stepBoundStay, upperbounds, bottomMec, ec,
-            lowerbound, upperbound);
+        Hashtable exitSubsequence = ComputeBestExitSequence(stpg, min1, min2, stepBoundReach, stepBoundStay, upperbounds, bottomMec, ec, lowerbound, upperbound);
         bestExitSequence.putAll(exitSubsequence);
       }
     }
@@ -2091,6 +2104,10 @@ public class STPGModelChecker extends ProbModelChecker
   private static List<Pair<Integer, Integer>> getBestExitDeflate(BitSet ec, STPGExplicit stpg, double[] stepBoundReach, double[] stepBoundStay, double[] upperbounds, int maxPlayer, double upperbound){
     double bestValSoFar = 0.0; //min possible
     double val = 0.0;
+    upperbound = 0.0;
+    System.out.println("UpperBoundsEC: " +Arrays.toString(upperbounds));
+    for (int s = ec.nextSetBit(0); s >= 0; s = ec.nextSetBit(s+1))
+      upperbound = Math.max(upperbound, upperbounds[s]);
     // double [] exitValues = new double[ec.cardinality()];
     Hashtable<Pair<Integer,Integer>, Double> allExits = new Hashtable<>();
     List<Pair<Integer, Integer>> allBestExits = new ArrayList<>();
@@ -2107,14 +2124,22 @@ public class STPGModelChecker extends ProbModelChecker
             boolean all = stpg.allSuccessorsInSet(s, i, ec);
 
             if (!all) {
-              val = 0.0;
-              System.out.println("TEST:" + stpg.getChoices(s));
+              //val = 0.0;
+              double reachVal = 0.0;
+              double stayVal = 0.0;
+              //System.out.println("TEST:" + stpg.getChoices(s));
               for (int succ : stpg.getChoice(s, i).keySet()) {
-                System.out.println("state: " + s + " action: " + i + " succ: " + succ);
-                System.out.println("stpg.getChoice(s,i).get(succ): " + stpg.getChoice(s,i).get(succ) + "\nstepBoundReach[succ]: " + stepBoundReach[succ] + "\nstepBoundStay[succ]: "+ stepBoundStay[succ] +"\nupperbound: "+ upperbound);
-                val += stpg.getChoice(s,i).get(succ)* (stepBoundReach[succ] + stepBoundStay[succ] * upperbound);
-                System.out.println("Val: "+ val);
+                //System.out.println("state: " + s + " action: " + i + " succ: " + succ);
+                //System.out.println("stpg.getChoice(s,i).get(succ): " + stpg.getChoice(s,i).get(succ) + "\nstepBoundReach[succ]: " + stepBoundReach[succ] + "\nstepBoundStay[succ]: "+ stepBoundStay[succ] +"\nupperbound: "+ upperbound);
+                // val += stpg.getChoice(s,i).get(succ)* (stepBoundReach[succ] + stepBoundStay[succ] * upperbound);
+                reachVal += stpg.getChoice(s,i).get(succ)* (stepBoundReach[succ]);
+                stayVal += stpg.getChoice(s,i).get(succ)* (stepBoundStay[succ]);
               }
+              val = reachVal + stayVal * upperbound;
+              System.out.println("Reach: " + s +": "+ reachVal);
+              System.out.println("Stay: "+ s +": "+ stayVal);
+              System.out.println("UpperBound: "+ s +": "+ upperbound);
+              System.out.println("Reach+Stay*ub of state " + s +" is: "+ val);
                //double val = stpg.mvMultSingle(s, i, stepBoundStay);
               if (val > bestValSoFar) {
                 bestValSoFar = val;
@@ -2124,13 +2149,19 @@ public class STPGModelChecker extends ProbModelChecker
                 allExits.put(stateActionPair,val);
                 allBestExits.clear();
                 allBestExits.add(stateActionPair);
+                //System.out.println("First BES + val:" + allExits);
               }else{
                 if (val == bestValSoFar){
+                  bestValSoFar = val;
+                  stateActionPair.first = s;
+                  stateActionPair.second = i;
                   allExits.put(stateActionPair,val);
                   allBestExits.add(stateActionPair);
+                  //System.out.println("Second BES + val:" + allExits);
                 }
               }
             }
+
         }
       }
 
