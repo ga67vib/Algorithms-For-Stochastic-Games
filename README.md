@@ -49,8 +49,10 @@ The following tutorial includes a summary of common errors and fixes we have exp
             b: Project settings (Ctrl+Alt+Shift+S) -> Set output directory as prism/classes<br>
             c: Also in project settings, select correct JDK (and make sure to use java 8, at least if using prism-games)<br>
             d: Also in project settings, add lib folder to libraries<br>
+            e: From prism-games/prism execute ./install.sh and make<br>
+            f: if Demo duplicate error occurs; Rename Demo to Demo2<br>
     - Add a configuration to run it, i.e. top right there should be "Add configuration" or "edit configuration". Add new configuration of type "Application". Set the Main class to prism.PrismCL and add a new Environment variable - LD_LIBRARY_PATH=:lib. Note that on MAC OS, this is called DYLD_LIBRARY_PATH.<br>
-            In case of weird errors, check a, b, d from before (often stuff with libraries missing, so copy them from some other place. Or source folder not specified (can't select PrismCL as main class), so select it. Or wrong Java/no SDK selected)<br>
+            In case of weird errors, check a-f from before (often stuff with libraries missing, so copy them from some other place. Or source folder not specified (can't select PrismCL as main class), so select it. Or wrong Java/no SDK selected)<br>
             In case of errors that include "Parma Polyhedra Library", you still have to properly install the ppl library, which is needed for multi-objective code; still, to compile PRISM, sometimes it complains about this.<br>
                 In the Algorithms-for-SG github, PPL is already in ext folder, so it might also work out of the box (and break if you try to install it manually)<br>
             If there are libraries missing (PPL or commons or sth like that), then go to project settings (Ctrl Alt Shift S) -> Libraries -> + and add the ext and lib folder (or possibly PPl.jar directly). 
