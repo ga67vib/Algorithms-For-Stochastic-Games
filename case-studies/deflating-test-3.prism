@@ -7,7 +7,8 @@ global state: [0..7] init 5;
 
 
 player P1 player1, [a1], [b1], [c1], [d1], [e1], [f1], [g1] endplayer
-player P2 player2, [a2], [b2], [c2] endplayer
+// player P2 player2, [a2], [b2], [c2] endplayer
+player P2 player2, [b2], [c2] endplayer
 
 
 module player1 // maximizer
@@ -22,7 +23,7 @@ module player1 // maximizer
 endmodule
 
 module player2 // minimizer
-	[a2] state=0 -> 1/2 : (state'=1) + 1/2 : (state'=2);
+	// [a2] state=0 -> 1/2 : (state'=1) + 1/2 : (state'=2);
 	[b2] state=2 -> (state'=3);
 	[c2] state=2 -> (state'=4);
 	[] state=7 -> (state'=7);

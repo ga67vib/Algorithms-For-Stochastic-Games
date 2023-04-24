@@ -217,8 +217,7 @@ public class PrismCL implements PrismModelListener
 	 * Entry point: call run method, catch CuddOutOfMemoryException
 	 */
 	public void go(String[] args) {
-		try {
-			run(args);
+		try { run(args);
 		} catch (jdd.JDD.CuddOutOfMemoryException e) {
 			mainLog.println("\nCUDD internal error detected, from the following stack trace:");
 			for (StackTraceElement st : e.getStackTrace()) {
