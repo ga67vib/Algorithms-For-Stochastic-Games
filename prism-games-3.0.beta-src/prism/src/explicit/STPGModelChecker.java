@@ -1448,7 +1448,7 @@ public class STPGModelChecker extends ProbModelChecker
     unknownForEC.or(unknown);
     ec.computeMECStates(unknownForEC);
     mecs = ec.getMECStates();
-    mainLog.println("Number of MECs: " + mecs.size());
+    mainLog.println("Number of MECs SVI: " + mecs.size());
     //}
 
     // Need initstate to determine whether done in bounded case
@@ -1509,29 +1509,58 @@ public class STPGModelChecker extends ProbModelChecker
 
     while (!done) {
       iters++;
+//      System.out.println("ITERATION:" + iters);
 
-      Hashtable<Pair<Integer, Integer>, BitSet> BES = new Hashtable<>();
+      //HashMap<Pair<Integer, Integer>, BitSet> BES = new HashMap<>();
+      HashMap<Integer, Integer> BES = new HashMap<>();
       for (BitSet mec : mecs) {
         if (subset.intersects(mec)) {
           /**
            * * this function computes the sequence in which the best exits should be played in order to exit all the MEC
            * * **/
-          Hashtable<Pair<Integer, Integer>, BitSet> mecBES= ComputeBestExitSequence(stpg, min1, min2, stepBoundReach, stepBoundStay, mec, ec, lowerBound, upperBound);
+          //HashMap<Pair<Integer, Integer>, BitSet> mecBES= ComputeBestExitSequence(stpg, min1, min2, stepBoundReach, stepBoundStay, mec, ec, lowerBound, upperBound);
+          HashMap<Integer, Integer> mecBES =BestExitSequence(stpg, min1, min2, stepBoundReach, stepBoundStay, mec, ec, lowerBound, upperBound);
           BES.putAll(mecBES);
           //System.out.println("BES: "+BES);
         }
       }
+
+//      double[] finalStepBoundStay = stepBoundStay;
+//      double finalLowerBound = lowerBound;
+//      double finalUpperBound = upperBound;
+//      double[] finalStepBoundReach = stepBoundReach;
+//      mecs.parallelStream().forEach(mec -> {
+//        // parallem BES computation
+//        if (subset.intersects(mec)) {
+//          /**
+//           * * this function computes the sequence in which the best exits should be played in order to exit all the MEC
+//           * * **/
+//          HashMap<Pair<Integer, Integer>, BitSet> mecBES= null;
+//          try {
+//            mecBES = ComputeBestExitSequence(stpg, min1, min2,
+//                finalStepBoundReach,
+//                finalStepBoundStay, mec, ec, finalLowerBound, finalUpperBound);
+//          } catch (PrismException e) {
+//            e.printStackTrace();
+//          }
+//          BES.putAll(mecBES);
+//          //System.out.println("BES: "+BES);
+//        }
+//      });
+
       // this Bitset can be returned directly from BES function call
       BitSet besStates = new BitSet();
-      for(Entry<Pair<Integer, Integer>, BitSet> entry: BES.entrySet()) {
-        Pair<Integer, Integer> keyPair = entry.getKey();
-
-        // Get the first coordinate of the key pair
-        int firstCoordinate = keyPair.getKey();
-
-        // Add the first coordinate to the list
-        besStates.set(firstCoordinate);
-      }
+      for(Integer s : BES.keySet())
+        besStates.set(s);
+//      for(Entry<Pair<Integer, Integer>, BitSet> entry: BES.entrySet()) {
+//        Pair<Integer, Integer> keyPair = entry.getKey();
+//
+//        // Get the first coordinate of the key pair
+//        int firstCoordinate = keyPair.getKey();
+//
+//        // Add the first coordinate to the list
+//        besStates.set(firstCoordinate);
+//      }
 
       /**
        * BELLMAN UPDATES
@@ -1544,7 +1573,7 @@ public class STPGModelChecker extends ProbModelChecker
         // find if the player is min or max
         boolean min = (stpg.getPlayer(s) == 1) ? min1 : min2;
         int a;
-        a = findAction(stpg, s, mecStates, BES, stepBoundReach, stepBoundStay, min, lowerBound, upperBound);
+        a = findActionNew(stpg, s, mecStates, BES, stepBoundReach, stepBoundStay, min, lowerBound, upperBound);
 
         double decisionValue = computeDecisionValue(stpg, stepBoundReach, stepBoundStay, s, a, min);
         //System.out.println("decision value for the state: " + s + " is: " + decisionValue);
@@ -1624,6 +1653,7 @@ public class STPGModelChecker extends ProbModelChecker
         lower_val = Math.min(decisionValueMin, lower_val);
         lowerBound = Math.max(lowerBoundNew, lower_val);
         lowerBoundNew = lowerBound; //remember this for next iteration
+
         //lowerBound=0.0; //TODO:Delete this
         //System.out.println("lowerBound: "+lowerBound2);
 
@@ -1636,9 +1666,14 @@ public class STPGModelChecker extends ProbModelChecker
         upper_val = Math.max(decisionValueMax, upper_val);
         upperBound = Math.min(upperBoundNew, upper_val);
         upperBoundNew = upperBound;
+
         // upperBound=1.0; //TODO:Delete this
         //System.out.println("upperBound: "+upperBound2);
       }
+//      System.out.println("GLB: " + lowerBound);
+//      System.out.println("GUB: " + upperBound);
+//      System.out.println("decisionValLB: "+ decisionValueMin);
+//      System.out.println("decisionValUB: "+ decisionValueMax);
 
 
       // Swap vectors for next iter
@@ -1646,10 +1681,12 @@ public class STPGModelChecker extends ProbModelChecker
       tmpsoln = stepBoundReach;
       stepBoundReach = stepBoundReachNew;
       stepBoundReachNew = tmpsoln;
+//      System.out.println("Reach: " + Arrays.toString(stepBoundReach));
 
       tmpsoln = stepBoundStay;
       stepBoundStay = stepBoundStayNew;
       stepBoundStayNew = tmpsoln;
+//      System.out.println("Stay: " + Arrays.toString(stepBoundStay));
 
       /**
        * Check termination
@@ -1847,13 +1884,13 @@ public class STPGModelChecker extends ProbModelChecker
     while (!done) {
       iters++;
 
-      Hashtable<Pair<Integer, Integer>, BitSet> BES = new Hashtable<>();
+      HashMap<Pair<Integer, Integer>, BitSet> BES = new HashMap<>();
       for (BitSet mec : mecs) {
         if (subset.intersects(mec)) {
           /**
            * * this function computes the sequence in which the best exits should be played in order to exit all the MEC
            * * **/
-          Hashtable<Pair<Integer, Integer>, BitSet> mecBES= ComputeBestExitSequenceTOPOLOGICAL(stpg, min1, min2, stepBoundReach, stepBoundStay, upperbounds, mec, ec, lowerBound, upperBound);
+          HashMap<Pair<Integer, Integer>, BitSet> mecBES= ComputeBestExitSequenceTOPOLOGICAL(stpg, min1, min2, stepBoundReach, stepBoundStay, upperbounds, mec, ec, lowerBound, upperBound);
           BES.putAll(mecBES);
           //System.out.println("BES: "+BES);
         }
@@ -2101,19 +2138,56 @@ public class STPGModelChecker extends ProbModelChecker
 
 
 
+  /**
+   * SVI best exit sequence operation.
+   */
+  private HashMap<Integer, Integer> BestExitSequence(STPGExplicit stpg, boolean min1, boolean min2, double[] stepBoundReach, double[] stepBoundStay, BitSet endComponent, explicit.ECComputerDefault ec, double lowerbound, double upperbound) throws PrismException {
+
+    HashMap<Integer, Integer>bestExitSequence = new HashMap<>();
+    // Get best Maximizer exit from MEC
+    BitSet subset = (BitSet) endComponent.clone();
+    int maxPlayer = min1 ? (min2 ? -1 : 2) : (min2 ? 1 : 3);
+    HashMap<Integer, Integer> bestExitStateActionMap = getBestExits(subset, stpg, stepBoundReach, stepBoundStay, maxPlayer, upperbound);
+
+    if (bestExitStateActionMap.isEmpty()) {
+      return bestExitSequence;
+    } else {
+      bestExitSequence.putAll(bestExitStateActionMap);
+    }
+    BitSet newSetwithoutBestExit = new BitSet();
+    newSetwithoutBestExit.or(endComponent);
+    //BitSet newSetwithoutBestExit = (BitSet) endComponent.clone(); \\no cloning
+    for(Integer s : bestExitStateActionMap.keySet()){
+      newSetwithoutBestExit.clear(s);
+    }
+    ec.computeMECStates(newSetwithoutBestExit);
+    List<BitSet> inducedMECs = ec.getMECStates();
+    //if (!inducedMECs.isEmpty()) {
+      for (BitSet iMEC : inducedMECs) {
+        HashMap exitSubsequence = BestExitSequence(stpg, min1, min2, stepBoundReach, stepBoundStay, iMEC, ec, lowerbound, upperbound);
+        bestExitSequence.putAll(exitSubsequence);
+      }
+    //}
+    return bestExitSequence;
+  }
+
+
 
 
   /**
    * SVI best exit sequence operation.
    */
-  private Hashtable ComputeBestExitSequence(STPGExplicit stpg, boolean min1, boolean min2, double[] stepBoundReach, double[] stepBoundStay, BitSet endComponent, explicit.ECComputerDefault ec, double lowerbound, double upperbound) throws PrismException {
+  private HashMap<Pair<Integer, Integer>, BitSet> ComputeBestExitSequence(STPGExplicit stpg, boolean min1, boolean min2, double[] stepBoundReach, double[] stepBoundStay, BitSet endComponent, explicit.ECComputerDefault ec, double lowerbound, double upperbound) throws PrismException {
 
     //double[] upperbounds = new double[stpg.numStates];
-    Hashtable<Pair<Integer, Integer>, BitSet> bestExitSequence = new Hashtable<>();
+    HashMap<Pair<Integer, Integer>, BitSet> bestExitSequence = new HashMap<>();
     // Get best Maximizer exit from MEC
     BitSet subset = (BitSet) endComponent.clone();
     int maxPlayer = min1 ? (min2 ? -1 : 2) : (min2 ? 1 : 3);
     List<Pair<Integer,Integer>> bestExitStateActionPairs = getBestExitDeflate(subset, stpg, stepBoundReach, stepBoundStay, maxPlayer, upperbound);
+//    List<Pair<Integer,Integer>> bestExitStateActionPairs = new ArrayList<>();
+//    getBestExitDeflate(subset, stpg, stepBoundReach, stepBoundStay, maxPlayer, upperbound, bestExitStateActionPairs);
+
     if (bestExitStateActionPairs.isEmpty()) {
       return bestExitSequence;
     } else {
@@ -2126,6 +2200,7 @@ public class STPGModelChecker extends ProbModelChecker
     }
     BitSet newSetwithoutBestExit = new BitSet();
     newSetwithoutBestExit.or(endComponent);
+    //BitSet newSetwithoutBestExit = (BitSet) endComponent.clone();
     for(Pair p: bestExitStateActionPairs){
       if ((Integer) p.first == -1 || (Integer) p.second == -1) {
       } else {
@@ -2136,7 +2211,7 @@ public class STPGModelChecker extends ProbModelChecker
     List<BitSet> bottomMecs = ec.getMECStates();
     if (!bottomMecs.isEmpty()) {
       for (BitSet bottomMec : bottomMecs) {
-        Hashtable exitSubsequence = ComputeBestExitSequence(stpg, min1, min2, stepBoundReach, stepBoundStay, bottomMec, ec, lowerbound, upperbound);
+        HashMap exitSubsequence = ComputeBestExitSequence(stpg, min1, min2, stepBoundReach, stepBoundStay, bottomMec, ec, lowerbound, upperbound);
         bestExitSequence.putAll(exitSubsequence);
       }
     }
@@ -2147,10 +2222,10 @@ public class STPGModelChecker extends ProbModelChecker
   /**
    * SVI best exit sequence operation.
    */
-  private Hashtable ComputeBestExitSequenceTOPOLOGICAL(STPGExplicit stpg, boolean min1, boolean min2, double[] stepBoundReach, double[] stepBoundStay, double[] upperbounds, BitSet endComponent, explicit.ECComputerDefault ec, double lowerbound, double upperbound) throws PrismException {
+  private HashMap<Pair<Integer, Integer>, BitSet> ComputeBestExitSequenceTOPOLOGICAL(STPGExplicit stpg, boolean min1, boolean min2, double[] stepBoundReach, double[] stepBoundStay, double[] upperbounds, BitSet endComponent, explicit.ECComputerDefault ec, double lowerbound, double upperbound) throws PrismException {
 
     //double[] upperbounds = new double[stpg.numStates];
-    Hashtable<Pair<Integer, Integer>, BitSet> bestExitSequence = new Hashtable<>();
+    HashMap<Pair<Integer, Integer>, BitSet> bestExitSequence = new HashMap<>();
     // Get best Maximizer exit from MEC
     BitSet subset = (BitSet) endComponent.clone();
     int maxPlayer = min1 ? (min2 ? -1 : 2) : (min2 ? 1 : 3);
@@ -2177,7 +2252,7 @@ public class STPGModelChecker extends ProbModelChecker
     List<BitSet> bottomMecs = ec.getMECStates();
     if (!bottomMecs.isEmpty()) {
       for (BitSet bottomMec : bottomMecs) {
-        Hashtable exitSubsequence = ComputeBestExitSequenceTOPOLOGICAL(stpg, min1, min2, stepBoundReach, stepBoundStay, upperbounds, bottomMec, ec, lowerbound, upperbound);
+        HashMap exitSubsequence = ComputeBestExitSequenceTOPOLOGICAL(stpg, min1, min2, stepBoundReach, stepBoundStay, upperbounds, bottomMec, ec, lowerbound, upperbound);
         bestExitSequence.putAll(exitSubsequence);
       }
     }
@@ -2474,13 +2549,77 @@ public class STPGModelChecker extends ProbModelChecker
    * @param upperbound
    * @return
    */
+
+
   private static List<Pair<Integer, Integer>> getBestExitDeflate(BitSet ec, STPGExplicit stpg, double[] stepBoundReach, double[] stepBoundStay, int maxPlayer, double upperbound){
     double bestValSoFar = 0.0; //min possible
-    double val = 0.0;
+    double val;
     // double [] exitValues = new double[ec.cardinality()];
-    Hashtable<Pair<Integer,Integer>, Double> allExits = new Hashtable<>();
+    //Hashtable<Pair<Integer,Integer>, Double> allExits = new Hashtable<>();
     List<Pair<Integer, Integer>> allBestExits = new ArrayList<>();
 
+    for (int s = ec.nextSetBit(0); s >= 0; s = ec.nextSetBit(s+1)) {
+      Pair<Integer,Integer> stateActionPair = new Pair<>(-1,-1);
+      if (stpg.getPlayer(s)==maxPlayer || maxPlayer == 3) {
+        //mainLog.println("Searching for the best leaving value; state belongs to maximizer");
+        for (int i = 0; i < stpg.getNumChoices(s); i++) {
+          boolean all = stpg.allSuccessorsInSet(s, i, ec);
+
+          if (!all) {
+            double reachVal = 0.0;
+            double stayVal = 0.0;
+            //System.out.println("TEST:" + stpg.getChoices(s));
+            Distribution actionDist = stpg.getChoice(s,i);
+            for (int succ : actionDist.keySet()) {
+              //System.out.println("state: " + s + " action: " + i + " succ: " + succ);
+              //System.out.println("stpg.getChoice(s,i).get(succ): " + stpg.getChoice(s,i).get(succ) + "\nstepBoundReach[succ]: " + stepBoundReach[succ] + "\nstepBoundStay[succ]: "+ stepBoundStay[succ] +"\nupperbound: "+ upperbound);
+              reachVal += actionDist.get(succ)* (stepBoundReach[succ]);
+              stayVal += actionDist.get(succ)* (stepBoundStay[succ]);
+            }
+            val = reachVal + stayVal * upperbound;
+//              double[] stepBoundReachtemp = stepBoundReach.clone();
+//              double[] stepBoundStaytemp = stepBoundStay.clone();
+//              double reach = stpg.mvMultSingle(s, i, stepBoundReach);
+//              double stay = stpg.mvMultSingle(s, i, stepBoundStay);
+//              double val2 = reach + stay * upperbound;
+//              if(val != val2)
+//              {
+//                System.out.println("WRONG");
+//                System.exit(0);
+//                System.out.println("VAL1: " + val + ", Val2: " + val2);
+//              }
+            if (val > bestValSoFar) {
+              bestValSoFar = val;
+              stateActionPair.first = s;
+              stateActionPair.second = i;
+              //allExits.clear();
+              //allExits.put(stateActionPair,val);
+              allBestExits.clear();
+              allBestExits.add(stateActionPair);
+              //System.out.println("First BES + val:" + allExits);
+            }else{
+              if (val == bestValSoFar){
+                bestValSoFar = val;
+                stateActionPair.first = s;
+                stateActionPair.second = i;
+                //allExits.put(stateActionPair,val);
+                allBestExits.add(stateActionPair);
+                //System.out.println("Second BES + val:" + allExits);
+              }
+            }
+          }
+
+        }
+      }
+    }
+    return allBestExits;
+  }
+
+  private static HashMap<Integer, Integer> getBestExits(BitSet ec, STPGExplicit stpg, double[] stepBoundReach, double[] stepBoundStay, int maxPlayer, double upperbound){
+    double bestValSoFar = 0.0; //min possible
+    double val;
+    HashMap<Integer, Integer> allBestExits = new HashMap<>();
+    //allBestExits.put(-1,-1);
     for (int s = ec.nextSetBit(0); s >= 0; s = ec.nextSetBit(s+1)) {
       Pair<Integer,Integer> stateActionPair = new Pair<>(-1,-1);
       if (stpg.getPlayer(s)==maxPlayer || maxPlayer == 3) {
@@ -2492,39 +2631,22 @@ public class STPGModelChecker extends ProbModelChecker
               double reachVal = 0.0;
               double stayVal = 0.0;
               //System.out.println("TEST:" + stpg.getChoices(s));
-              for (int succ : stpg.getChoice(s, i).keySet()) {
-                //System.out.println("state: " + s + " action: " + i + " succ: " + succ);
-                //System.out.println("stpg.getChoice(s,i).get(succ): " + stpg.getChoice(s,i).get(succ) + "\nstepBoundReach[succ]: " + stepBoundReach[succ] + "\nstepBoundStay[succ]: "+ stepBoundStay[succ] +"\nupperbound: "+ upperbound);
-                reachVal += stpg.getChoice(s,i).get(succ)* (stepBoundReach[succ]);
-                stayVal += stpg.getChoice(s,i).get(succ)* (stepBoundStay[succ]);
+              Distribution actionDist = stpg.getChoice(s,i);
+              for (int succ : actionDist.keySet()) {
+                reachVal += actionDist.get(succ)* (stepBoundReach[succ]);
+                stayVal += actionDist.get(succ)* (stepBoundStay[succ]);
               }
               val = reachVal + stayVal * upperbound;
-//              System.out.println("Reach: " + s +": "+ reachVal);
-//              System.out.println("Stay: "+ s +": "+ stayVal);
-//              System.out.println("UpperBound: "+ s +": "+ upperbound);
-//              System.out.println("Reach+Stay*ub of state " + s +" is: "+ val);
-               //double val = stpg.mvMultSingle(s, i, stepBoundStay);
               if (val > bestValSoFar) {
                 bestValSoFar = val;
-                stateActionPair.first = s;
-                stateActionPair.second = i;
-                allExits.clear();
-                allExits.put(stateActionPair,val);
                 allBestExits.clear();
-                allBestExits.add(stateActionPair);
-                //System.out.println("First BES + val:" + allExits);
+                allBestExits.put(s,i);
               }else{
                 if (val == bestValSoFar){
-                  bestValSoFar = val;
-                  stateActionPair.first = s;
-                  stateActionPair.second = i;
-                  allExits.put(stateActionPair,val);
-                  allBestExits.add(stateActionPair);
-                  //System.out.println("Second BES + val:" + allExits);
+                  allBestExits.put(s,i);
                 }
               }
             }
-
         }
       }
     }
@@ -2709,7 +2831,68 @@ public class STPGModelChecker extends ProbModelChecker
 
 
 
-  private static int findAction(STPGExplicit stpg, int s, BitSet mecStates, Hashtable<Pair<Integer, Integer>, BitSet> BES, double[] stepBoundReach, double[] stepBoundStay, boolean min, double lowerbound, double upperbound){
+  private static int findActionNew(STPGExplicit stpg, int s, BitSet mecStates, HashMap<Integer, Integer> BES, double[] stepBoundReach, double[] stepBoundStay, boolean min, double lowerbound, double upperbound){
+    // best choice -1 means it does not exit
+    int bestChoice=-1;
+    int numChoices = stpg.getNumChoices(s);
+
+//    BitSet BESStates = new BitSet();
+//    Hashtable<Integer, Integer> BESStatesAndActions= new Hashtable<>();
+//
+//    // find all the states of BES
+//    for(Pair<Integer,Integer> p: BES.keySet()){
+//      BESStates.set(p.getKey());
+//      BESStatesAndActions.put(p.getKey(), p.getValue());
+//    }
+    if(BES.get(s)!=null){
+      return BES.get(s);
+    }
+
+
+
+    // TODO: optimize (return action 0, which is 0) in case of only one action
+    if(numChoices==1){
+      return 0;
+    }
+    if (!min) {
+//      if(mecStates.get(s)){
+//        return -10; //-10 means to wait, i.e. dummy loop
+//      }
+      double bestValueSoFar = 0;
+      //mainLog.println("Searching for best leaving value; state belongs to maximizer");
+      //for each state the choices are from 0 to NumChoices-1
+      for (int curr_action = 0; curr_action < numChoices; curr_action++) {
+        Distribution d = stpg.getChoice(s,curr_action);
+        //Set<Integer> successors = d.keySet();
+        double currentValue=0;
+        for(int succ : d.keySet()){
+          currentValue += d.get(succ) * (stepBoundReach[succ]+stepBoundStay[succ]*upperbound);
+        }
+        if (currentValue>=bestValueSoFar){
+          bestValueSoFar = currentValue;
+          bestChoice = curr_action;
+        }
+      }
+    }else{
+      double bestValueSoFar = 1; //init in case of minimizer
+      //mainLog.println("Searching for best leaving value; state belongs to minimizer");
+      for (int curr_action = 0; curr_action < numChoices; curr_action++) {
+        Distribution d = stpg.getChoice(s,curr_action);
+        double currentValue=0;
+        for(int succ : d.keySet()){
+          currentValue += d.get(succ) * (stepBoundReach[succ]+stepBoundStay[succ]*lowerbound);
+        }
+        if (currentValue<=bestValueSoFar){
+          bestValueSoFar = currentValue;
+          bestChoice = curr_action;
+        }
+      }
+    }
+    //System.out.println("best choice for state "+ s + " is: "+ bestChoice);
+    return bestChoice;
+  }
+
+  private static int findAction(STPGExplicit stpg, int s, BitSet mecStates, HashMap<Pair<Integer, Integer>, BitSet> BES, double[] stepBoundReach, double[] stepBoundStay, boolean min, double lowerbound, double upperbound){
     // best choice -1 means it does not exit
     int bestChoice=-1;
     int numChoices = stpg.getNumChoices(s);
