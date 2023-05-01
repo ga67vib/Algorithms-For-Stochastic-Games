@@ -1,0 +1,61 @@
+PRISM-games
+===========
+
+Version: 3.0.beta (based on PRISM 4.5.dev)
+Date: Mon May 01 04:03:56 CEST 2023
+Hostname: matrix
+Memory limits: cudd=1g, java(heap)=5g
+Command line: prism-games ../case-studies/charlton.prism ../case-studies/charlton.props -prop 2 -ii -maxiters 1 -javamaxmem 5g -javastack 1g
+
+Parsing model file "../case-studies/charlton.prism"...
+
+Type:        SMG
+Modules:     field_2 field_1 field_0 field_7 field_8 field_10 field_12 field_17 field_21 field_31 field_33 field_38 field_3 field_4 field_5 field_6 field_9 field_13 field_14 field_15 field_16 field_18 field_19 field_20 field_22 field_23 field_24 field_25 field_27 field_28 field_29 field_30 field_32 field_34 field_35 field_36 field_37 field_39 field_40 field_42 field_43 field_11 field_26 field_41 terminals 
+Variables:   p car_position s 
+
+Switching to explicit engine, which supports SMGs...
+
+Parsing properties file "../case-studies/charlton.props"...
+
+2 properties:
+(1) <<1>>Pmax=? [ F "accidents" ]
+(2) <<1>>Pmax=? [ F "reach_goal" ]
+
+---------------------------------------------------------------------
+
+Model checking: <<1>>Pmax=? [ F "reach_goal" ]
+
+Building model...
+
+Computing reachable states... 502 states
+Reachable states exploration and model construction done in 0.24 secs.
+Sorting reachable states list...
+
+Time for model construction: 0.273 seconds.
+
+Type:        SMG
+States:      502 (1 initial)
+Transitions: 1240
+Choices:     785
+Max/avg:     3/1.56
+
+Starting probabilistic reachability...
+Starting Prob0 (maxmin)...
+Prob0 (maxmin) took 25 iterations and 0.016 seconds.
+Starting Prob1 (maxmin)...
+Prob1 (maxmin) took 61 iterations and 0.021 seconds.
+target=1, yes=2, no=82, maybe=418
+Doing value iteration variant INTERVAL_ITERATION with solnMethodOptions=0, maxIters=1, epsilon=1.0E-6 and topological=false
+Starting value iteration (maxmin)...
+Getting MECs...
+Number of MECs: 0
+Resulting interval: [0.9476067836642807,0.9476069545084603]
+Value iteration variant INTERVAL_ITERATION(maxmin) took 43 iterations and 0.05 seconds.
+Probabilistic reachability took 0.103 seconds.
+
+Value in the initial state: 0.9476067836642807
+
+Time for model checking: 0.11 seconds.
+
+Result: 0.9476067836642807 (value in the initial state)
+

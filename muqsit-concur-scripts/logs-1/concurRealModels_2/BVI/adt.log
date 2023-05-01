@@ -1,0 +1,68 @@
+PRISM-games
+===========
+
+Version: 3.0.beta (based on PRISM 4.5.dev)
+Date: Mon May 01 04:03:51 CEST 2023
+Hostname: matrix
+Memory limits: cudd=1g, java(heap)=5g
+Command line: prism-games ../case-studies/adt-infect.prism ../case-studies/adt-infect.props -prop 2 -ii -maxiters 1 -javamaxmem 5g -javastack 1g
+
+Parsing model file "../case-studies/adt-infect.prism"...
+
+Type:        SMG
+Modules:     attacker 
+Variables:   s doSE doUSB doRAV doRC doEF success_t_SU success_t_VF success_Root 
+
+Switching to explicit engine, which supports SMGs...
+
+Parsing properties file "../case-studies/adt-infect.props"...
+
+3 properties:
+(1) <<a>>P>=0.03 [ F "success" ]
+(2) <<a>>Pmax=? [ F "success" ]
+(3) <<a>>R{"success"}max=? [ F "end" ]
+
+---------------------------------------------------------------------
+
+Model checking: <<a>>Pmax=? [ F "success" ]
+
+Building model...
+
+Computing reachable states... 305 states
+Reachable states exploration and model construction done in 0.047 secs.
+Sorting reachable states list...
+
+Time for model construction: 0.059 seconds.
+
+Warning: Deadlocks detected and fixed in 80 states
+
+Type:        SMG
+States:      305 (1 initial)
+Transitions: 384
+Choices:     366
+Max/avg:     4/1.20
+
+Starting probabilistic reachability...
+Starting Prob0 (maxmin)...
+Prob0 (maxmin) took 9 iterations and 0.005 seconds.
+Starting Prob1 (maxmin)...
+Prob1 (maxmin) took 13 iterations and 0.004 seconds.
+target=12, yes=24, no=238, maybe=43
+Doing value iteration variant INTERVAL_ITERATION with solnMethodOptions=0, maxIters=1, epsilon=1.0E-6 and topological=false
+Starting value iteration (maxmin)...
+Getting MECs...
+Number of MECs: 0
+Resulting interval: [0.022950000000000005,0.022950000000000005]
+Value iteration variant INTERVAL_ITERATION(maxmin) took 7 iterations and 0.015 seconds.
+Probabilistic reachability took 0.04 seconds.
+
+Value in the initial state: 0.022950000000000005
+
+Time for model checking: 0.045 seconds.
+
+Result: 0.022950000000000005 (value in the initial state)
+
+---------------------------------------------------------------------
+
+Note: There was 1 warning during computation.
+

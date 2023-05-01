@@ -1,0 +1,60 @@
+PRISM-games
+===========
+
+Version: 3.0.beta (based on PRISM 4.5.dev)
+Date: Sun Apr 30 22:49:08 CEST 2023
+Hostname: matrix
+Memory limits: cudd=1g, java(heap)=5g
+Command line: prism-games ../case-studies/cloud_5.prism ../case-studies/cloud.props -ii -maxiters 1 -javamaxmem 5g -javastack 1g
+
+Parsing model file "../case-studies/cloud_5.prism"...
+
+Type:        SMG
+Modules:     player1_start PlayerScheduler ServerA ServerB VM1 VM2 VM3 VM4 VM5 FunctionsOnServerA FunctionsOnServerB Service 
+Variables:   st p sa sb vm1 vm2 vm3 vm4 vm5 web1 web2 web3 web4 web5 web6 web7 web8 web9 web10 web1234 web5678910 s 
+
+Switching to explicit engine, which supports SMGs...
+
+Parsing properties file "../case-studies/cloud.props"...
+
+1 property:
+(1) <<controller>>Pmax=? [ F "deployed" ]
+
+---------------------------------------------------------------------
+
+Model checking: <<controller>>Pmax=? [ F "deployed" ]
+
+Building model...
+
+Computing reachable states... 8842 states
+Reachable states exploration and model construction done in 0.932 secs.
+Sorting reachable states list...
+
+Time for model construction: 1.022 seconds.
+
+Type:        SMG
+States:      8842 (1 initial)
+Transitions: 60437
+Choices:     34805
+Max/avg:     11/3.94
+
+Starting probabilistic reachability...
+Starting Prob0 (maxmin)...
+Prob0 (maxmin) took 4 iterations and 0.012 seconds.
+Starting Prob1 (maxmin)...
+Prob1 (maxmin) took 12 iterations and 0.037 seconds.
+target=7280, yes=7280, no=781, maybe=781
+Doing value iteration variant INTERVAL_ITERATION with solnMethodOptions=0, maxIters=1, epsilon=1.0E-6 and topological=false
+Starting value iteration (maxmin)...
+Getting MECs...
+Number of MECs: 520
+Resulting interval: [0.9999980009999999,0.999998999000002]
+Value iteration variant INTERVAL_ITERATION(maxmin) took 5 iterations and 0.728 seconds.
+Probabilistic reachability took 0.826 seconds.
+
+Value in the initial state: 0.9999980009999999
+
+Time for model checking: 0.835 seconds.
+
+Result: 0.9999980009999999 (value in the initial state)
+

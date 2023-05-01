@@ -1,0 +1,60 @@
+PRISM-games
+===========
+
+Version: 3.0.beta (based on PRISM 4.5.dev)
+Date: Sun Apr 30 22:51:47 CEST 2023
+Hostname: matrix
+Memory limits: cudd=1g, java(heap)=5g
+Command line: prism-games ../case-studies/cloud_6.prism ../case-studies/cloud.props -svi -maxiters 1 -javamaxmem 5g -javastack 1g
+
+Parsing model file "../case-studies/cloud_6.prism"...
+
+Type:        SMG
+Modules:     player1_start PlayerScheduler ServerA ServerB VM1 VM2 VM3 VM4 VM5 VM6 FunctionsOnServerA FunctionsOnServerB Service 
+Variables:   st p sa sb vm1 vm2 vm3 vm4 vm5 vm6 web1 web2 web3 web4 web5 web6 web7 web8 web9 web10 web11 web12 web1234 web56789101112 s 
+
+Switching to explicit engine, which supports SMGs...
+
+Parsing properties file "../case-studies/cloud.props"...
+
+1 property:
+(1) <<controller>>Pmax=? [ F "deployed" ]
+
+---------------------------------------------------------------------
+
+Model checking: <<controller>>Pmax=? [ F "deployed" ]
+
+Building model...
+
+Computing reachable states... 34954 states
+Reachable states exploration and model construction done in 1.993 secs.
+Sorting reachable states list...
+
+Time for model construction: 2.224 seconds.
+
+Type:        SMG
+States:      34954 (1 initial)
+Transitions: 274965
+Choices:     155509
+Max/avg:     13/4.45
+
+Starting probabilistic reachability...
+Starting Prob0 (maxmin)...
+Prob0 (maxmin) took 4 iterations and 0.056 seconds.
+Starting Prob1 (maxmin)...
+Prob1 (maxmin) took 12 iterations and 0.152 seconds.
+target=30464, yes=30464, no=1225, maybe=3265
+Doing sound value iteration variant SOUND_VALUE_ITERATION with solnMethodOptions=0, maxIters=1, epsilon=1.0E-6 and topological=false
+Starting Sound value iteration (maxmin)...
+Getting MECs...
+Number of MECs SVI: 2176
+Resulting interval: [0.9998980299000001,0.99989901]
+Sound Value iteration variant SOUND_VALUE_ITERATION(maxmin) took 7 iterations and 3.225 seconds.
+Probabilistic reachability took 3.453 seconds.
+
+Value in the initial state: 0.99989851995
+
+Time for model checking: 3.472 seconds.
+
+Result: 0.99989851995 (value in the initial state)
+

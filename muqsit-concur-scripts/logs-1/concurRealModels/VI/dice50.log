@@ -1,0 +1,59 @@
+PRISM-games
+===========
+
+Version: 3.0.beta (based on PRISM 4.5.dev)
+Date: Sun Apr 30 23:05:51 CEST 2023
+Hostname: matrix
+Memory limits: cudd=1g, java(heap)=5g
+Command line: prism-games ../case-studies/dice50.prism ../case-studies/dice.props -prop 1 -javamaxmem 5g -javastack 1g
+
+Parsing model file "../case-studies/dice50.prism"...
+
+Type:        SMG
+Modules:     player1 player2 
+Variables:   s1 i x s2 y j 
+
+Switching to explicit engine, which supports SMGs...
+
+Parsing properties file "../case-studies/dice.props"...
+
+2 properties:
+(1) <<P1>>Pmax=? [ F "p1win" ]
+(2) <<P1>>Pmax=? [ F "draw" ]
+
+---------------------------------------------------------------------
+
+Model checking: <<P1>>Pmax=? [ F "p1win" ]
+
+Building model...
+
+Computing reachable states... 96295 states
+Reachable states exploration and model construction done in 0.874 secs.
+Sorting reachable states list...
+
+Time for model construction: 1.208 seconds.
+
+Type:        SMG
+States:      96295 (1 initial)
+Transitions: 145464
+Choices:     142489
+Max/avg:     2/1.48
+
+Starting probabilistic reachability...
+Starting Prob0 (maxmin)...
+Prob0 (maxmin) took 56 iterations and 1.778 seconds.
+Starting Prob1 (maxmin)...
+Prob1 (maxmin) took 160 iterations and 4.405 seconds.
+target=19875, yes=39750, no=55701, maybe=844
+Doing value iteration variant VALUE_ITERATION with solnMethodOptions=0, maxIters=10000, epsilon=1.0E-6 and topological=false
+Starting value iteration (maxmin)...
+Resulting interval: [0.8332936693090242,none]
+Value iteration variant VALUE_ITERATION(maxmin) took 102 iterations and 0.133 seconds.
+Probabilistic reachability took 6.805 seconds.
+
+Value in the initial state: 0.8332936693090242
+
+Time for model checking: 6.82 seconds.
+
+Result: 0.8332936693090242 (value in the initial state)
+

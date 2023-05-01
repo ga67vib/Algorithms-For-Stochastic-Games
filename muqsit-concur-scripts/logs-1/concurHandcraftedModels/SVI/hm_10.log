@@ -1,0 +1,62 @@
+PRISM-games
+===========
+
+Version: 3.0.beta (based on PRISM 4.5.dev)
+Date: Sun Apr 30 23:33:05 CEST 2023
+Hostname: matrix
+Memory limits: cudd=1g, java(heap)=5g
+Command line: prism-games ../case-studies/haddad-monmege-SG.pm ../case-studies/haddad-monmege.prctl -const 'N=10,p=0.5' -svi -maxiters 1 -javamaxmem 5g -javastack 1g
+
+Parsing model file "../case-studies/haddad-monmege-SG.pm"...
+
+Type:        SMG
+Modules:     main 
+Variables:   x 
+
+Switching to explicit engine, which supports SMGs...
+
+Parsing properties file "../case-studies/haddad-monmege.prctl"...
+
+1 property:
+(1) "target": Pmax=? [ F "Target" ]
+
+---------------------------------------------------------------------
+
+Model checking: "target": Pmax=? [ F "Target" ]
+Model constants: N=10,p=0.5
+
+Building model...
+Model constants: N=10,p=0.5
+
+Computing reachable states... 21 states
+Reachable states exploration and model construction done in 0.015 secs.
+Sorting reachable states list...
+
+Time for model construction: 0.029 seconds.
+
+Type:        SMG
+States:      21 (1 initial)
+Transitions: 40
+Choices:     21
+Max/avg:     1/1.00
+
+Starting probabilistic reachability...
+Starting Prob0 (maxmax)...
+Prob0 (maxmax) took 12 iterations and 0.002 seconds.
+Starting Prob1 (maxmax)...
+Prob1 (maxmax) took 131 iterations and 0.005 seconds.
+target=1, yes=1, no=1, maybe=19
+Doing sound value iteration variant SOUND_VALUE_ITERATION with solnMethodOptions=0, maxIters=1, epsilon=1.0E-6 and topological=false
+Starting Sound value iteration (maxmax)...
+Getting MECs...
+Number of MECs SVI: 0
+Resulting interval: [0.49999950006663363,0.5000004999333674]
+Sound Value iteration variant SOUND_VALUE_ITERATION(maxmax) took 20030 iterations and 0.203 seconds.
+Probabilistic reachability took 0.23 seconds.
+
+Value in the initial state: 0.5000000000000004
+
+Time for model checking: 0.234 seconds.
+
+Result: 0.5000000000000004 (value in the initial state)
+

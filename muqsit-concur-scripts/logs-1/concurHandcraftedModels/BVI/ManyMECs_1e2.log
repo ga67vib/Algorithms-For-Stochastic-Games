@@ -1,0 +1,62 @@
+PRISM-games
+===========
+
+Version: 3.0.beta (based on PRISM 4.5.dev)
+Date: Sun Apr 30 23:31:26 CEST 2023
+Hostname: matrix
+Memory limits: cudd=1g, java(heap)=5g
+Command line: prism-games ../case-studies/ManyMecs.prism ../case-studies/ManyMecs.props -const N=100 -ii -maxiters 1 -javamaxmem 5g -javastack 1g
+
+Parsing model file "../case-studies/ManyMecs.prism"...
+
+Type:        SMG
+Modules:     player1 player2 
+Variables:   state i 
+
+Switching to explicit engine, which supports SMGs...
+
+Parsing properties file "../case-studies/ManyMecs.props"...
+
+1 property:
+(1) <<P1>>Pmax=? [ F "p1win" ]
+
+---------------------------------------------------------------------
+
+Model checking: <<P1>>Pmax=? [ F "p1win" ]
+Model constants: N=100
+
+Building model...
+Model constants: N=100
+
+Computing reachable states... 302 states
+Reachable states exploration and model construction done in 0.105 secs.
+Sorting reachable states list...
+
+Time for model construction: 0.121 seconds.
+
+Type:        SMG
+States:      302 (1 initial)
+Transitions: 902
+Choices:     602
+Max/avg:     2/1.99
+
+Starting probabilistic reachability...
+Starting Prob0 (maxmin)...
+Prob0 (maxmin) took 201 iterations and 0.052 seconds.
+Starting Prob1 (maxmin)...
+Prob1 (maxmin) took 203 iterations and 0.09 seconds.
+target=1, yes=1, no=1, maybe=300
+Doing value iteration variant INTERVAL_ITERATION with solnMethodOptions=0, maxIters=1, epsilon=1.0E-6 and topological=false
+Starting value iteration (maxmin)...
+Getting MECs...
+Number of MECs: 100
+Resulting interval: [0.49999902089669956,0.5]
+Value iteration variant INTERVAL_ITERATION(maxmin) took 702 iterations and 1.873 seconds.
+Probabilistic reachability took 2.033 seconds.
+
+Value in the initial state: 0.49999902089669956
+
+Time for model checking: 2.041 seconds.
+
+Result: 0.49999902089669956 (value in the initial state)
+

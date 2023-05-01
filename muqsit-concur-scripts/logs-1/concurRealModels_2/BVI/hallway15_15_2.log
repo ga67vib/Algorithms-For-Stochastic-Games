@@ -1,0 +1,61 @@
+PRISM-games
+===========
+
+Version: 3.0.beta (based on PRISM 4.5.dev)
+Date: Mon May 01 03:58:45 CEST 2023
+Hostname: matrix
+Memory limits: cudd=1g, java(heap)=5g
+Command line: prism-games ../case-studies/hallway15_15.prism ../case-studies/hallway.props -prop 2 -ii -maxiters 1 -javamaxmem 5g -javastack 1g
+
+Parsing model file "../case-studies/hallway15_15.prism"...
+
+Type:        SMG
+Modules:     agent human 
+Variables:   turn x y look dmg s1 a b s2 
+
+Switching to explicit engine, which supports SMGs...
+
+Parsing properties file "../case-studies/hallway.props"...
+
+2 properties:
+(1) <<1>>Pmax=? [ F "saved" ]
+(2) <<1>>Pmax=? [ G !"damaged" ]
+
+---------------------------------------------------------------------
+
+Model checking: <<1>>Pmax=? [ G !"damaged" ]
+
+Building model...
+
+Computing reachable states... 137316 318809 481417 654056 827923 1024545 1191565 1350965 1508387 1669096 1825974 1943347 2025000 states
+Reachable states exploration and model construction done in 37.732 secs.
+Sorting reachable states list...
+
+Time for model construction: 43.53 seconds.
+
+Type:        SMG
+States:      2025000 (1 initial)
+Transitions: 9145800
+Choices:     5157000
+Max/avg:     5/2.55
+
+Starting probabilistic reachability...
+Starting Prob0 (minmax)...
+Prob0 (minmax) took 2 iterations and 1.538 seconds.
+Starting Prob1 (minmax)...
+Prob1 (minmax) took 4 iterations and 2.146 seconds.
+target=1012500, yes=1012500, no=810000, maybe=202500
+Doing value iteration variant INTERVAL_ITERATION with solnMethodOptions=0, maxIters=1, epsilon=1.0E-6 and topological=false
+Starting value iteration (minmax)...
+Getting MECs...
+Number of MECs: 0
+Resulting interval: [0.0,0.0]
+Value iteration variant INTERVAL_ITERATION(minmax) took 1 iterations and 0.472 seconds.
+Probabilistic reachability took 4.212 seconds.
+
+Value in the initial state: 1.0
+
+Time for model checking: 4.299 seconds.
+
+Result: 1.0 (value in the initial state)
+

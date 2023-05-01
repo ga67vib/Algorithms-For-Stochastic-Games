@@ -1,0 +1,62 @@
+PRISM-games
+===========
+
+Version: 3.0.beta (based on PRISM 4.5.dev)
+Date: Mon May 01 03:56:25 CEST 2023
+Hostname: matrix
+Memory limits: cudd=1g, java(heap)=5g
+Command line: prism-games ../case-studies/AV10_10.prism ../case-studies/AV.props -prop 2 -ii -maxiters 1 -javamaxmem 5g -javastack 1g
+
+Parsing model file "../case-studies/AV10_10.prism"...
+
+Type:        SMG
+Modules:     intruder observer 
+Variables:   turn caught found_item x y s1 a b s2 detected 
+
+Switching to explicit engine, which supports SMGs...
+
+Parsing properties file "../case-studies/AV.props"...
+
+3 properties:
+(1) <<1>>Pmax=? [ F "caught" ]
+(2) <<1>>Pmax=? [ F "exit" ]
+(3) <<1>>Pmax=? [ F "found_item" ]
+
+---------------------------------------------------------------------
+
+Model checking: <<1>>Pmax=? [ F "exit" ]
+
+Building model...
+
+Computing reachable states... 106524 states
+Reachable states exploration and model construction done in 1.814 secs.
+Sorting reachable states list...
+
+Time for model construction: 2.081 seconds.
+
+Type:        SMG
+States:      106524 (1 initial)
+Transitions: 297790
+Choices:     231542
+Max/avg:     6/2.17
+
+Starting probabilistic reachability...
+Starting Prob0 (maxmin)...
+Prob0 (maxmin) took 81 iterations and 3.762 seconds.
+Starting Prob1 (maxmin)...
+Prob1 (maxmin) took 1296 iterations and 55.462 seconds.
+target=884, yes=75552, no=7136, maybe=23836
+Doing value iteration variant INTERVAL_ITERATION with solnMethodOptions=0, maxIters=1, epsilon=1.0E-6 and topological=false
+Starting value iteration (maxmin)...
+Getting MECs...
+Number of MECs: 6
+Resulting interval: [0.9999993049204932,0.9999999865035534]
+Value iteration variant INTERVAL_ITERATION(maxmin) took 84 iterations and 27.811 seconds.
+Probabilistic reachability took 87.055 seconds.
+
+Value in the initial state: 0.9999993049204932
+
+Time for model checking: 87.071 seconds.
+
+Result: 0.9999993049204932 (value in the initial state)
+

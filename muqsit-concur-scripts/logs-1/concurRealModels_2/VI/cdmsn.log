@@ -1,0 +1,58 @@
+PRISM-games
+===========
+
+Version: 3.0.beta (based on PRISM 4.5.dev)
+Date: Mon May 01 04:17:21 CEST 2023
+Hostname: matrix
+Memory limits: cudd=1g, java(heap)=5g
+Command line: prism-games ../case-studies/cdmsn.prism ../case-studies/cdmsn.props -javamaxmem 5g -javastack 1g
+
+Parsing model file "../case-studies/cdmsn.prism"...
+
+Type:        SMG
+Modules:     player0 player1 player2 player3 
+Variables:   confidence1 confidence2 confidence3 preference1 preference2 preference3 sched 
+
+Switching to explicit engine, which supports SMGs...
+
+Parsing properties file "../case-studies/cdmsn.props"...
+
+1 property:
+(1) <<p1>>Pmax=? [ F all_prefer_1 ]
+
+---------------------------------------------------------------------
+
+Model checking: <<p1>>Pmax=? [ F all_prefer_1 ]
+
+Building model...
+
+Computing reachable states... 1240 states
+Reachable states exploration and model construction done in 0.155 secs.
+Sorting reachable states list...
+
+Time for model construction: 0.184 seconds.
+
+Type:        SMG
+States:      1240 (1 initial)
+Transitions: 6240
+Choices:     2059
+Max/avg:     2/1.66
+
+Starting probabilistic reachability...
+Starting Prob0 (maxmin)...
+Prob0 (maxmin) took 8 iterations and 0.015 seconds.
+Starting Prob1 (maxmin)...
+Prob1 (maxmin) took 8 iterations and 0.012 seconds.
+target=32, yes=1240, no=0, maybe=0
+Doing value iteration variant VALUE_ITERATION with solnMethodOptions=0, maxIters=10000, epsilon=1.0E-6 and topological=false
+Starting value iteration (maxmin)...
+Resulting interval: [1.0,none]
+Value iteration variant VALUE_ITERATION(maxmin) took 1 iterations and 0.003 seconds.
+Probabilistic reachability took 0.058 seconds.
+
+Value in the initial state: 1.0
+
+Time for model checking: 0.068 seconds.
+
+Result: 1.0 (value in the initial state)
+

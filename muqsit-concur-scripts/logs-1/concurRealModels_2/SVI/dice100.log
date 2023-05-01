@@ -1,0 +1,63 @@
+PRISM-games
+===========
+
+Version: 3.0.beta (based on PRISM 4.5.dev)
+Date: Mon May 01 03:59:45 CEST 2023
+Hostname: matrix
+Memory limits: cudd=1g, java(heap)=5g
+Command line: prism-games ../case-studies/dice-N.prism ../case-studies/dice.props -const N=100 -prop 1 -svi -maxiters 1 -javamaxmem 5g -javastack 1g
+
+Parsing model file "../case-studies/dice-N.prism"...
+
+Type:        SMG
+Modules:     player1 player2 
+Variables:   s1 i x s2 y j 
+
+Switching to explicit engine, which supports SMGs...
+
+Parsing properties file "../case-studies/dice.props"...
+
+2 properties:
+(1) <<P1>>Pmax=? [ F "p1win" ]
+(2) <<P1>>Pmax=? [ F "draw" ]
+
+---------------------------------------------------------------------
+
+Model checking: <<P1>>Pmax=? [ F "p1win" ]
+Model constants: N=100
+
+Building model...
+Model constants: N=100
+
+Computing reachable states... 308761 554395 states
+Reachable states exploration and model construction done in 5.321 secs.
+Sorting reachable states list...
+
+Time for model construction: 6.59 seconds.
+
+Type:        SMG
+States:      554395 (1 initial)
+Transitions: 1651764
+Choices:     736789
+Max/avg:     2/1.33
+
+Starting probabilistic reachability...
+Starting Prob0 (maxmin)...
+Prob0 (maxmin) took 206 iterations and 23.157 seconds.
+Starting Prob1 (maxmin)...
+Prob1 (maxmin) took 210 iterations and 26.657 seconds.
+target=77250, yes=78750, no=246701, maybe=228944
+Doing sound value iteration variant SOUND_VALUE_ITERATION with solnMethodOptions=0, maxIters=1, epsilon=1.0E-6 and topological=false
+Starting Sound value iteration (maxmin)...
+Getting MECs...
+Number of MECs SVI: 0
+Resulting interval: [0.4039463936368627,0.4039472784194858]
+Sound Value iteration variant SOUND_VALUE_ITERATION(maxmin) took 263 iterations and 40.507 seconds.
+Probabilistic reachability took 90.361 seconds.
+
+Value in the initial state: 0.40394683602817427
+
+Time for model checking: 90.39 seconds.
+
+Result: 0.40394683602817427 (value in the initial state)
+

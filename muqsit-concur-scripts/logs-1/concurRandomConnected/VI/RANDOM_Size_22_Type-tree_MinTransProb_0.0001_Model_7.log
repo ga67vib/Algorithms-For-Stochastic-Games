@@ -1,0 +1,58 @@
+PRISM-games
+===========
+
+Version: 3.0.beta (based on PRISM 4.5.dev)
+Date: Mon May 01 00:18:26 CEST 2023
+Hostname: matrix
+Memory limits: cudd=1g, java(heap)=5g
+Command line: prism-games ../random-generated-models/moreTrees/RANDOM_Size_22_Type-tree_MinTransProb_0.0001_Model_7.prism ../case-studies/randomModels.props -prop 1 -javamaxmem 5g -javastack 1g
+
+Parsing model file "../random-generated-models/moreTrees/RANDOM_Size_22_Type-tree_MinTransProb_0.0001_Model_7.prism"...
+
+Type:        SMG
+Modules:     player1 player2 
+Variables:   state 
+
+Switching to explicit engine, which supports SMGs...
+
+Parsing properties file "../case-studies/randomModels.props"...
+
+1 property:
+(1) <<P1>>Pmax=? [ F "p1win" ]
+
+---------------------------------------------------------------------
+
+Model checking: <<P1>>Pmax=? [ F "p1win" ]
+
+Building model...
+
+Computing reachable states... 22 states
+Reachable states exploration and model construction done in 0.011 secs.
+Sorting reachable states list...
+
+Time for model construction: 0.018 seconds.
+
+Type:        SMG
+States:      22 (1 initial)
+Transitions: 70
+Choices:     43
+Max/avg:     2/1.95
+
+Starting probabilistic reachability...
+Starting Prob0 (maxmin)...
+Prob0 (maxmin) took 4 iterations and 0.001 seconds.
+Starting Prob1 (maxmin)...
+Prob1 (maxmin) took 6 iterations and 0.0 seconds.
+target=1, yes=1, no=10, maybe=11
+Doing value iteration variant VALUE_ITERATION with solnMethodOptions=0, maxIters=10000, epsilon=1.0E-6 and topological=false
+Starting value iteration (maxmin)...
+Resulting interval: [0.0,none]
+Value iteration variant VALUE_ITERATION(maxmin) took 6 iterations and 0.003 seconds.
+Probabilistic reachability took 0.016 seconds.
+
+Value in the initial state: 0.0
+
+Time for model checking: 0.019 seconds.
+
+Result: 0.0 (value in the initial state)
+

@@ -1,0 +1,58 @@
+PRISM-games
+===========
+
+Version: 3.0.beta (based on PRISM 4.5.dev)
+Date: Mon May 01 04:20:31 CEST 2023
+Hostname: matrix
+Memory limits: cudd=1g, java(heap)=5g
+Command line: prism-games ../case-studies/team-form-3.prism ../case-studies/team-form.props -javamaxmem 5g -javastack 1g
+
+Parsing model file "../case-studies/team-form-3.prism"...
+
+Type:        SMG
+Modules:     controller sensor1 sensor2 sensor3 
+Variables:   status t1_r1 t1_r2 t1_r3 t2_r1 t2_r2 t2_r3 turn1 turn2 turn3 state1 m1_t1 m1_t2 turn1_1 turn2_1 state2 m2_t1 m2_t2 turn1_2 turn2_2 state3 m3_t1 m3_t2 turn1_3 turn2_3 
+
+Switching to explicit engine, which supports SMGs...
+
+Parsing properties file "../case-studies/team-form.props"...
+
+1 property:
+(1) <<p1,p2,p3>>Pmax=? [ F task1_completed ]
+
+---------------------------------------------------------------------
+
+Model checking: <<p1,p2,p3>>Pmax=? [ F task1_completed ]
+
+Building model...
+
+Computing reachable states... 12476 states
+Reachable states exploration and model construction done in 0.354 secs.
+Sorting reachable states list...
+
+Time for model construction: 0.399 seconds.
+
+Type:        SMG
+States:      12476 (1 initial)
+Transitions: 15229
+Choices:     14936
+Max/avg:     3/1.20
+
+Starting probabilistic reachability...
+Starting Prob0 (maxmin)...
+Prob0 (maxmin) took 11 iterations and 0.1 seconds.
+Starting Prob1 (maxmin)...
+Prob1 (maxmin) took 22 iterations and 0.153 seconds.
+target=546, yes=3686, no=8790, maybe=0
+Doing value iteration variant VALUE_ITERATION with solnMethodOptions=0, maxIters=10000, epsilon=1.0E-6 and topological=false
+Starting value iteration (maxmin)...
+Resulting interval: [1.0,none]
+Value iteration variant VALUE_ITERATION(maxmin) took 1 iterations and 0.011 seconds.
+Probabilistic reachability took 0.335 seconds.
+
+Value in the initial state: 1.0
+
+Time for model checking: 0.394 seconds.
+
+Result: 1.0 (value in the initial state)
+
