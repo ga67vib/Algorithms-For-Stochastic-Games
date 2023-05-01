@@ -1,0 +1,104 @@
+PRISM-games
+===========
+
+Version: 3.0.beta (based on PRISM 4.5.dev)
+Date: Mon May 01 17:42:44 CEST 2023
+Hostname: matrix
+Memory limits: cudd=1g, java(heap)=5g
+Command line: prism-games ../case-studies/mdp/csma.2-2.v1-SG.prism ../case-studies/mdp/csma.v1.props -javamaxmem 5g -javastack 1g
+
+Parsing model file "../case-studies/mdp/csma.2-2.v1-SG.prism"...
+
+Type:        SMG
+Modules:     bus station1 station2 
+Variables:   b y1 y2 s1 x1 bc1 cd1 s2 x2 bc2 cd2 
+
+Switching to explicit engine, which supports SMGs...
+
+Parsing properties file "../case-studies/mdp/csma.v1.props"...
+
+3 properties:
+(1) "all_before_max": Pmax=? [ !"collision_max_backoff" U "all_delivered" ]
+(2) "all_before_min": Pmin=? [ !"collision_max_backoff" U "all_delivered" ]
+(3) "some_before": Pmin=? [ F min_backoff_after_success<K ]
+
+---------------------------------------------------------------------
+
+Model checking: "all_before_max": Pmax=? [ !"collision_max_backoff" U "all_delivered" ]
+
+Building model...
+
+Computing reachable states... 1038 states
+Reachable states exploration and model construction done in 0.122 secs.
+Sorting reachable states list...
+
+Time for model construction: 0.159 seconds.
+
+Type:        SMG
+States:      1038 (1 initial)
+Transitions: 1282
+Choices:     1054
+Max/avg:     2/1.02
+
+Starting probabilistic reachability...
+Starting Prob0 (maxmax)...
+Prob0 (maxmax) took 82 iterations and 0.082 seconds.
+Starting Prob1 (maxmax)...
+Prob1 (maxmax) took 320 iterations and 0.102 seconds.
+target=3, yes=993, no=16, maybe=29
+Doing value iteration variant VALUE_ITERATION with solnMethodOptions=0, maxIters=10000, epsilon=1.0E-6 and topological=false
+Starting value iteration (maxmax)...
+Resulting interval: [0.875,none]
+Value iteration variant VALUE_ITERATION(maxmax) took 15 iterations and 0.007 seconds.
+Probabilistic reachability took 0.243 seconds.
+
+Value in the initial state: 0.875
+
+Time for model checking: 0.251 seconds.
+
+Result: 0.875 (value in the initial state)
+
+---------------------------------------------------------------------
+
+Model checking: "all_before_min": Pmin=? [ !"collision_max_backoff" U "all_delivered" ]
+
+Starting probabilistic reachability...
+Starting Prob0 (minmin)...
+Prob0 (minmin) took 87 iterations and 0.03 seconds.
+Starting Prob1 (minmin)...
+Prob1 (minmin) took 332 iterations and 0.073 seconds.
+target=3, yes=993, no=16, maybe=29
+Doing value iteration variant VALUE_ITERATION with solnMethodOptions=0, maxIters=10000, epsilon=1.0E-6 and topological=false
+Starting value iteration (minmin)...
+Resulting interval: [0.875,none]
+Value iteration variant VALUE_ITERATION(minmin) took 17 iterations and 0.002 seconds.
+Probabilistic reachability took 0.129 seconds.
+
+Value in the initial state: 0.875
+
+Time for model checking: 0.129 seconds.
+
+Result: 0.875 (value in the initial state)
+
+---------------------------------------------------------------------
+
+Model checking: "some_before": Pmin=? [ F min_backoff_after_success<K ]
+
+Starting probabilistic reachability...
+Starting Prob0 (minmin)...
+Prob0 (minmin) took 49 iterations and 0.006 seconds.
+Starting Prob1 (minmin)...
+Prob1 (minmin) took 135 iterations and 0.019 seconds.
+target=90, yes=476, no=552, maybe=10
+Doing value iteration variant VALUE_ITERATION with solnMethodOptions=0, maxIters=10000, epsilon=1.0E-6 and topological=false
+Starting value iteration (minmin)...
+Resulting interval: [0.5,none]
+Value iteration variant VALUE_ITERATION(minmin) took 7 iterations and 0.002 seconds.
+Probabilistic reachability took 0.045 seconds.
+
+Value in the initial state: 0.5
+
+Time for model checking: 0.049 seconds.
+
+Result: 0.5 (value in the initial state)
+

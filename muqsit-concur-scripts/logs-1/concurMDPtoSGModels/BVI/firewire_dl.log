@@ -1,0 +1,62 @@
+PRISM-games
+===========
+
+Version: 3.0.beta (based on PRISM 4.5.dev)
+Date: Mon May 01 17:42:39 CEST 2023
+Hostname: matrix
+Memory limits: cudd=1g, java(heap)=5g
+Command line: prism-games ../case-studies/mdp/firewire_dl.v1-SG.prism ../case-studies/mdp/firewire_dl.v1.props -const 'delay=3,deadline=200' -ii -maxiters 1 -javamaxmem 5g -javastack 1g
+
+Parsing model file "../case-studies/mdp/firewire_dl.v1-SG.prism"...
+
+Type:        SMG
+Modules:     abstract_firewire 
+Variables:   y x s 
+
+Switching to explicit engine, which supports SMGs...
+
+Parsing properties file "../case-studies/mdp/firewire_dl.v1.props"...
+
+1 property:
+(1) "deadline": Pmin=? [ F s=9 ]
+
+---------------------------------------------------------------------
+
+Model checking: "deadline": Pmin=? [ F s=9 ]
+Model constants: deadline=200,delay=3
+
+Building model...
+Model constants: deadline=200,delay=3
+
+Computing reachable states... 14824 states
+Reachable states exploration and model construction done in 0.358 secs.
+Sorting reachable states list...
+
+Time for model construction: 0.448 seconds.
+
+Type:        SMG
+States:      14824 (1 initial)
+Transitions: 17607
+Choices:     16671
+Max/avg:     3/1.12
+
+Starting probabilistic reachability...
+Starting Prob0 (minmin)...
+Prob0 (minmin) took 174 iterations and 0.451 seconds.
+Starting Prob1 (minmin)...
+Prob1 (minmin) took 512 iterations and 1.323 seconds.
+target=44, yes=1388, no=13416, maybe=20
+Doing value iteration variant INTERVAL_ITERATION with solnMethodOptions=0, maxIters=1, epsilon=1.0E-6 and topological=false
+Starting value iteration (minmin)...
+Getting MECs...
+Number of MECs: 0
+Resulting interval: [0.5,0.5]
+Value iteration variant INTERVAL_ITERATION(minmin) took 5 iterations and 0.019 seconds.
+Probabilistic reachability took 1.808 seconds.
+
+Value in the initial state: 0.5
+
+Time for model checking: 1.824 seconds.
+
+Result: 0.5 (value in the initial state)
+

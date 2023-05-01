@@ -1,0 +1,108 @@
+PRISM-games
+===========
+
+Version: 3.0.beta (based on PRISM 4.5.dev)
+Date: Mon May 01 17:42:43 CEST 2023
+Hostname: matrix
+Memory limits: cudd=1g, java(heap)=5g
+Command line: prism-games ../case-studies/mdp/consensus.2.v1-SG.prism ../case-studies/mdp/consensus.v1.props -const K=2 -javamaxmem 5g -javastack 1g
+
+Parsing model file "../case-studies/mdp/consensus.2.v1-SG.prism"...
+
+Type:        SMG
+Modules:     process1 process2 
+Variables:   counter pc1 coin1 pc2 coin2 
+
+Switching to explicit engine, which supports SMGs...
+
+Parsing properties file "../case-studies/mdp/consensus.v1.props"...
+
+3 properties:
+(1) "c1": Pmin=? [ F "finished" ]
+(2) "c2": Pmin=? [ F "finished"&"all_coins_equal_1" ]
+(3) "disagree": Pmax=? [ F "finished"&!"agree" ]
+
+---------------------------------------------------------------------
+
+Model checking: "c1": Pmin=? [ F "finished" ]
+Model constants: K=2
+
+Building model...
+Model constants: K=2
+
+Computing reachable states... 272 states
+Reachable states exploration and model construction done in 0.045 secs.
+Sorting reachable states list...
+
+Time for model construction: 0.056 seconds.
+
+Type:        SMG
+States:      272 (1 initial)
+Transitions: 492
+Choices:     400
+Max/avg:     2/1.47
+
+Starting probabilistic reachability...
+Starting Prob0 (minmin)...
+Prob0 (minmin) took 20 iterations and 0.006 seconds.
+Starting Prob1 (minmin)...
+Prob1 (minmin) took 20 iterations and 0.005 seconds.
+target=8, yes=272, no=0, maybe=0
+Doing value iteration variant VALUE_ITERATION with solnMethodOptions=0, maxIters=10000, epsilon=1.0E-6 and topological=false
+Starting value iteration (minmin)...
+Resulting interval: [1.0,none]
+Value iteration variant VALUE_ITERATION(minmin) took 1 iterations and 0.002 seconds.
+Probabilistic reachability took 0.032 seconds.
+
+Value in the initial state: 1.0
+
+Time for model checking: 0.037 seconds.
+
+Result: 1.0 (value in the initial state)
+
+---------------------------------------------------------------------
+
+Model checking: "c2": Pmin=? [ F "finished"&"all_coins_equal_1" ]
+Model constants: K=2
+
+Starting probabilistic reachability...
+Starting Prob0 (minmin)...
+Prob0 (minmin) took 29 iterations and 0.004 seconds.
+Starting Prob1 (minmin)...
+Prob1 (minmin) took 153 iterations and 0.022 seconds.
+target=2, yes=15, no=94, maybe=163
+Doing value iteration variant VALUE_ITERATION with solnMethodOptions=0, maxIters=10000, epsilon=1.0E-6 and topological=false
+Starting value iteration (minmin)...
+Resulting interval: [0.38281081900641334,none]
+Value iteration variant VALUE_ITERATION(minmin) took 483 iterations and 0.104 seconds.
+Probabilistic reachability took 0.144 seconds.
+
+Value in the initial state: 0.38281081900641334
+
+Time for model checking: 0.144 seconds.
+
+Result: 0.38281081900641334 (value in the initial state)
+
+---------------------------------------------------------------------
+
+Model checking: "disagree": Pmax=? [ F "finished"&!"agree" ]
+Model constants: K=2
+
+Starting probabilistic reachability...
+Starting Prob0 (maxmax)...
+Prob0 (maxmax) took 39 iterations and 0.006 seconds.
+Starting Prob1 (maxmax)...
+Prob1 (maxmax) took 126 iterations and 0.009 seconds.
+target=4, yes=12, no=30, maybe=230
+Doing value iteration variant VALUE_ITERATION with solnMethodOptions=0, maxIters=10000, epsilon=1.0E-6 and topological=false
+Starting value iteration (maxmax)...
+Resulting interval: [0.10833260973166493,none]
+Value iteration variant VALUE_ITERATION(maxmax) took 525 iterations and 0.063 seconds.
+Probabilistic reachability took 0.09 seconds.
+
+Value in the initial state: 0.10833260973166493
+
+Time for model checking: 0.09 seconds.
+
+Result: 0.10833260973166493 (value in the initial state)
+

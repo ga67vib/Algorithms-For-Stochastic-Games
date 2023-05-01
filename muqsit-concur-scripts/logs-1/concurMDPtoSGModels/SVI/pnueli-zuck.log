@@ -1,0 +1,60 @@
+PRISM-games
+===========
+
+Version: 3.0.beta (based on PRISM 4.5.dev)
+Date: Mon May 01 17:42:41 CEST 2023
+Hostname: matrix
+Memory limits: cudd=1g, java(heap)=5g
+Command line: prism-games ../case-studies/mdp/pnueli-zuck.3.v1-SG.prism ../case-studies/mdp/pnueli-zuck.v1.props -svi -maxiters 1 -javamaxmem 5g -javastack 1g
+
+Parsing model file "../case-studies/mdp/pnueli-zuck.3.v1-SG.prism"...
+
+Type:        SMG
+Modules:     process0 process1 process2 
+Variables:   p0 p1 p2 
+
+Switching to explicit engine, which supports SMGs...
+
+Parsing properties file "../case-studies/mdp/pnueli-zuck.v1.props"...
+
+1 property:
+(1) "live": Pmax=? [ F (p1=10) ]
+
+---------------------------------------------------------------------
+
+Model checking: "live": Pmax=? [ F (p1=10) ]
+
+Building model...
+
+Computing reachable states... 2701 states
+Reachable states exploration and model construction done in 0.166 secs.
+Sorting reachable states list...
+
+Time for model construction: 0.187 seconds.
+
+Type:        SMG
+States:      2701 (1 initial)
+Transitions: 9676
+Choices:     9040
+Max/avg:     6/3.35
+
+Starting probabilistic reachability...
+Starting Prob0 (maxmax)...
+Prob0 (maxmax) took 27 iterations and 0.09 seconds.
+Starting Prob1 (maxmax)...
+Prob1 (maxmax) took 27 iterations and 0.09 seconds.
+target=100, yes=2701, no=0, maybe=0
+Doing sound value iteration variant SOUND_VALUE_ITERATION with solnMethodOptions=0, maxIters=1, epsilon=1.0E-6 and topological=false
+Starting Sound value iteration (maxmax)...
+Getting MECs...
+Number of MECs SVI: 0
+Resulting interval: [1.0,1.0]
+Sound Value iteration variant SOUND_VALUE_ITERATION(maxmax) took 1 iterations and 0.003 seconds.
+Probabilistic reachability took 0.198 seconds.
+
+Value in the initial state: 1.0
+
+Time for model checking: 0.204 seconds.
+
+Result: 1.0 (value in the initial state)
+

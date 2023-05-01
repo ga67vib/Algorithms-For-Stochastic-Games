@@ -1,0 +1,110 @@
+PRISM-games
+===========
+
+Version: 3.0.beta (based on PRISM 4.5.dev)
+Date: Mon May 01 17:42:41 CEST 2023
+Hostname: matrix
+Memory limits: cudd=1g, java(heap)=5g
+Command line: prism-games ../case-studies/mdp/csma.2-2.v1-SG.prism ../case-studies/mdp/csma.v1.props -svi -maxiters 1 -javamaxmem 5g -javastack 1g
+
+Parsing model file "../case-studies/mdp/csma.2-2.v1-SG.prism"...
+
+Type:        SMG
+Modules:     bus station1 station2 
+Variables:   b y1 y2 s1 x1 bc1 cd1 s2 x2 bc2 cd2 
+
+Switching to explicit engine, which supports SMGs...
+
+Parsing properties file "../case-studies/mdp/csma.v1.props"...
+
+3 properties:
+(1) "all_before_max": Pmax=? [ !"collision_max_backoff" U "all_delivered" ]
+(2) "all_before_min": Pmin=? [ !"collision_max_backoff" U "all_delivered" ]
+(3) "some_before": Pmin=? [ F min_backoff_after_success<K ]
+
+---------------------------------------------------------------------
+
+Model checking: "all_before_max": Pmax=? [ !"collision_max_backoff" U "all_delivered" ]
+
+Building model...
+
+Computing reachable states... 1038 states
+Reachable states exploration and model construction done in 0.116 secs.
+Sorting reachable states list...
+
+Time for model construction: 0.132 seconds.
+
+Type:        SMG
+States:      1038 (1 initial)
+Transitions: 1282
+Choices:     1054
+Max/avg:     2/1.02
+
+Starting probabilistic reachability...
+Starting Prob0 (maxmax)...
+Prob0 (maxmax) took 82 iterations and 0.061 seconds.
+Starting Prob1 (maxmax)...
+Prob1 (maxmax) took 320 iterations and 0.091 seconds.
+target=3, yes=993, no=16, maybe=29
+Doing sound value iteration variant SOUND_VALUE_ITERATION with solnMethodOptions=0, maxIters=1, epsilon=1.0E-6 and topological=false
+Starting Sound value iteration (maxmax)...
+Getting MECs...
+Number of MECs SVI: 0
+Resulting interval: [0.875,0.875]
+Sound Value iteration variant SOUND_VALUE_ITERATION(maxmax) took 16 iterations and 0.023 seconds.
+Probabilistic reachability took 0.194 seconds.
+
+Value in the initial state: 0.875
+
+Time for model checking: 0.203 seconds.
+
+Result: 0.875 (value in the initial state)
+
+---------------------------------------------------------------------
+
+Model checking: "all_before_min": Pmin=? [ !"collision_max_backoff" U "all_delivered" ]
+
+Starting probabilistic reachability...
+Starting Prob0 (minmin)...
+Prob0 (minmin) took 87 iterations and 0.027 seconds.
+Starting Prob1 (minmin)...
+Prob1 (minmin) took 332 iterations and 0.048 seconds.
+target=3, yes=993, no=16, maybe=29
+Doing sound value iteration variant SOUND_VALUE_ITERATION with solnMethodOptions=0, maxIters=1, epsilon=1.0E-6 and topological=false
+Starting Sound value iteration (minmin)...
+Getting MECs...
+Number of MECs SVI: 0
+Resulting interval: [0.875,0.875]
+Sound Value iteration variant SOUND_VALUE_ITERATION(minmin) took 16 iterations and 0.003 seconds.
+Probabilistic reachability took 0.079 seconds.
+
+Value in the initial state: 0.875
+
+Time for model checking: 0.08 seconds.
+
+Result: 0.875 (value in the initial state)
+
+---------------------------------------------------------------------
+
+Model checking: "some_before": Pmin=? [ F min_backoff_after_success<K ]
+
+Starting probabilistic reachability...
+Starting Prob0 (minmin)...
+Prob0 (minmin) took 49 iterations and 0.004 seconds.
+Starting Prob1 (minmin)...
+Prob1 (minmin) took 135 iterations and 0.015 seconds.
+target=90, yes=476, no=552, maybe=10
+Doing sound value iteration variant SOUND_VALUE_ITERATION with solnMethodOptions=0, maxIters=1, epsilon=1.0E-6 and topological=false
+Starting Sound value iteration (minmin)...
+Getting MECs...
+Number of MECs SVI: 0
+Resulting interval: [0.5,0.5]
+Sound Value iteration variant SOUND_VALUE_ITERATION(minmin) took 6 iterations and 0.001 seconds.
+Probabilistic reachability took 0.021 seconds.
+
+Value in the initial state: 0.5
+
+Time for model checking: 0.023 seconds.
+
+Result: 0.5 (value in the initial state)
+

@@ -1,0 +1,20 @@
+PRISM-games
+===========
+
+Version: 3.0.beta (based on PRISM 4.5.dev)
+Date: Mon May 01 17:42:45 CEST 2023
+Hostname: matrix
+Memory limits: cudd=1g, java(heap)=5g
+Command line: prism-games ../case-studies/mdp/wlan.0.v1-SG.prism ../case-studies/mdp/wlan.v1.props -const COL=0 -javamaxmem 5g -javastack 1g
+
+Parsing model file "../case-studies/mdp/wlan.0.v1-SG.prism"...
+
+Type:        SMG
+Modules:     medium station1 station2 
+Variables:   col c1 c2 x1 s1 slot1 backoff1 bc1 x2 s2 slot2 backoff2 bc2 
+
+Switching to explicit engine, which supports SMGs...
+
+Parsing properties file "../case-studies/mdp/wlan.v1.props"...
+
+Error: Syntax error ("1", line 11, column 14).

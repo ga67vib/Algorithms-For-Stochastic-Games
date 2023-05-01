@@ -1,0 +1,41 @@
+PRISM-games
+===========
+
+Version: 3.0.beta (based on PRISM 4.5.dev)
+Date: Mon May 01 17:42:42 CEST 2023
+Hostname: matrix
+Memory limits: cudd=1g, java(heap)=5g
+Command line: prism-games ../case-studies/mdp/wlan_dl.0.v1-SG.prism ../case-studies/mdp/wlan_dl.v1.props -const deadline=80 -svi -maxiters 1 -javamaxmem 5g -javastack 1g
+
+Parsing model file "../case-studies/mdp/wlan_dl.0.v1-SG.prism"...
+
+Type:        SMG
+Modules:     medium station1 station2 timer 
+Variables:   c1 c2 x1 s1 slot1 backoff1 bc1 x2 s2 slot2 backoff2 bc2 t 
+
+Switching to explicit engine, which supports SMGs...
+
+Parsing properties file "../case-studies/mdp/wlan_dl.v1.props"...
+
+1 property:
+(1) "deadline": Pmin=? [ F s1=12&s2=12 ]
+
+---------------------------------------------------------------------
+
+Model checking: "deadline": Pmin=? [ F s1=12&s2=12 ]
+Model constants: deadline=80
+
+Building model...
+Model constants: deadline=80
+
+Computing reachable states...
+java.lang.NullPointerException: Cannot invoke "Object.toString()" because the return value of "prism.ModelGenerator.getChoiceAction(int)" is null
+    at explicit.ConstructModel.constructModel(ConstructModel.java:307)
+    at prism.Prism.doBuildModel(Prism.java:2183)
+    at prism.Prism.buildModelIfRequired(Prism.java:2141)
+    at prism.Prism.modelCheck(Prism.java:3128)
+    at prism.PrismCL.run(PrismCL.java:394)
+    at prism.PrismCL.go(PrismCL.java:220)
+    at prism.PrismCL.main(PrismCL.java:2638)
+
+Error: Caught unhandled exception, aborting....
