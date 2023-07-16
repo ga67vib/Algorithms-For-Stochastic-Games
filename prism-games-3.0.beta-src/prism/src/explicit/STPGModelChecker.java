@@ -1394,14 +1394,11 @@ public class STPGModelChecker extends ProbModelChecker
    * @param variant The SolnMethod, namely one of normal VI, II, OVI and SVI. All share lots of code, so they all are the same method (Maxi 07.07.21, replacing the previous "bounded" parameter. II is the bounded value iteration from CAV18, SVI and OVI are described in the paper we are writing for FSTTCS21 right now)
    * Note: if 'known' is specified (i.e. is non-null, 'init' must also be given and is used for the exact values.
    */
+
   protected ModelCheckerResult computeReachProbsSoundValIter(STPG stpg, BitSet no, BitSet yes, boolean min1, boolean min2, double init[], BitSet known, SolnMethod variant)
       throws PrismException
   {
     mainLog.println("Doing sound value iteration variant " + variant + " with solnMethodOptions=" + this.solnMethodOptions + ", maxIters=" + this.maxIters + ", epsilon=" + this.termCritParam + " and topological=" + this.getDoTopologicalValueIteration());
-
-    //solnMethodOptions is used to decide whether we use Gauss Seidel or not (%2==1 implies Gauss-Seidel) and for one optimization of OVI. See the iterateOnSubset-method.
-    //The idea of solnMethodOptions is: first bit encodes GS. Second bit encodes OVI. Further bits are still free for further opts.
-
 
     ModelCheckerResult res = null;
     BitSet unknown;
@@ -1451,16 +1448,72 @@ public class STPGModelChecker extends ProbModelChecker
     mainLog.println("Number of MECs SVI: " + mecs.size());
     //}
 
+
+    SCCInfo sccs = null;
+    if (getDoTopologicalValueIteration()){
+      mainLog.println("Getting topologically ordered SCCs...");
+      sccs = SCCComputer.computeTopologicalOrdering(this, stpg, true, unknown::get);
+      mainLog.println("Done; got " + sccs.getNumSCCs() + " SCCs.");
+    }
+
+
     // Need initstate to determine whether done in bounded case
     int initialState = stpg.getFirstInitialState();
 
-    double[][] subres = iterateOnSVISubset((STPGExplicit) stpg, min1, min2, stepBoundReach, stepBoundReach2, stepBoundStay, stepBoundStay2, iters, variant, mecs, ec, unknown, null, initialState, yes);
-    iters = (int) subres[3][0];
-    stepBoundReach = subres[0];
-    stepBoundStay = subres[2];
 
 
 
+
+    // Start iterations
+
+    if (getDoTopologicalValueIteration() & solnMethodOptions%2==1) {
+
+      double[][] subres = iterateOnSVISubsetWithSCCbounds((STPGExplicit) stpg, min1, min2, stepBoundReach,
+          stepBoundReach2, stepBoundStay, stepBoundStay2, iters, variant, mecs, ec, sccs, unknown, null,
+          initialState, yes);
+      iters = (int) subres[3][0];
+      stepBoundReach = subres[0];
+      stepBoundStay = subres[2];
+    }
+
+    else {
+      if (getDoTopologicalValueIteration()) {
+
+//      boolean sccBySCC = this.solnMethodOptions != 1000;
+//      boolean globalBoundPerSCC = this.solnMethodOptions == 2000;
+
+        // complex SCC: do VI
+        int itersInSCC = 0;
+        for (int scc = 0; scc < sccs.getNumSCCs(); scc++) {
+          IntSet statesForSCCIntSet = sccs.getStatesForSCC(scc);
+          BitSet statesForSCC = new BitSet(n);
+          for (int state : statesForSCCIntSet) {
+            statesForSCC.set(state);
+          }
+          //Solve the SCC until all states are close (initialState argument is -1 to ensure all states are solved, not just initial)
+          double[][] subres = iterateOnSVISubset((STPGExplicit) stpg, min1, min2, stepBoundReach,
+              stepBoundReach2, stepBoundStay, stepBoundStay2, iters, variant, mecs, ec,
+              statesForSCC,
+              statesForSCCIntSet, -1, yes);
+          itersInSCC = (int) subres[3][0];
+          stepBoundReach = subres[0];
+          stepBoundStay = subres[2];
+
+          iters += itersInSCC;
+          mainLog.println(
+              "SCC done.  eps-approx value: " + stepBoundReach[sccs.getStatesForSCC(scc).iterator()
+                  .nextInt()] + ", Stay: " + stepBoundStay[sccs.getStatesForSCC(scc).iterator()
+                  .nextInt()] + ". \nIters: " + iters);
+        }
+      } else {
+        double[][] subres = iterateOnSVISubset((STPGExplicit) stpg, min1, min2, stepBoundReach,
+            stepBoundReach2, stepBoundStay, stepBoundStay2, iters, variant, mecs, ec, unknown, null,
+            initialState, yes);
+        iters = (int) subres[3][0];
+        stepBoundReach = subres[0];
+        stepBoundStay = subres[2];
+      }
+    }
     // Finished value iteration
     timer = System.currentTimeMillis() - timer;
     if (verbosity >= 1) {
@@ -1489,6 +1542,7 @@ public class STPGModelChecker extends ProbModelChecker
    * Sometimes it returns the previous iteration, thus resulting in result which is not eps-precise
    * Thus we return an array of double arrays: LowerBounds, UpperBounds and an array containing only iters
    */
+
   private double[][] iterateOnSVISubset(STPGExplicit stpg, boolean min1, boolean min2, double[] stepBoundReach, double[] stepBoundReachNew, double[] stepBoundStay, double[] stepBoundStayNew,
       int iters, SolnMethod variant, List<BitSet> mecs, explicit.ECComputerDefault ec,
       BitSet subset, IntSet subsetAsIntSet, int initialState, BitSet yes) throws PrismException{
@@ -1507,9 +1561,9 @@ public class STPGModelChecker extends ProbModelChecker
     decisionValueMax = 0;
     decisionValueMin = 1;
 
-    while (!done) {
+    while (!done & iters <10000) {
       iters++;
-//      System.out.println("ITERATION:" + iters);
+      System.out.println("ITERATION:" + iters);
 
       //HashMap<Pair<Integer, Integer>, BitSet> BES = new HashMap<>();
       HashMap<Integer, Integer> BES = new HashMap<>();
@@ -1549,6 +1603,7 @@ public class STPGModelChecker extends ProbModelChecker
 //      });
 
       // this Bitset can be returned directly from BES function call
+      System.out.println("BES: "+BES);
       BitSet besStates = new BitSet();
       for(Integer s : BES.keySet())
         besStates.set(s);
@@ -1604,12 +1659,41 @@ public class STPGModelChecker extends ProbModelChecker
         stepBoundReachNew[s] = reachVal;
         stepBoundStayNew[s] = stayVal;
 
-        if(!besStates.get(s) & mecStates.get(s) & !min & stepBoundReachNew[s] + stepBoundStayNew[s] * upperBound > stepBoundReach[s]+stepBoundStay[s]*upperBound){
+        System.out.println("state:" + s);
+        if(!min){
+          System.out.println("is a Maximizer state");
+        }
+        else{
+          System.out.println("is a Minimizer state");
+        }
+        if(!besStates.get(s)){
+          System.out.println("and is NOT in BES");
+        }
+        else{
+          System.out.println("is in BES");
+        }
+        if(!mecStates.get(s)){
+          System.out.println("is NOT in MEC");
+        }
+        else{
+          System.out.println("is in MEC");
+        }
+        double ub1 =stepBoundReachNew[s] + stepBoundStayNew[s] * upperBound;
+        double ub2 = stepBoundReach[s] + stepBoundStay[s] * upperBound;
+        if((stepBoundReachNew[s] + stepBoundStayNew[s] * upperBound <= stepBoundReach[s]+stepBoundStay[s]*upperBound)){
+          System.out.println("upperbound not worse- ub1: " + ub1 +", ub2:"+ ub2);
+        }
+        else{
+          System.out.println("upperbound worse- ub1: " + ub1 +", ub2:"+ ub2);
+        }
+
+        if(!besStates.get(s) & mecStates.get(s) & !min & ! (stepBoundReachNew[s] + stepBoundStayNew[s] * upperBound <= stepBoundReach[s]+stepBoundStay[s]*upperBound)) {
           stepBoundReachNew[s] = stepBoundReach[s];
           stepBoundStayNew[s] = stepBoundStay[s];
           update = false;
+          System.out.println("PLAYING DUMMY ACTION");
         }
-//        if(!mecStates.get(s)|true){
+//        if(!mecStates.get(s)|true)
 //          double oldVal= stepBoundReach[s]+stepBoundStay[s]*upperBound;
 //          double newVal= stepBoundReachNew[s] + stepBoundStayNew[s] * upperBound;
 //          System.out.println("STATE: " + s + ": OldVal:" + oldVal + ", NewVal: " + newVal );
@@ -1643,7 +1727,8 @@ public class STPGModelChecker extends ProbModelChecker
 
       // Do smart SVI stuff: Compute upper and lower bound. This is used for checking termination.
       // When we terminate, the vectors lowerBounds and upperBounds are updated to contain the smarter values, i.e. best lower and upper bound SVI can give us right now
-      if (allStatesStayValLessThan1 & update) {
+      if (allStatesStayValLessThan1 & false) {
+      //  if (allStatesStayValLessThan1 & update) {
         //double lower_val=Double.POSITIVE_INFINITY; //would be for rewards
         double lower_val = 1.0;
         for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
@@ -1655,7 +1740,7 @@ public class STPGModelChecker extends ProbModelChecker
         lowerBoundNew = lowerBound; //remember this for next iteration
 
         //lowerBound=0.0; //TODO:Delete this
-        //System.out.println("lowerBound: "+lowerBound2);
+        System.out.println("lowerBound: "+lowerBound);
 
         //double upper_val=Double.NEGATIVE_INFINITY;
         double upper_val = 0.0;
@@ -1668,7 +1753,7 @@ public class STPGModelChecker extends ProbModelChecker
         upperBoundNew = upperBound;
 
         // upperBound=1.0; //TODO:Delete this
-        //System.out.println("upperBound: "+upperBound2);
+        System.out.println("upperBound: "+upperBound);
       }
 //      System.out.println("GLB: " + lowerBound);
 //      System.out.println("GUB: " + upperBound);
@@ -1681,12 +1766,22 @@ public class STPGModelChecker extends ProbModelChecker
       tmpsoln = stepBoundReach;
       stepBoundReach = stepBoundReachNew;
       stepBoundReachNew = tmpsoln;
-//      System.out.println("Reach: " + Arrays.toString(stepBoundReach));
+      System.out.println("Reach: " + Arrays.toString(stepBoundReach));
 
       tmpsoln = stepBoundStay;
       stepBoundStay = stepBoundStayNew;
       stepBoundStayNew = tmpsoln;
-//      System.out.println("Stay: " + Arrays.toString(stepBoundStay));
+      System.out.println("Stay: " + Arrays.toString(stepBoundStay));
+      double [] overApproximation = new double[stepBoundReach.length];
+      double [] underApproximation = new double[stepBoundReach.length];
+      for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+        underApproximation[s] = stepBoundReach[s] + stepBoundStay[s] * lowerBound;
+        overApproximation[s] = stepBoundReach[s] + stepBoundStay[s] * upperBound;
+      }
+
+      System.out.println("Under-approximation: " + Arrays.toString(underApproximation));
+      System.out.println("Over-approximation: " + Arrays.toString(overApproximation));
+
 
       /**
        * Check termination
@@ -1713,11 +1808,13 @@ public class STPGModelChecker extends ProbModelChecker
         } else {
           //in all states, for topological VI. Need the second thing as temp, since meaning of content switches from reach/stayVal to actual lower/upper bound
           for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
-            stepBoundReachNew[s] = stepBoundReach[s] + stepBoundStay[s] * lowerBound;
-            stepBoundStayNew[s] = stepBoundReach[s] + stepBoundStay[s] * upperBound;
+//            stepBoundReachNew[s] = stepBoundReach[s] + stepBoundStay[s] * lowerBound;
+//            stepBoundStayNew[s] = stepBoundReach[s] + stepBoundStay[s] * upperBound;
+            stepBoundReachNew[s] = stepBoundReach[s];
+            stepBoundStayNew[s] = stepBoundStay[s];
           }
-          stepBoundReach = stepBoundReachNew;
-          stepBoundStay = stepBoundStayNew;
+          stepBoundReach = stepBoundReachNew.clone();
+          stepBoundStay = stepBoundStayNew.clone();
         }
       } else{
         //System.out.println("Reach: " + Arrays.toString(stepBoundReach) + "\nStay: " + Arrays.toString(stepBoundStay) + "\nLB: " + lowerBound + "\nUB: " + upperBound);
@@ -1738,8 +1835,335 @@ public class STPGModelChecker extends ProbModelChecker
       //stepBoundStayNew[s] = stepBoundReach[s] + stepBoundStay[s] * upperBound;
     }
 
-    return new double[][]{stepBoundReachNew, stepBoundReach,stepBoundStay,{iters}};
+    return new double[][]{stepBoundReachNew, stepBoundReach,stepBoundStay,{iters},{lowerBound},{upperBound}};
   }
+
+
+
+
+
+
+  private double[][] iterateOnSVISubsetWithSCCbounds(STPGExplicit stpg, boolean min1, boolean min2, double[] stepBoundReach, double[] stepBoundReachNew, double[] stepBoundStay, double[] stepBoundStayNew,
+      int iters, SolnMethod variant, List<BitSet> mecs, explicit.ECComputerDefault ec, SCCInfo sccs,
+      BitSet subset, IntSet subsetAsIntSet, int initialState, BitSet yes) throws PrismException{
+    iters = 0;
+    boolean done = false;
+    double tmpsoln[];
+    BitSet mecStates = new BitSet();
+    for (BitSet mec: mecs){
+      mecStates.or(mec);
+    }
+
+    int sccCount = sccs.getNumSCCs();
+
+    // Helper variables needed for SVI
+    //TODO: probably we can maintain decision value for every SCCs to make it more efficient
+    double  decisionValueMin, decisionValueMax, lowerBound[], lowerBoundNew[], upperBound[], upperBoundNew[];
+    // Create solution vector(s)
+    lowerBound = new double[sccCount];
+    lowerBoundNew = new double[sccCount];
+    upperBound = new double[sccCount];
+    upperBoundNew = new double[sccCount];
+    double conservativeLB=0.0;
+    double conservativeUB=1.0;
+    for (int scc=0; scc < sccCount; scc++) {
+      lowerBound[scc] = lowerBoundNew[scc] = 0.0;
+      upperBound[scc] = upperBoundNew[scc] = 1.0;
+    }
+    decisionValueMax = 0;
+    decisionValueMin = 1;
+
+
+    while (!done & iters <10000) {
+      iters++;
+      System.out.println("ITERATION:" + iters);
+
+      //HashMap<Pair<Integer, Integer>, BitSet> BES = new HashMap<>();
+      HashMap<Integer, Integer> BES = new HashMap<>();
+      for (BitSet mec : mecs) {
+        if (subset.intersects(mec)) {
+          /**
+           * * this function computes the sequence in which the best exits should be played in order to exit all the MEC
+           * * **/
+          //HashMap<Pair<Integer, Integer>, BitSet> mecBES= ComputeBestExitSequence(stpg, min1, min2, stepBoundReach, stepBoundStay, mec, ec, lowerBound, upperBound);
+          //TODO: currently taking the most conservative lower and upperbound to Compute BES
+          for (int i=0; i<sccCount; i++){
+            conservativeLB=Math.min(conservativeLB,lowerBound[i]);
+            conservativeUB=Math.min(conservativeUB,upperBound[i]);
+          }
+          HashMap<Integer, Integer> mecBES =BestExitSequence(stpg, min1, min2, stepBoundReach, stepBoundStay, mec, ec, conservativeLB, conservativeUB);
+          BES.putAll(mecBES);
+          //System.out.println("BES: "+BES);
+        }
+      }
+
+//      double[] finalStepBoundStay = stepBoundStay;
+//      double finalLowerBound = lowerBound;
+//      double finalUpperBound = upperBound;
+//      double[] finalStepBoundReach = stepBoundReach;
+//      mecs.parallelStream().forEach(mec -> {
+//        // parallem BES computation
+//        if (subset.intersects(mec)) {
+//          /**
+//           * * this function computes the sequence in which the best exits should be played in order to exit all the MEC
+//           * * **/
+//          HashMap<Pair<Integer, Integer>, BitSet> mecBES= null;
+//          try {
+//            mecBES = ComputeBestExitSequence(stpg, min1, min2,
+//                finalStepBoundReach,
+//                finalStepBoundStay, mec, ec, finalLowerBound, finalUpperBound);
+//          } catch (PrismException e) {
+//            e.printStackTrace();
+//          }
+//          BES.putAll(mecBES);
+//          //System.out.println("BES: "+BES);
+//        }
+//      });
+
+      // this Bitset can be returned directly from BES function call
+      System.out.println("BES: "+BES);
+      BitSet besStates = new BitSet();
+      for(Integer s : BES.keySet())
+        besStates.set(s);
+//      for(Entry<Pair<Integer, Integer>, BitSet> entry: BES.entrySet()) {
+//        Pair<Integer, Integer> keyPair = entry.getKey();
+//
+//        // Get the first coordinate of the key pair
+//        int firstCoordinate = keyPair.getKey();
+//
+//        // Add the first coordinate to the list
+//        besStates.set(firstCoordinate);
+//      }
+
+      /**
+       * BELLMAN UPDATES
+       * (Very special for SVI, others just normal Bellmann. OVI however only does some things sometimes.)
+       */
+      // For SVI, we need the special find action
+      // Recall that lower bounds are stepBoundReach and upperBounds are stepBoundStay. So in fact, upperBounds are not upperBounds but sth completely different. We just use the name, because this code is for four different kinds of VI at once
+      boolean update = true;
+      for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+        int sccIndex = sccs.getSCCIndex(s);
+        double lowerBoundSCCIndex = lowerBound[sccIndex];
+        double upperBoundSCCIndex = upperBound[sccIndex];
+        // find if the player is min or max
+        boolean min = (stpg.getPlayer(s) == 1) ? min1 : min2;
+        int a;
+        a = findActionNew(stpg, s, mecStates, BES, stepBoundReach, stepBoundStay, min, lowerBoundSCCIndex, upperBoundSCCIndex);
+
+        double decisionValue = computeDecisionValue(stpg, stepBoundReach, stepBoundStay, s, a, min);
+        //System.out.println("decision value for the state: " + s + " is: " + decisionValue);
+        if (min)
+          decisionValueMin = Math.min(decisionValueMin, decisionValue);
+        else
+          decisionValueMax = Math.max(decisionValueMax, decisionValue);
+
+        // Matrix-vector multiply and min/max ops (Monotonic Bellman update); monotonic thing is needed, since deflating can make weird values occur
+
+        // keep old bounds as they are and update new bounds object
+//        stepBoundReachNew[s] = Math
+//            .max(stpg.mvMultSingle(s, a, stepBoundReach), stepBoundReachNew[s]);
+//        stepBoundStayNew[s] = Math.min(stpg.mvMultSingle(s, a, stepBoundStay), stepBoundStayNew[s]);
+//        lowerboundsNew[s] = Math
+//            .max(stepBoundReachNew[s] + stepBoundStayNew[s] * lowerBound, lowerbounds[s]);
+//        upperboundsNew[s] = Math
+//            .min(stepBoundReachNew[s] + stepBoundStayNew[s] * upperBound, upperbounds[s]);
+        double reachVal = 0.0;
+        double stayVal = 0.0;
+        for (int succ : stpg.getChoice(s, a).keySet()) {
+          //System.out.println("state: " + s + " action: " + i + " succ: " + succ);
+          //System.out.println("stpg.getChoice(s,i).get(succ): " + stpg.getChoice(s,i).get(succ) + "\nstepBoundReach[succ]: " + stepBoundReach[succ] + "\nstepBoundStay[succ]: "+ stepBoundStay[succ] +"\nupperbound: "+ upperbound);
+          // val += stpg.getChoice(s,i).get(succ)* (stepBoundReach[succ] + stepBoundStay[succ] * upperbound);
+          reachVal += stpg.getChoice(s,a).get(succ)* (stepBoundReach[succ]);
+          stayVal += stpg.getChoice(s,a).get(succ)* (stepBoundStay[succ]);
+        }
+        stepBoundReachNew[s] = reachVal;
+        stepBoundStayNew[s] = stayVal;
+
+        System.out.println("state:" + s);
+        if(!min){
+          System.out.println("is a Maximizer state");
+        }
+        else{
+          System.out.println("is a Minimizer state");
+        }
+        if(!besStates.get(s)){
+          System.out.println("and is NOT in BES");
+        }
+        else{
+          System.out.println("is in BES");
+        }
+        if(!mecStates.get(s)){
+          System.out.println("is NOT in MEC");
+        }
+        else{
+          System.out.println("is in MEC");
+        }
+        double ub1 =stepBoundReachNew[s] + stepBoundStayNew[s] * upperBound[sccs.getSCCIndex(s)];
+        double ub2 = stepBoundReach[s] + stepBoundStay[s] * upperBound[sccs.getSCCIndex(s)];
+        if((stepBoundReachNew[s] + stepBoundStayNew[s] * upperBound[sccs.getSCCIndex(s)] <= stepBoundReach[s]+stepBoundStay[s]*upperBound[sccs.getSCCIndex(s)])){
+          System.out.println("upperbound not worse- ub1: " + ub1 +", ub2:"+ ub2);
+        }
+        else{
+          System.out.println("upperbound worse- ub1: " + ub1 +", ub2:"+ ub2);
+        }
+
+        if(!besStates.get(s) & mecStates.get(s) & !min & ! (stepBoundReachNew[s] + stepBoundStayNew[s] * upperBound[sccs.getSCCIndex(s)] <= stepBoundReach[s]+stepBoundStay[s]*upperBound[sccs.getSCCIndex(s)])) {
+          stepBoundReachNew[s] = stepBoundReach[s];
+          stepBoundStayNew[s] = stepBoundStay[s];
+          update = false;
+          System.out.println("PLAYING DUMMY ACTION");
+        }
+//        if(!mecStates.get(s)|true)
+//          double oldVal= stepBoundReach[s]+stepBoundStay[s]*upperBound;
+//          double newVal= stepBoundReachNew[s] + stepBoundStayNew[s] * upperBound;
+//          System.out.println("STATE: " + s + ": OldVal:" + oldVal + ", NewVal: " + newVal );
+//          if(newVal > oldVal){
+//            System.out.println(mecStates.get(s)? "in MEC: ": "Outside MEC: "+"ERRRRRRRRRRRRRRRRRRRRRRRRRRRR:Not monotonic DEC");
+//
+//          }
+//        }
+//        if(!mecStates.get(s)|true){
+//          double oldVal= stepBoundReach[s]+stepBoundStay[s]*lowerBound;
+//          double newVal= stepBoundReachNew[s] + stepBoundStayNew[s] * lowerBound;
+//          //System.out.println("STATE: " + s + ": OldVal:" + oldVal + ", NewVal: " + newVal );
+//          if(newVal < oldVal){
+//            System.out.println(mecStates.get(s)? "in MEC: ": "Outside MEC: "+"ERRRRRRRRRRRRRRRRRRRRRRRRRRRR:Not monotonic INC");
+//
+//          }
+//        }
+
+
+        /**Update: If s is in MEC then reach and stay will remain the old one*/
+      }
+
+
+      for (int scc = 0; scc < sccCount; scc++) {
+        //update the global lower and upper bound of every SCC
+        boolean allSCCStatesStayValLessThan1 = true;
+        for (int s: sccs.getStatesForSCC(scc)) {
+          if (stepBoundStayNew[s] == 1) {
+            allSCCStatesStayValLessThan1 = false;
+            break;
+          }
+        }
+        if (allSCCStatesStayValLessThan1) {
+          //  if (allStatesStayValLessThan1 & update) {
+          //double lower_val=Double.POSITIVE_INFINITY; //would be for rewards
+          double lower_val = 1.0;
+          for (int s: sccs.getStatesForSCC(scc)) {
+            lower_val = Math.min(lower_val, stepBoundReachNew[s] / (1 - stepBoundStayNew[s]));
+          }
+          lower_val = Math.min(decisionValueMin, lower_val);
+          lowerBound[scc] = Math.max(lowerBoundNew[scc], lower_val);
+          lowerBoundNew[scc] = lowerBound[scc]; //remember this for next iteration
+
+          //lowerBound=0.0; //TODO:Delete this
+          System.out.println("lowerBound of SCC: " + scc + " " + lowerBound[scc]);
+          //double upper_val=Double.NEGATIVE_INFINITY;
+          double upper_val = 0.0;
+          for (int s: sccs.getStatesForSCC(scc)) {
+            upper_val = Math.max(upper_val, stepBoundReachNew[s] / (1 - stepBoundStayNew[s]));
+          }
+          //if(decisionValueMax > upper_val) System.out.println("Need of DECISION VALUE for UBin iteration " + iters + ". DecVal: "+decisionValueMax + ", approx_upper: "+ upper_val + ", oldupperBound: "+ upperBound2);
+          upper_val = Math.max(decisionValueMax, upper_val);
+          upperBound[scc] = Math.min(upperBoundNew[scc], upper_val);
+          upperBoundNew[scc] = upperBound[scc];
+
+          // upperBound=1.0; //TODO:Delete this
+          System.out.println("upperBound of SCC: " + upperBound[scc]);
+        }
+      }
+//      System.out.println("GLB: " + lowerBound);
+//      System.out.println("GUB: " + upperBound);
+//      System.out.println("decisionValLB: "+ decisionValueMin);
+//      System.out.println("decisionValUB: "+ decisionValueMax);
+
+
+      // Swap vectors for next iter
+      // Now lowerBounds is the most up-to-date approximation, while the lowerBoundsNew contains the previous iteration
+      tmpsoln = stepBoundReach;
+      stepBoundReach = stepBoundReachNew;
+      stepBoundReachNew = tmpsoln;
+      System.out.println("Reach: " + Arrays.toString(stepBoundReach));
+
+      tmpsoln = stepBoundStay;
+      stepBoundStay = stepBoundStayNew;
+      stepBoundStayNew = tmpsoln;
+      System.out.println("Stay: " + Arrays.toString(stepBoundStay));
+      double [] overApproximation = new double[stepBoundReach.length];
+      double [] underApproximation = new double[stepBoundReach.length];
+      for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+        underApproximation[s] = stepBoundReach[s] + stepBoundStay[s] * lowerBound[sccs.getSCCIndex(s)];
+        overApproximation[s] = stepBoundReach[s] + stepBoundStay[s] * upperBound[sccs.getSCCIndex(s)];
+      }
+
+      System.out.println("Under-approximation: " + Arrays.toString(underApproximation));
+      System.out.println("Over-approximation: " + Arrays.toString(overApproximation));
+
+
+      /**
+       * Check termination
+       */
+      double relevantStayVal = 0;
+      if (initialState != -1) {
+        relevantStayVal = stepBoundStay[initialState];
+      } else {
+        for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+          relevantStayVal = Math.max(relevantStayVal, stepBoundStay[s]);
+        }
+      }
+      /**termination criteria for the case of SCC bounds**/
+      double diffUBLB=1.0;
+      for (int scc=0; scc<sccCount; scc++){
+        diffUBLB = Math.max(diffUBLB, upperBound[scc]-lowerBound[scc]);
+      }
+      done = diffUBLB * relevantStayVal < this.termCritParam;
+      //done = relevantStayVal < 2 * this.termCritParam;
+      if (done) {
+//			print_smg(stpg,lowerBounds,upperBounds);
+        //When we are done, we have to insert the smarter values
+        if (initialState != -1) {
+          //Only in initial state
+          //System.out.println("ReachFin: " + Arrays.toString(stepBoundReach) + "\nStay: " + Arrays.toString(stepBoundStay) + "\nLB: " + lowerBound + "\nUB: " + upperBound);
+          double lb_i = stepBoundReach[initialState] + stepBoundStay[initialState] * lowerBound[sccs.getSCCIndex(initialState)];
+          double ub_i = stepBoundReach[initialState] + stepBoundStay[initialState] * upperBound[sccs.getSCCIndex(initialState)];
+        } else {
+          //in all states, for topological VI. Need the second thing as temp, since meaning of content switches from reach/stayVal to actual lower/upper bound
+          for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+//            stepBoundReachNew[s] = stepBoundReach[s] + stepBoundStay[s] * lowerBound;
+//            stepBoundStayNew[s] = stepBoundReach[s] + stepBoundStay[s] * upperBound;
+            stepBoundReachNew[s] = stepBoundReach[s];
+            stepBoundStayNew[s] = stepBoundStay[s];
+          }
+          stepBoundReach = stepBoundReachNew.clone();
+          stepBoundStay = stepBoundStayNew.clone();
+        }
+      } else{
+        //System.out.println("Reach: " + Arrays.toString(stepBoundReach) + "\nStay: " + Arrays.toString(stepBoundStay) + "\nLB: " + lowerBound + "\nUB: " + upperBound);
+        for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+          double lbprint = stepBoundReach[s] + stepBoundStay[s] * lowerBound[sccs.getSCCIndex(s)];
+          double ubprint =stepBoundReach[s] + stepBoundStay[s] * upperBound[sccs.getSCCIndex(s)];
+          ///System.out.println("bounds for state "+ s + " are: [" + lbprint +", "+ ubprint +"]");
+        }
+      }
+    }
+    if(initialState!=-1){
+      double lbprint = stepBoundReach[initialState] + stepBoundStay[initialState] * lowerBound[sccs.getSCCIndex(initialState)];
+      double ubprint =stepBoundReach[initialState] + stepBoundStay[initialState] * upperBound[sccs.getSCCIndex(initialState)];
+      mainLog.println("Resulting interval: ["+lbprint+","+ ubprint + "]");
+    }
+    for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+      stepBoundReachNew[s] = stepBoundReach[s] + stepBoundStay[s] * (lowerBound[sccs.getSCCIndex(s)]+upperBound[sccs.getSCCIndex(s)])/2;
+      //stepBoundStayNew[s] = stepBoundReach[s] + stepBoundStay[s] * upperBound;
+    }
+
+    return new double[][]{stepBoundReachNew, stepBoundReach,stepBoundStay,{iters},{lowerBound[sccs.getSCCIndex(initialState)]},{upperBound[sccs.getSCCIndex(initialState)]}};
+  }
+
+
+
+
 
 
 
@@ -2162,6 +2586,7 @@ public class STPGModelChecker extends ProbModelChecker
     }
     ec.computeMECStates(newSetwithoutBestExit);
     List<BitSet> inducedMECs = ec.getMECStates();
+
     //if (!inducedMECs.isEmpty()) {
       for (BitSet iMEC : inducedMECs) {
         HashMap exitSubsequence = BestExitSequence(stpg, min1, min2, stepBoundReach, stepBoundStay, iMEC, ec, lowerbound, upperbound);
@@ -2971,7 +3396,7 @@ public class STPGModelChecker extends ProbModelChecker
         for(int j : possible_successors){
           y_delta += (d_choice.get(j) - d_other.get(j)) * stepBoundStay[j];
         }
-        if (y_delta > 0) {
+        if ((y_delta > 0 & !min) | (y_delta < 0 & min)) {
           double x_delta = 0;
           //for (int j = 0; j < stpg.numStates; j++) {
           for(int j : possible_successors){

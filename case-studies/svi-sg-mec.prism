@@ -13,12 +13,12 @@ player P2 player2, [alpha2], [beta2] endplayer
 
 module player1
 	[alpha1] state=1 -> (state'=0);	
-	[beta1] state=1 -> 99/100 : (state'=1) + 5/1000 : (state'=2) + 5/1000 : (state'=3);
+	[beta1] state=1 -> 9/10 : (state'=1) + 5/100 : (state'=2) + 5/100 : (state'=3);
 	[] state=3 -> (state'=3);	
 endmodule
 
 module player2
-	[alpha2] state=0 -> 99/100 : (state'=0) + 1/100 : (state'=1);
+	[alpha2] state=0 -> 9/10 : (state'=0) + 1/10 : (state'=1);
 	[beta2] state=0 -> (state'= 3);
 	[] state=2 -> (state'=2);
 endmodule

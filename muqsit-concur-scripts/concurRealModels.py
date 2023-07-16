@@ -94,7 +94,7 @@ configurations["BVI"] = (prism_path, "-ii -maxiters 1")
 configurations["SVI"] = (prism_path, "-svi -maxiters 1")
 #configurations["G_SVI"] = (prism_path, "-svi -maxiters 1 -smg_opts 1")
 #configurations["T_SVI"] = (prism_path, "-svi -maxiters 1 -topological -smg_opts 2")
-#configurations["TOP_SVI"] = (prism_path, "-svi -maxiters 1 -topological")
+configurations["TOP_SVI"] = (prism_path, "-svi -maxiters 1 -topological")
 #configurations["D_SVI"] = (prism_path, "-svi -maxiters 100")
 #configurations["DG_SVI"] = (prism_path, "-svi -maxiters 100 -smg_opts 1")
 
@@ -122,7 +122,6 @@ configurations["SVI"] = (prism_path, "-svi -maxiters 1")
 #Models
 models=dict()
 
-'''
 models["cdmsn"]="../case-studies/cdmsn.prism ../case-studies/cdmsn.props"
 models["cloud5"]="../case-studies/cloud_5.prism ../case-studies/cloud.props"
 models["cloud6"]="../case-studies/cloud_6.prism ../case-studies/cloud.props"
@@ -173,7 +172,6 @@ models["prison_dil"]="../case-studies/prisoners_dilemma.prism ../case-studies/pr
 #models["hm_10"]="../case-studies/haddad-monmege-SG.pm ../case-studies/haddad-monmege.prctl -const N=30,p=0.5"
 #models["hm_30"]="../case-studies/haddad-monmege-SG.pm ../case-studies/haddad-monmege.prctl -const N=30,p=0.5"
 #models["hm_40"]="../case-studies/haddad-monmege-SG.pm ../case-studies/haddad-monmege.prctl -const N=30,p=0.5"
-'''
 
 # Random Models
 """

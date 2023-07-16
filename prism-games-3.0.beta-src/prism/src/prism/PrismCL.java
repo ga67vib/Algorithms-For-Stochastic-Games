@@ -1350,7 +1350,7 @@ public class PrismCL implements PrismModelListener
 				}
 				// override model type to mdp
 				else if (sw.equals("mdp")) {
-					typeOverride = ModelType.MDP;
+          typeOverride = ModelType.MDP;
 				}
 				// override model type to ctmc
 				else if (sw.equals("ctmc")) {
