@@ -1874,7 +1874,7 @@ public class STPGModelChecker extends ProbModelChecker
     decisionValueMin = 1;
 
 
-    while (!done & iters <10000) {
+    while (!done) {
       iters++;
       System.out.println("ITERATION:" + iters);
 
@@ -1897,43 +1897,12 @@ public class STPGModelChecker extends ProbModelChecker
         }
       }
 
-//      double[] finalStepBoundStay = stepBoundStay;
-//      double finalLowerBound = lowerBound;
-//      double finalUpperBound = upperBound;
-//      double[] finalStepBoundReach = stepBoundReach;
-//      mecs.parallelStream().forEach(mec -> {
-//        // parallem BES computation
-//        if (subset.intersects(mec)) {
-//          /**
-//           * * this function computes the sequence in which the best exits should be played in order to exit all the MEC
-//           * * **/
-//          HashMap<Pair<Integer, Integer>, BitSet> mecBES= null;
-//          try {
-//            mecBES = ComputeBestExitSequence(stpg, min1, min2,
-//                finalStepBoundReach,
-//                finalStepBoundStay, mec, ec, finalLowerBound, finalUpperBound);
-//          } catch (PrismException e) {
-//            e.printStackTrace();
-//          }
-//          BES.putAll(mecBES);
-//          //System.out.println("BES: "+BES);
-//        }
-//      });
 
       // this Bitset can be returned directly from BES function call
       System.out.println("BES: "+BES);
       BitSet besStates = new BitSet();
       for(Integer s : BES.keySet())
         besStates.set(s);
-//      for(Entry<Pair<Integer, Integer>, BitSet> entry: BES.entrySet()) {
-//        Pair<Integer, Integer> keyPair = entry.getKey();
-//
-//        // Get the first coordinate of the key pair
-//        int firstCoordinate = keyPair.getKey();
-//
-//        // Add the first coordinate to the list
-//        besStates.set(firstCoordinate);
-//      }
 
       /**
        * BELLMAN UPDATES
@@ -2014,29 +1983,9 @@ public class STPGModelChecker extends ProbModelChecker
           update = false;
           System.out.println("PLAYING DUMMY ACTION");
         }
-//        if(!mecStates.get(s)|true)
-//          double oldVal= stepBoundReach[s]+stepBoundStay[s]*upperBound;
-//          double newVal= stepBoundReachNew[s] + stepBoundStayNew[s] * upperBound;
-//          System.out.println("STATE: " + s + ": OldVal:" + oldVal + ", NewVal: " + newVal );
-//          if(newVal > oldVal){
-//            System.out.println(mecStates.get(s)? "in MEC: ": "Outside MEC: "+"ERRRRRRRRRRRRRRRRRRRRRRRRRRRR:Not monotonic DEC");
-//
-//          }
-//        }
-//        if(!mecStates.get(s)|true){
-//          double oldVal= stepBoundReach[s]+stepBoundStay[s]*lowerBound;
-//          double newVal= stepBoundReachNew[s] + stepBoundStayNew[s] * lowerBound;
-//          //System.out.println("STATE: " + s + ": OldVal:" + oldVal + ", NewVal: " + newVal );
-//          if(newVal < oldVal){
-//            System.out.println(mecStates.get(s)? "in MEC: ": "Outside MEC: "+"ERRRRRRRRRRRRRRRRRRRRRRRRRRRR:Not monotonic INC");
-//
-//          }
-//        }
 
-
-        /**Update: If s is in MEC then reach and stay will remain the old one*/
+        /**Update, only if s is in MEC then reach and stay will remain the old one*/
       }
-
 
       for (int scc = 0; scc < sccCount; scc++) {
         //update the global lower and upper bound of every SCC
@@ -2047,7 +1996,7 @@ public class STPGModelChecker extends ProbModelChecker
             break;
           }
         }
-        if (allSCCStatesStayValLessThan1) {
+        if (allSCCStatesStayValLessThan1 & false) {
           //  if (allStatesStayValLessThan1 & update) {
           //double lower_val=Double.POSITIVE_INFINITY; //would be for rewards
           double lower_val = 1.0;
@@ -2080,7 +2029,7 @@ public class STPGModelChecker extends ProbModelChecker
 //      System.out.println("decisionValUB: "+ decisionValueMax);
 
 
-      // Swap vectors for next iter
+      /** **Swap** vectors for next iter, not assigning is not enough in Java**/
       // Now lowerBounds is the most up-to-date approximation, while the lowerBoundsNew contains the previous iteration
       tmpsoln = stepBoundReach;
       stepBoundReach = stepBoundReachNew;
