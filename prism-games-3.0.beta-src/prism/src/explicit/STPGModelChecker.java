@@ -1561,7 +1561,7 @@ public class STPGModelChecker extends ProbModelChecker
     decisionValueMax = 0;
     decisionValueMin = 1;
 
-    while (!done & iters <10000) {
+    while (!done) {
       iters++;
       System.out.println("ITERATION:" + iters);
 
@@ -1629,14 +1629,14 @@ public class STPGModelChecker extends ProbModelChecker
         boolean min = (stpg.getPlayer(s) == 1) ? min1 : min2;
         int a;
         a = findActionNew(stpg, s, mecStates, BES, stepBoundReach, stepBoundStay, min, lowerBound, upperBound);
-
         double decisionValue = computeDecisionValue(stpg, stepBoundReach, stepBoundStay, s, a, min);
         //System.out.println("decision value for the state: " + s + " is: " + decisionValue);
         if (min)
           decisionValueMin = Math.min(decisionValueMin, decisionValue);
-        else
+        else {
           decisionValueMax = Math.max(decisionValueMax, decisionValue);
-
+          decisionValueMax = decisionValue;
+        }
         // Matrix-vector multiply and min/max ops (Monotonic Bellman update); monotonic thing is needed, since deflating can make weird values occur
 
         // keep old bounds as they are and update new bounds object
@@ -1727,7 +1727,7 @@ public class STPGModelChecker extends ProbModelChecker
 
       // Do smart SVI stuff: Compute upper and lower bound. This is used for checking termination.
       // When we terminate, the vectors lowerBounds and upperBounds are updated to contain the smarter values, i.e. best lower and upper bound SVI can give us right now
-      if (allStatesStayValLessThan1 & false) {
+      if (allStatesStayValLessThan1) {
       //  if (allStatesStayValLessThan1 & update) {
         //double lower_val=Double.POSITIVE_INFINITY; //would be for rewards
         double lower_val = 1.0;
@@ -1837,7 +1837,6 @@ public class STPGModelChecker extends ProbModelChecker
 
     return new double[][]{stepBoundReachNew, stepBoundReach,stepBoundStay,{iters},{lowerBound},{upperBound}};
   }
-
 
 
 
@@ -2544,9 +2543,6 @@ public class STPGModelChecker extends ProbModelChecker
     //}
     return bestExitSequence;
   }
-
-
-
 
   /**
    * SVI best exit sequence operation.
@@ -3345,7 +3341,8 @@ public class STPGModelChecker extends ProbModelChecker
         for(int j : possible_successors){
           y_delta += (d_choice.get(j) - d_other.get(j)) * stepBoundStay[j];
         }
-        if ((y_delta > 0 & !min) | (y_delta < 0 & min)) {
+        if (y_delta > 0) {
+        // if ((y_delta > 0 & !min) | (y_delta < 0 & min)) { // this is not correct, y_delta>0 is the only condition to be checked in both the directions.
           double x_delta = 0;
           //for (int j = 0; j < stpg.numStates; j++) {
           for(int j : possible_successors){
