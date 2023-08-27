@@ -558,29 +558,35 @@ public class MDPModelChecker extends ProbModelChecker
 
 		IterationMethod iterationMethod = null;
 		switch (method) {
-		case VALUE_ITERATION:
-			iterationMethod = new IterationMethodPower(termCrit == TermCrit.ABSOLUTE, termCritParam);
+		  case VALUE_ITERATION:
+			  iterationMethod = new IterationMethodPower(termCrit == TermCrit.ABSOLUTE, termCritParam);
+			  break;
+			case SOUND_VALUE_ITERATION:
+        if (doIntervalIteration) {
+          throw new PrismNotSupportedException("Interval iteration is not needed for sound value iteration");
+        }
+        res = doSoundValueIterationReachProbs(mdp, no, yes, min, init, known, iterationMethod, getDoTopologicalValueIteration(), strat);
+        break;
+      case GAUSS_SEIDEL:
+			  iterationMethod = new IterationMethodGS(termCrit == TermCrit.ABSOLUTE, termCritParam, false);
 			break;
-		case GAUSS_SEIDEL:
-			iterationMethod = new IterationMethodGS(termCrit == TermCrit.ABSOLUTE, termCritParam, false);
-			break;
-		case POLICY_ITERATION:
-			if (doIntervalIteration) {
-				throw new PrismNotSupportedException("Interval iteration currently not supported for policy iteration");
-			}
-			res = computeReachProbsPolIter(mdp, no, yes, min, strat);
-			break;
-		case LINEAR_PROGRAMMING:
-			res = computeReachProbsLinearProgrammingGurobi(mdp, no, yes, min, strat, null);
-			break;
-		case MODIFIED_POLICY_ITERATION:
-			if (doIntervalIteration) {
-				throw new PrismNotSupportedException("Interval iteration currently not supported for policy iteration");
-			}
-			res = computeReachProbsModPolIter(mdp, no, yes, min, strat);
-			break;
-		default:
-			throw new PrismException("Unknown MDP solution method " + mdpSolnMethod.fullName());
+		  case POLICY_ITERATION:
+			  if (doIntervalIteration) {
+				  throw new PrismNotSupportedException("Interval iteration currently not supported for policy iteration");
+			  }
+			  res = computeReachProbsPolIter(mdp, no, yes, min, strat);
+			  break;
+		  case LINEAR_PROGRAMMING:
+			  res = computeReachProbsLinearProgrammingGurobi(mdp, no, yes, min, strat, null);
+			  break;
+		  case MODIFIED_POLICY_ITERATION:
+			  if (doIntervalIteration) {
+				  throw new PrismNotSupportedException("Interval iteration currently not supported for policy iteration");
+			  }
+			  res = computeReachProbsModPolIter(mdp, no, yes, min, strat);
+			  break;
+		  default:
+			  throw new PrismException("Unknown MDP solution method " + mdpSolnMethod.fullName());
 		}
 
 		if (res == null) { // not yet computed, use iterationMethod
@@ -815,6 +821,27 @@ public class MDPModelChecker extends ProbModelChecker
 		return doValueIterationReachProbs(mdp, no, yes, min, init, known, iterationMethod, false, strat);
 	}
 
+
+  /**
+   * Compute reachability probabilities using value iteration.
+   * Optionally, store optimal (memoryless) strategy info.
+   * @param mdp The MDP
+   * @param no Probability 0 states
+   * @param yes Probability 1 states
+   * @param min Min or max probabilities (true=min, false=max)
+   * @param init Optionally, an initial solution vector (will be overwritten)
+   * @param known Optionally, a set of states for which the exact answer is known
+   * @param strat Storage for (memoryless) strategy choice indices (ignored if null)
+   * Note: if 'known' is specified (i.e. is non-null, 'init' must also be given and is used for the exact values.
+   */
+  protected ModelCheckerResult computeReachProbsSoundValIter(MDP mdp, BitSet no, BitSet yes, boolean min, double init[], BitSet known, int strat[])
+      throws PrismException
+  {
+    IterationMethodPower iterationMethod = new IterationMethodPower(termCrit == TermCrit.ABSOLUTE, termCritParam);
+    return doSoundValueIterationReachProbs(mdp, no, yes, min, init, known, iterationMethod, false, strat);
+  }
+
+
 	/**
 	 * Compute reachability probabilities using value iteration.
 	 * Optionally, store optimal (memoryless) strategy info.
@@ -1012,6 +1039,117 @@ public class MDPModelChecker extends ProbModelChecker
 			return iterationMethod.doIntervalIteration(this, description, below, above, unknownStates, timer, iterationsExport);
 		}
 	}
+
+
+  /**
+   * Compute reachability probabilities using interval iteration.
+   * Optionally, store optimal (memoryless) strategy info.
+   * @param mdp The MDP
+   * @param no Probability 0 states
+   * @param yes Probability 1 states
+   * @param min Min or max probabilities (true=min, false=max)
+   * @param init Optionally, an initial solution vector (will be overwritten)
+   * @param known Optionally, a set of states for which the exact answer is known
+   * @param iterationMethod The iteration method
+   * @param topological Do topological value iteration?
+   * @param strat Storage for (memoryless) strategy choice indices (ignored if null)
+   * Note: if 'known' is specified (i.e. is non-null, 'init' must also be given and is used for the exact values.
+   */
+  protected ModelCheckerResult doSoundValueIterationReachProbs(MDP mdp, BitSet no, BitSet yes, boolean min, double init[], BitSet known, IterationMethod iterationMethod, boolean topological, int strat[])
+      throws PrismException
+  {
+    BitSet unknown;
+    int i, n;
+    double initBelow[], initAbove[];
+    long timer;
+
+    // Start value iteration
+    timer = System.currentTimeMillis();
+    String description = (min ? "min" : "max")
+        + (topological ? ", topological": "" )
+        + ", with " + iterationMethod.getDescriptionShort();
+
+    //mainLog.println("Starting interval iteration (" + description + ")...");
+
+    ExportIterations iterationsExport = null;
+    if (settings.getBoolean(PrismSettings.PRISM_EXPORT_ITERATIONS)) {
+      iterationsExport = new ExportIterations("Explicit MDP ReachProbs interval iteration (" + description + ")");
+      mainLog.println("Exporting iterations to " + iterationsExport.getFileName());
+    }
+
+    // Store num states
+    n = mdp.getNumStates();
+
+    // Create solution vector(s)
+    initBelow = (init == null) ? new double[n] : init;
+    initAbove = new double[n];
+
+    // Initialise solution vectors. Use (where available) the following in order of preference:
+    // (1) exact answer, if already known; (2) 1.0/0.0 if in yes/no; (3) initVal
+    // where initVal is 0.0 or 1.0, depending on whether we converge from below/above.
+    if (known != null && init != null) {
+      for (i = 0; i < n; i++) {
+        initBelow[i] = known.get(i) ? init[i] : yes.get(i) ? 1.0 : no.get(i) ? 0.0 : 0.0;
+        initAbove[i] = known.get(i) ? init[i] : yes.get(i) ? 1.0 : no.get(i) ? 0.0 : 1.0;
+      }
+    } else {
+      for (i = 0; i < n; i++) {
+        initBelow[i] = yes.get(i) ? 1.0 : no.get(i) ? 0.0 :  0.0;
+        initAbove[i] = yes.get(i) ? 1.0 : no.get(i) ? 0.0 :  1.0;
+      }
+    }
+
+    // Determine set of states actually need to compute values for
+    unknown = new BitSet();
+    unknown.set(0, n);
+    unknown.andNot(yes);
+    unknown.andNot(no);
+    if (known != null)
+      unknown.andNot(known);
+
+    if (iterationsExport != null) {
+      iterationsExport.exportVector(initBelow, 0);
+      iterationsExport.exportVector(initAbove, 1);
+    }
+
+    OptionsIntervalIteration iiOptions = OptionsIntervalIteration.from(this);
+
+    final boolean enforceMonotonicFromBelow = iiOptions.isEnforceMonotonicityFromBelow();
+    final boolean enforceMonotonicFromAbove = iiOptions.isEnforceMonotonicityFromAbove();
+    final boolean checkMonotonic = iiOptions.isCheckMonotonicity();
+
+    if (!enforceMonotonicFromAbove) {
+      getLog().println("Note: Interval iteration is configured to not enforce monotonicity from above.");
+    }
+    if (!enforceMonotonicFromBelow) {
+      getLog().println("Note: Interval iteration is configured to not enforce monotonicity from below.");
+    }
+
+    IterationMethod.IterationIntervalIter below = iterationMethod.forMvMultMinMaxInterval(mdp, min, strat, true, enforceMonotonicFromBelow, checkMonotonic);
+    IterationMethod.IterationIntervalIter above = iterationMethod.forMvMultMinMaxInterval(mdp, min, strat, false, enforceMonotonicFromAbove, checkMonotonic);
+    below.init(initBelow);
+    above.init(initAbove);
+
+    IntSet unknownStates = IntSet.asIntSet(unknown);
+
+    if (topological) {
+
+      throw new PrismNotSupportedException("Todo development exception: Currently topological is not supported for Sound value iteration");
+//      // Compute SCCInfo, including trivial SCCs in the subgraph obtained when only considering
+//      // states in unknown
+//      SCCInfo sccs = SCCComputer.computeTopologicalOrdering(this, mdp, true, unknown::get);
+//
+//      IterationMethod.SingletonSCCSolver singletonSCCSolver = (int s, double[] soln) -> {
+//        soln[s] = mdp.mvMultJacMinMaxSingle(s, soln, min, strat);
+//      };
+//
+//      // run the actual value iteration
+//      return iterationMethod.Sound(this, description, sccs, below, above, singletonSCCSolver, timer, iterationsExport);
+    } else {
+      // run the actual value iteration
+      return iterationMethod.doSoundValueIteration(this, description, below, above, unknownStates, timer, iterationsExport);
+    }
+  }
 
 	/**
 	 * Compute reachability probabilities using Gauss-Seidel (including Jacobi-style updates).

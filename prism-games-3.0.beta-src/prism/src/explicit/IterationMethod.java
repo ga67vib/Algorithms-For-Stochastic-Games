@@ -647,7 +647,100 @@ public abstract class IterationMethod {
 		}
 	}
 
-	/**
+  /**
+   * Perform the actual work of an sound value iteration, i.e., iterate until convergence or abort.
+   *
+   * @param mc ProbModelChecker (for log and settings)
+   * @param description Description (for logging)
+   * @param below The iteration object for the iteration from below
+   * @param above The iteration object for the iteration from above
+   * @param unknownStates The set of unknown states, i.e., whose value should be determined
+   * @param startTime The start time (for logging purposes, obtained from a call to System.currentTimeMillis())
+   * @param iterationsExport an ExportIterations object (optional, ignored if null)
+   * @return a ModelChecker result with the solution vector and statistics
+   * @throws PrismException on non-convergence (if mc.errorOnNonConverge is set)
+   */
+  public ModelCheckerResult doSoundValueIteration(ProbModelChecker mc, String description, IterationIntervalIter below, IterationIntervalIter above, IntSet unknownStates, long timer, ExportIterations iterationsExport) throws PrismException {
+    try {
+      // Start iterations
+      int iters = 0;
+      final int maxIters = mc.maxIters;
+      boolean done = false;
+
+      PeriodicTimer updatesTimer = new PeriodicTimer(ProbModelChecker.UPDATE_DELAY);
+      updatesTimer.start();
+
+      while (!done && iters < maxIters) {
+        iters++;
+        // Matrix-vector multiply
+        below.iterate(unknownStates);
+        above.iterate(unknownStates);
+
+        if (iterationsExport != null) {
+          iterationsExport.exportVector(below.getSolnVector(), 0);
+          iterationsExport.exportVector(above.getSolnVector(), 1);
+        }
+
+        intervalIterationCheckForProblems(below.getSolnVector(), above.getSolnVector(), unknownStates.iterator());
+
+        // Check termination
+        done = PrismUtils.doublesAreClose(below.getSolnVector(), above.getSolnVector(), termCritParam, absolute);
+
+        if (done) {
+          double diff = PrismUtils.measureSupNormInterval(below.getSolnVector(), above.getSolnVector(), absolute);
+//					mc.getLog().println("Max " + (!absolute ? "relative ": "") +
+//							"diff between upper and lower bound on convergence: " + PrismUtils.formatDouble(diff));
+          done = true;
+        }
+
+        if (!done && updatesTimer.triggered()) {
+          double diff = PrismUtils.measureSupNormInterval(below.getSolnVector(), above.getSolnVector(), absolute);
+//					mc.getLog().print("Iteration " + iters + ": ");
+//					mc.getLog().print("max " + (absolute ? "" : "relative ") + "diff=" + PrismUtils.formatDouble(diff));
+//					mc.getLog().println(", " + PrismUtils.formatDouble2dp(updatesTimer.elapsedMillisTotal() / 1000.0) + " sec so far");
+        }
+      }
+
+      // Finished value iteration
+      long mvCount = 2 * iters * countTransitions(below.getModel(), unknownStates);
+      timer = System.currentTimeMillis() - timer;
+//			mc.getLog().print("Interval iteration (" + description + ")");
+//			mc.getLog().print(" took " + iters + " iterations, ");
+//			mc.getLog().print(mvCount + " multiplications");
+//			mc.getLog().println(" and " + timer / 1000.0 + " seconds.");
+
+      if (done && OptionsIntervalIteration.from(mc.getSettings()).isSelectMidpointForResult()) {
+        PrismUtils.selectMidpoint(below.getSolnVector(), above.getSolnVector());
+
+        if (iterationsExport != null) {
+          // export midpoint
+          iterationsExport.exportVector(below.getSolnVector(), 0);
+          iterationsExport.exportVector(below.getSolnVector(), 1);
+        }
+      }
+
+      // Non-convergence is an error (usually)
+      if (!done && mc.errorOnNonConverge) {
+        String msg = "Iterative method (interval iteration) did not converge within " + iters + " iterations.";
+        msg += "\nConsider using a different numerical method or increasing the maximum number of iterations";
+        throw new PrismException(msg);
+      }
+
+      // Return results
+      ModelCheckerResult res = new ModelCheckerResult();
+      res.soln = below.getSolnVector();
+      res.numIters = iters;
+      res.timeTaken = timer / 1000.0;
+      return res;
+    } finally {
+      if (iterationsExport != null)
+        iterationsExport.close();
+    }
+  }
+
+
+
+  /**
 	 * Perform the actual work of a topological interval iteration, i.e., iterate until convergence or abort.
 	 *
 	 * @param mc ProbModelChecker (for log and settings)

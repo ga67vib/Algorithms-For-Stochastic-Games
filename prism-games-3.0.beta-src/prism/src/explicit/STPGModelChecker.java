@@ -1633,10 +1633,10 @@ public class STPGModelChecker extends ProbModelChecker
         //System.out.println("decision value for the state: " + s + " is: " + decisionValue);
         if (min)
           decisionValueMin = Math.min(decisionValueMin, decisionValue);
-        else {
+        else
           decisionValueMax = Math.max(decisionValueMax, decisionValue);
-          decisionValueMax = decisionValue;
-        }
+          //decisionValueMax = decisionValue;
+
         // Matrix-vector multiply and min/max ops (Monotonic Bellman update); monotonic thing is needed, since deflating can make weird values occur
 
         // keep old bounds as they are and update new bounds object
@@ -1837,6 +1837,7 @@ public class STPGModelChecker extends ProbModelChecker
 
     return new double[][]{stepBoundReachNew, stepBoundReach,stepBoundStay,{iters},{lowerBound},{upperBound}};
   }
+
 
 
 

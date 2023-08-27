@@ -143,22 +143,24 @@ public class ProbModelChecker extends NonProbModelChecker
 
 	// Method used for solving MDPs
 	public enum MDPSolnMethod {
-		VALUE_ITERATION, GAUSS_SEIDEL, POLICY_ITERATION, MODIFIED_POLICY_ITERATION, LINEAR_PROGRAMMING;
+		VALUE_ITERATION, SOUND_VALUE_ITERATION, GAUSS_SEIDEL, POLICY_ITERATION, MODIFIED_POLICY_ITERATION, LINEAR_PROGRAMMING;
 		public String fullName()
 		{
 			switch (this) {
-			case VALUE_ITERATION:
-				return "Value iteration";
-			case GAUSS_SEIDEL:
-				return "Gauss-Seidel";
-			case POLICY_ITERATION:
-				return "Policy iteration";
-			case MODIFIED_POLICY_ITERATION:
-				return "Modified policy iteration";
-			case LINEAR_PROGRAMMING:
-				return "Linear programming";
-			default:
-				return this.toString();
+			  case VALUE_ITERATION:
+				  return "Value iteration";
+				case  SOUND_VALUE_ITERATION:
+				  return "Sound value iteration";
+			  case GAUSS_SEIDEL:
+				  return "Gauss-Seidel";
+				case POLICY_ITERATION:
+				  return "Policy iteration";
+			  case MODIFIED_POLICY_ITERATION:
+				  return "Modified policy iteration";
+			  case LINEAR_PROGRAMMING:
+				  return "Linear programming";
+			  default:
+				  return this.toString();
 			}
 		}
 	};
@@ -212,7 +214,9 @@ public class ProbModelChecker extends NonProbModelChecker
 			s = settings.getString(PrismSettings.PRISM_MDP_SOLN_METHOD);
 			if (s.equals("Value iteration")) {
 				setMDPSolnMethod(MDPSolnMethod.VALUE_ITERATION);
-			} else if (s.equals("Gauss-Seidel")) {
+			} else if (s.equals("Sound value iteration")) {
+        setMDPSolnMethod(MDPSolnMethod.SOUND_VALUE_ITERATION);
+      } else if (s.equals("Gauss-Seidel")) {
 				setMDPSolnMethod(MDPSolnMethod.GAUSS_SEIDEL);
 			} else if (s.equals("Policy iteration")) {
 				setMDPSolnMethod(MDPSolnMethod.POLICY_ITERATION);
@@ -236,7 +240,7 @@ public class ProbModelChecker extends NonProbModelChecker
 			} else if (s.equals("Gauss-Seidel")) {
 				setSolnMethod(SolnMethod.GAUSS_SEIDEL);
 			} else if (s.equals("Sound value iteration")) {
-        		setSolnMethod(SolnMethod.SOUND_VALUE_ITERATION);
+			  setSolnMethod(SolnMethod.SOUND_VALUE_ITERATION);
 			} else if (s.equals("Optimistic value iteration")) {
 				setSolnMethod(SolnMethod.OPTIMISTIC_VALUE_ITERATION);
 			} else if (s.equals("Analyse")) {
