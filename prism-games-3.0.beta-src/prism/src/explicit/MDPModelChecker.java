@@ -565,7 +565,7 @@ public class MDPModelChecker extends ProbModelChecker
         if (doIntervalIteration) {
           throw new PrismNotSupportedException("Interval iteration is not needed for sound value iteration");
         }
-        res = doSoundValueIterationReachProbs(mdp, no, yes, min, init, known, iterationMethod, getDoTopologicalValueIteration(), strat);
+        res = doSoundValueIterationReachProbs((MDPSimple) mdp, no, yes, min, init, known, iterationMethod, getDoTopologicalValueIteration(), strat);
         break;
       case GAUSS_SEIDEL:
 			  iterationMethod = new IterationMethodGS(termCrit == TermCrit.ABSOLUTE, termCritParam, false);
@@ -834,7 +834,7 @@ public class MDPModelChecker extends ProbModelChecker
    * @param strat Storage for (memoryless) strategy choice indices (ignored if null)
    * Note: if 'known' is specified (i.e. is non-null, 'init' must also be given and is used for the exact values.
    */
-  protected ModelCheckerResult computeReachProbsSoundValIter(MDP mdp, BitSet no, BitSet yes, boolean min, double init[], BitSet known, int strat[])
+  protected ModelCheckerResult computeReachProbsSoundValIter(MDPSimple mdp, BitSet no, BitSet yes, boolean min, double init[], BitSet known, int strat[])
       throws PrismException
   {
     IterationMethodPower iterationMethod = new IterationMethodPower(termCrit == TermCrit.ABSOLUTE, termCritParam);
@@ -1055,100 +1055,99 @@ public class MDPModelChecker extends ProbModelChecker
    * @param strat Storage for (memoryless) strategy choice indices (ignored if null)
    * Note: if 'known' is specified (i.e. is non-null, 'init' must also be given and is used for the exact values.
    */
-  protected ModelCheckerResult doSoundValueIterationReachProbs(MDP mdp, BitSet no, BitSet yes, boolean min, double init[], BitSet known, IterationMethod iterationMethod, boolean topological, int strat[])
+  protected ModelCheckerResult doSoundValueIterationReachProbs(MDPSimple mdp, BitSet no, BitSet yes, boolean min, double init[], BitSet known, IterationMethod iterationMethod, boolean topological, int strat[])
       throws PrismException
   {
+    mainLog.println("Doing sound value iteration variant " + iterationMethod + " with solnMethodOptions=" + this.solnMethodOptions + ", maxIters=" + this.maxIters + ", epsilon=" + this.termCritParam + " and topological=" + this.getDoTopologicalValueIteration());
+
+    ModelCheckerResult res = null;
     BitSet unknown;
-    int i, n;
-    double initBelow[], initAbove[];
+    int s, n, iters;
+    iters=0;
+    // Note: For SVI, we keep all stepbound- reach and stay, lowerbounds and upperbounds
+    double stepBoundReach[], stepBoundReach2[], stepBoundStay[], stepBoundStay2[];
     long timer;
 
     // Start value iteration
     timer = System.currentTimeMillis();
-    String description = (min ? "min" : "max")
-        + (topological ? ", topological": "" )
-        + ", with " + iterationMethod.getDescriptionShort();
-
-    //mainLog.println("Starting interval iteration (" + description + ")...");
-
-    ExportIterations iterationsExport = null;
-    if (settings.getBoolean(PrismSettings.PRISM_EXPORT_ITERATIONS)) {
-      iterationsExport = new ExportIterations("Explicit MDP ReachProbs interval iteration (" + description + ")");
-      mainLog.println("Exporting iterations to " + iterationsExport.getFileName());
-    }
+    if (verbosity >= 1)
+      mainLog.println("Starting Sound value iteration (" + (min ? "min Property" : "max property)"));
 
     // Store num states
     n = mdp.getNumStates();
-
-    // Create solution vector(s)
-    initBelow = (init == null) ? new double[n] : init;
-    initAbove = new double[n];
-
-    // Initialise solution vectors. Use (where available) the following in order of preference:
-    // (1) exact answer, if already known; (2) 1.0/0.0 if in yes/no; (3) initVal
-    // where initVal is 0.0 or 1.0, depending on whether we converge from below/above.
-    if (known != null && init != null) {
-      for (i = 0; i < n; i++) {
-        initBelow[i] = known.get(i) ? init[i] : yes.get(i) ? 1.0 : no.get(i) ? 0.0 : 0.0;
-        initAbove[i] = known.get(i) ? init[i] : yes.get(i) ? 1.0 : no.get(i) ? 0.0 : 1.0;
-      }
-    } else {
-      for (i = 0; i < n; i++) {
-        initBelow[i] = yes.get(i) ? 1.0 : no.get(i) ? 0.0 :  0.0;
-        initAbove[i] = yes.get(i) ? 1.0 : no.get(i) ? 0.0 :  1.0;
-      }
-    }
 
     // Determine set of states actually need to compute values for
     unknown = new BitSet();
     unknown.set(0, n);
     unknown.andNot(yes);
     unknown.andNot(no);
-    if (known != null)
-      unknown.andNot(known);
 
-    if (iterationsExport != null) {
-      iterationsExport.exportVector(initBelow, 0);
-      iterationsExport.exportVector(initAbove, 1);
+    // Create solution vector(s)
+    stepBoundReach = new double[n];
+    stepBoundReach2 = new double[n];
+    stepBoundStay = new double[n];
+    stepBoundStay2 = new double[n];
+    for (s = 0; s < n; s++) {
+      stepBoundReach[s] = stepBoundReach2[s] = yes.get(s) ? 1.0 : 0.0;
+    }
+    for (s = 0; s < n; s++) {
+      stepBoundStay[s] = stepBoundStay2[s] = unknown.get(s) ? 1.0 : 0.0;
+    }
+    // For guaranteed VI, we need MECs and an EC computer to find SECs
+    List<BitSet> mecs = null;
+    explicit.ECComputerDefault ec =null;
+    //if (solnMethodOptions != SOLN_METHOD_OPTION_DEFLATE_WITH_WP){
+    mainLog.println("Getting MECs...");
+    //compute MECs one time, use the decomposition in every iteration
+    ec = (ECComputerDefault) ECComputer.createECComputer(this, mdp);
+    //need a copy of unknown, since EC computation empties the set as a side effect
+    BitSet unknownForEC = new BitSet();
+    unknownForEC.or(unknown);
+    ec.computeMECStates(unknownForEC);
+    mecs = ec.getMECStates();
+    mainLog.println("Number of MECs SVI: " + mecs.size());
+    //}
+
+
+    SCCInfo sccs = null;
+    if (getDoTopologicalValueIteration()){
+      mainLog.println("Getting topologically ordered SCCs...");
+      sccs = SCCComputer.computeTopologicalOrdering(this, mdp, true, unknown::get);
+      mainLog.println("Done; got " + sccs.getNumSCCs() + " SCCs.");
     }
 
-    OptionsIntervalIteration iiOptions = OptionsIntervalIteration.from(this);
 
-    final boolean enforceMonotonicFromBelow = iiOptions.isEnforceMonotonicityFromBelow();
-    final boolean enforceMonotonicFromAbove = iiOptions.isEnforceMonotonicityFromAbove();
-    final boolean checkMonotonic = iiOptions.isCheckMonotonicity();
+    // Need initstate to determine whether done in bounded case
+    int initialState = mdp.getFirstInitialState();
 
-    if (!enforceMonotonicFromAbove) {
-      getLog().println("Note: Interval iteration is configured to not enforce monotonicity from above.");
-    }
-    if (!enforceMonotonicFromBelow) {
-      getLog().println("Note: Interval iteration is configured to not enforce monotonicity from below.");
-    }
-
-    IterationMethod.IterationIntervalIter below = iterationMethod.forMvMultMinMaxInterval(mdp, min, strat, true, enforceMonotonicFromBelow, checkMonotonic);
-    IterationMethod.IterationIntervalIter above = iterationMethod.forMvMultMinMaxInterval(mdp, min, strat, false, enforceMonotonicFromAbove, checkMonotonic);
-    below.init(initBelow);
-    above.init(initAbove);
-
-    IntSet unknownStates = IntSet.asIntSet(unknown);
-
-    if (topological) {
-
+    // Start iterations
+    if (getDoTopologicalValueIteration() & solnMethodOptions%2==1) {
       throw new PrismNotSupportedException("Todo development exception: Currently topological is not supported for Sound value iteration");
-//      // Compute SCCInfo, including trivial SCCs in the subgraph obtained when only considering
-//      // states in unknown
-//      SCCInfo sccs = SCCComputer.computeTopologicalOrdering(this, mdp, true, unknown::get);
-//
-//      IterationMethod.SingletonSCCSolver singletonSCCSolver = (int s, double[] soln) -> {
-//        soln[s] = mdp.mvMultJacMinMaxSingle(s, soln, min, strat);
-//      };
-//
-//      // run the actual value iteration
-//      return iterationMethod.Sound(this, description, sccs, below, above, singletonSCCSolver, timer, iterationsExport);
-    } else {
-      // run the actual value iteration
-      return iterationMethod.doSoundValueIteration(this, description, below, above, unknownStates, timer, iterationsExport);
     }
+
+    else {
+      if (getDoTopologicalValueIteration()) {
+        throw new PrismNotSupportedException("Todo development exception: Currently topological is not supported for Sound value iteration");
+      } else {
+        double [][] subres = iterationMethod.doSoundValueIteration(mdp, min, stepBoundReach, stepBoundReach2, stepBoundStay,
+            stepBoundStay2, iters, mecs, ec, unknown, null, initialState, yes);
+        iters = (int) subres[3][0];
+        stepBoundReach = subres[0];
+        stepBoundStay = subres[2];
+      }
+    }
+    // Finished value iteration
+    timer = System.currentTimeMillis() - timer;
+    if (verbosity >= 1) {
+      mainLog.println("Starting Sound value iteration (" + (min ? "min Property" : "max property"));
+      mainLog.println(" took " + iters + " iterations and " + timer / 1000.0 + " seconds.");
+    }
+
+    res = new ModelCheckerResult();
+    res.soln = stepBoundReach;
+    res.numIters = iters;
+    res.timeTaken = timer / 1000.0;
+    return res;
   }
 
 	/**

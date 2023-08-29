@@ -282,7 +282,7 @@ public class PrismSettings implements Observer
 																				"Use interval iteration (from above and below) in iterative numerical methods."},
 			{ STRING_TYPE,		PRISM_INTERVAL_ITER_OPTIONS,				"Interval iteration options",				"4.3.1",		"",																		"",
 																	"Interval iteration options, a comma-separated list of the following:\n" + OptionsIntervalIteration.getOptionsDescription() },
-			{ CHOICE_TYPE,		PRISM_MDP_SOLN_METHOD,					"MDP solution method",				"4.0",			"Value iteration",																"Value iteration,Gauss-Seidel,Policy iteration,Modified policy iteration,Linear programming",
+			{ CHOICE_TYPE,		PRISM_MDP_SOLN_METHOD,					"MDP solution method",				"4.0",			"Value iteration",																"Value iteration,Sound value iteration, Gauss-Seidel,Policy iteration,Modified policy iteration,Linear programming",
 																			"Which method to use when solving Markov decision processes." },
 			{ CHOICE_TYPE,		PRISM_SMG_SOLN_METHOD,					"SMG solution method",				"Maxi0",			"Value iteration",																"Value iteration,Interval iteration,Sound value iteration,Optimistic value iteration,Quadratic programming,Policy iteration,Gauss-Seidel,Analyse,Optimistic interval iteration,Booster interval iteration,Widest Path Interval Iteration",
 					"Which method to use when solving stochastic games; Gauss-Seidel only for reward, others only for reach." },
@@ -1156,7 +1156,8 @@ public class PrismSettings implements Observer
 		} else if (sw.equals("qp")){
 			set(PRISM_SMG_SOLN_METHOD, "Quadratic programming");
 		} else if (sw.equals("svi")){
-      		set(PRISM_SMG_SOLN_METHOD, "Sound value iteration");
+		  set(PRISM_MDP_SOLN_METHOD, "Sound value iteration");
+		  set(PRISM_SMG_SOLN_METHOD, "Sound value iteration");
 		} else if (sw.equals("ovi")){
 			set(PRISM_SMG_SOLN_METHOD, "Optimistic value iteration");
 		} else if (sw.equals("analyse")){
@@ -1225,9 +1226,9 @@ public class PrismSettings implements Observer
 		}
 
 		// added by muqsit on 13.06.2021
-    else if (sw.equals("soundvaliter") ||
+    else if (sw.equals("soundval") ||
         sw.equals("svi")) {
-      set(PRISM_INTERVAL_ITER, true);
+      set(PRISM_INTERVAL_ITER, false);
       set(PRISM_SMG_SOLN_METHOD, "Sound value iteration");
 
       if (optionsString != null) {
@@ -1237,14 +1238,6 @@ public class PrismSettings implements Observer
         } catch (PrismException e) {
           throw new PrismException("In options for -" + sw + " switch: " + e.getMessage());
         }
-
-        // append options to existing ones
-        String iiOptions = getString(PRISM_INTERVAL_ITER_OPTIONS);
-        if ("".equals(iiOptions))
-          iiOptions = optionsString;
-        else
-          iiOptions += "," + optionsString;
-        set(PRISM_INTERVAL_ITER_OPTIONS, iiOptions);
       }
     }
 
