@@ -31,7 +31,9 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.PrimitiveIterator;
 
 import common.IntSet;
@@ -666,7 +668,7 @@ public abstract class IterationMethod {
    * @return a ModelChecker result with the solution vector and statistics
    * @throws PrismException on non-convergence (if mc.errorOnNonConverge is set)
    */
-  public double[][] doSoundValueIteration(MDPSimple mdp, boolean min, double[] stepBoundReach, double[] stepBoundReachNew, double[] stepBoundStay, double[] stepBoundStayNew,
+  public double[][] doSoundValueIteration(MDP mdp, boolean min, double[] stepBoundReach, double[] stepBoundReachNew, double[] stepBoundStay, double[] stepBoundStayNew,
       int iters, List<BitSet> mecs, ECComputerDefault ec, BitSet subset, IntSet subsetAsIntSet, int initialState, BitSet yes) throws  PrismException{
     iters = 0;
     boolean done = false;
@@ -713,6 +715,7 @@ public abstract class IterationMethod {
 //            .min(stepBoundReachNew[s] + stepBoundStayNew[s] * upperBound, upperbounds[s]);
         double reachVal = 0.0;
         double stayVal = 0.0;
+
         for (int succ : mdp.getChoice(s, a).keySet()) {
           reachVal += mdp.getChoice(s,a).get(succ)* (stepBoundReach[succ]);
           stayVal += mdp.getChoice(s,a).get(succ)* (stepBoundStay[succ]);
@@ -845,7 +848,7 @@ public abstract class IterationMethod {
 
 
 
-  private static int findAction(MDPSimple mdp, int s, double[] stepBoundReach, double[] stepBoundStay, boolean min, double lowerbound, double upperbound){
+  private static int findAction(MDP mdp, int s, double[] stepBoundReach, double[] stepBoundStay, boolean min, double lowerbound, double upperbound){
     // best choice -1 means it does not exit
     int bestChoice=-1;
     int numChoices = mdp.getNumChoices(s);
@@ -891,7 +894,7 @@ public abstract class IterationMethod {
 
 
 
-  private double computeDecisionValue(MDPSimple mdp, double[] stepBoundReach, double[] stepBoundStay, int s, int bestChoice, boolean min){
+  private double computeDecisionValue(MDP mdp, double[] stepBoundReach, double[] stepBoundStay, int s, int bestChoice, boolean min){
     double decisionValue = min? 1: 0;
     // double decisionValue = max? Double.NEGATIVE_INFINITY: Double.POSITIVE_INFINITY;
     for (int curr_action = 0; curr_action < mdp.getNumChoices(s); curr_action++) {

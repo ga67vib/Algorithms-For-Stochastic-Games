@@ -565,7 +565,8 @@ public class MDPModelChecker extends ProbModelChecker
         if (doIntervalIteration) {
           throw new PrismNotSupportedException("Interval iteration is not needed for sound value iteration");
         }
-        res = doSoundValueIterationReachProbs((MDPSimple) mdp, no, yes, min, init, known, iterationMethod, getDoTopologicalValueIteration(), strat);
+        iterationMethod = new IterationMethodPower(termCrit == TermCrit.ABSOLUTE, termCritParam);
+        res = doSoundValueIterationReachProbs(mdp, no, yes, min, init, known, iterationMethod, getDoTopologicalValueIteration(), strat);
         break;
       case GAUSS_SEIDEL:
 			  iterationMethod = new IterationMethodGS(termCrit == TermCrit.ABSOLUTE, termCritParam, false);
@@ -1055,7 +1056,7 @@ public class MDPModelChecker extends ProbModelChecker
    * @param strat Storage for (memoryless) strategy choice indices (ignored if null)
    * Note: if 'known' is specified (i.e. is non-null, 'init' must also be given and is used for the exact values.
    */
-  protected ModelCheckerResult doSoundValueIterationReachProbs(MDPSimple mdp, BitSet no, BitSet yes, boolean min, double init[], BitSet known, IterationMethod iterationMethod, boolean topological, int strat[])
+  protected ModelCheckerResult doSoundValueIterationReachProbs(MDP mdp, BitSet no, BitSet yes, boolean min, double init[], BitSet known, IterationMethod iterationMethod, boolean topological, int strat[])
       throws PrismException
   {
     mainLog.println("Doing sound value iteration variant " + iterationMethod + " with solnMethodOptions=" + this.solnMethodOptions + ", maxIters=" + this.maxIters + ", epsilon=" + this.termCritParam + " and topological=" + this.getDoTopologicalValueIteration());

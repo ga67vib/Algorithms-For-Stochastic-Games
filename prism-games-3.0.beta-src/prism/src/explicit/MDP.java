@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.PrimitiveIterator;
 import java.util.PrimitiveIterator.OfInt;
@@ -87,6 +88,23 @@ public interface MDP extends MDPGeneric<Double>
 			c.accept(s, e.getKey(), e.getValue());
 		}
 	}
+
+  /**
+   * Iterate over the outgoing transitions of state {@code s} and choice {@code i}
+   * and provides the distribution of successor
+   * @param s: the state s
+   * @param i: the choice i
+   * @return : Distribution of successors
+   */
+
+	public default Distribution getChoice(int s, int i){
+    Distribution d = new Distribution();
+    for (Iterator<Map.Entry<Integer, Double>> it = getTransitionsIterator(s, i); it.hasNext(); ) {
+      Entry<Integer, Double> t = it.next();
+      d.add(t.getKey(), t.getValue());
+    }
+    return d;
+  }
 
 	/**
 	 * Functional interface for a function
