@@ -1072,7 +1072,7 @@ public class MDPModelChecker extends ProbModelChecker
     // Start value iteration
     timer = System.currentTimeMillis();
     if (verbosity >= 1)
-      mainLog.println("Starting Sound value iteration (" + (min ? "min Property" : "max property)"));
+      mainLog.println("Starting Sound value iteration (" + (min ? "min Property)" : "max property)"));
 
     // Store num states
     n = mdp.getNumStates();
@@ -1082,6 +1082,8 @@ public class MDPModelChecker extends ProbModelChecker
     unknown.set(0, n);
     unknown.andNot(yes);
     unknown.andNot(no);
+    if (known != null)
+      unknown.andNot(known);
 
     // Create solution vector(s)
     stepBoundReach = new double[n];
@@ -1130,17 +1132,88 @@ public class MDPModelChecker extends ProbModelChecker
       if (getDoTopologicalValueIteration()) {
         throw new PrismNotSupportedException("Todo development exception: Currently topological is not supported for Sound value iteration");
       } else {
-        double [][] subres = iterationMethod.doSoundValueIteration(mdp, min, stepBoundReach, stepBoundReach2, stepBoundStay,
-            stepBoundStay2, iters, mecs, ec, unknown, null, initialState, yes);
-        iters = (int) subres[3][0];
-        stepBoundReach = subres[0];
-        stepBoundStay = subres[2];
+        if(true){
+          double[][] subres = iterationMethod
+              .doSoundValueIterationUntildVal(mdp, min, stepBoundReach, stepBoundReach2, stepBoundStay,
+                  stepBoundStay2, iters, mecs, ec, unknown, null, initialState, yes);
+          // Create solution vector(s) from SVI solutions
+          double[] initAbove = new double[n];
+          double[] initBelow = new double[n];
+          initBelow = subres[0];
+          initAbove = subres[1];
+          // Start value iteration
+          timer = System.currentTimeMillis();
+          String description = (min ? "min" : "max")
+              + (topological ? ", topological": "" )
+              + ", with " + iterationMethod.getDescriptionShort();
+
+          //mainLog.println("Starting interval iteration (" + description + ")...");
+
+          ExportIterations iterationsExport = null;
+          if (settings.getBoolean(PrismSettings.PRISM_EXPORT_ITERATIONS)) {
+            iterationsExport = new ExportIterations("Explicit MDP ReachProbs interval iteration (" + description + ")");
+            mainLog.println("Exporting iterations to " + iterationsExport.getFileName());
+          }
+
+          // Initialise solution vectors. Use (where available) the following in order of preference:
+          // (1) exact answer, if already known; (2) 1.0/0.0 if in yes/no; (3) initVal
+          // where initVal is 0.0 or 1.0, depending on whether we converge from below/above.
+
+          if (iterationsExport != null) {
+            iterationsExport.exportVector(initBelow, 0);
+            iterationsExport.exportVector(initAbove, 1);
+          }
+
+          OptionsIntervalIteration iiOptions = OptionsIntervalIteration.from(this);
+
+          final boolean enforceMonotonicFromBelow = iiOptions.isEnforceMonotonicityFromBelow();
+          final boolean enforceMonotonicFromAbove = iiOptions.isEnforceMonotonicityFromAbove();
+          final boolean checkMonotonic = iiOptions.isCheckMonotonicity();
+
+          if (!enforceMonotonicFromAbove) {
+            getLog().println("Note: Interval iteration is configured to not enforce monotonicity from above.");
+          }
+          if (!enforceMonotonicFromBelow) {
+            getLog().println("Note: Interval iteration is configured to not enforce monotonicity from below.");
+          }
+
+          IterationMethod.IterationIntervalIter below = iterationMethod.forMvMultMinMaxInterval(mdp, min, strat, true, enforceMonotonicFromBelow, checkMonotonic);
+          IterationMethod.IterationIntervalIter above = iterationMethod.forMvMultMinMaxInterval(mdp, min, strat, false, enforceMonotonicFromAbove, checkMonotonic);
+          below.init(initBelow);
+          above.init(initAbove);
+
+          IntSet unknownStates = IntSet.asIntSet(unknown);
+
+//          if (topological) {
+//            // Compute SCCInfo, including trivial SCCs in the subgraph obtained when only considering
+//            // states in unknown
+//            sccs = SCCComputer.computeTopologicalOrdering(this, mdp, true, unknown::get);
+//
+//            IterationMethod.SingletonSCCSolver singletonSCCSolver = (int s, double[] soln) -> {
+//              soln[s] = mdp.mvMultJacMinMaxSingle(s, soln, min, strat);
+//            };
+//
+//            // run the actual value iteration
+//            return iterationMethod.doTopologicalIntervalIteration(this, description, sccs, below, above, singletonSCCSolver, timer, iterationsExport);
+//          } else {
+            // run the actual value iteration
+            return iterationMethod.doIntervalIteration(this, description, below, above, unknownStates, timer, iterationsExport);
+//          }
+        }
+        else {
+          double[][] subres = iterationMethod
+              .doSoundValueIteration(mdp, min, stepBoundReach, stepBoundReach2, stepBoundStay,
+                  stepBoundStay2, iters, mecs, ec, unknown, null, initialState, yes);
+          iters = (int) subres[3][0];
+          stepBoundReach = subres[0];
+          stepBoundStay = subres[2];
+        }
       }
     }
     // Finished value iteration
     timer = System.currentTimeMillis() - timer;
     if (verbosity >= 1) {
-      mainLog.println("Starting Sound value iteration (" + (min ? "min Property" : "max property"));
+      mainLog.println("Starting Sound value iteration (" + (min ? "min Property)" : "max property)"));
       mainLog.println(" took " + iters + " iterations and " + timer / 1000.0 + " seconds.");
     }
 

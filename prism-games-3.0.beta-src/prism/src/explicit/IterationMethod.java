@@ -648,6 +648,7 @@ public abstract class IterationMethod {
 			res.soln = below.getSolnVector();
 			res.numIters = iters;
 			res.timeTaken = timer / 1000.0;
+			System.out.println("Number of Iterations:" + iters);
 			return res;
 		} finally {
 			if (iterationsExport != null)
@@ -675,11 +676,10 @@ public abstract class IterationMethod {
     double tmpsoln[];
 
     // Helper variables needed for SVI
-    double decisionValueMin, decisionValueMax, lowerBound, lowerBoundNew, upperBound, upperBoundNew;
+    double decisionValue, decisionValueNew, lowerBound, lowerBoundNew, upperBound, upperBoundNew;
     lowerBound = lowerBoundNew = 0;
     upperBound = upperBoundNew = 1;
-    decisionValueMax = 0;
-    decisionValueMin = 1;
+    decisionValue = min? 1 : 0;
 
     while (!done) {
       iters++;
@@ -692,38 +692,27 @@ public abstract class IterationMethod {
       // For SVI, we need the special find action
       // Recall that lower bounds are stepBoundReach and upperBounds are stepBoundStay. So in fact, upperBounds are not upperBounds but sth completely different. We just use the name, because this code is for four different kinds of VI at once
       boolean update = true;
+
       for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
         // find if the player is min or max
         int a;
         a = findAction(mdp, s, stepBoundReach, stepBoundStay, min, lowerBound, upperBound);
-        double decisionValue = computeDecisionValue(mdp, stepBoundReach, stepBoundStay, s, a, min);
-        if (min)
-          decisionValueMin = Math.min(decisionValueMin, decisionValue);
-        else
-          decisionValueMax = Math.max(decisionValueMax, decisionValue);
-        //decisionValueMax = decisionValue;
+        if(iters==240 && s == 185)
+        {
+          System.out.println("here");
+        }
+        decisionValueNew = computeDecisionValue(mdp, stepBoundReach, stepBoundStay, s, a, min);
 
-        // Matrix-vector multiply and min/max ops (Monotonic Bellman update); monotonic thing is needed, since deflating can make weird values occur
-
-        // keep old bounds as they are and update new bounds object
-//        stepBoundReachNew[s] = Math
-//            .max(stpg.mvMultSingle(s, a, stepBoundReach), stepBoundReachNew[s]);
-//        stepBoundStayNew[s] = Math.min(stpg.mvMultSingle(s, a, stepBoundStay), stepBoundStayNew[s]);
-//        lowerboundsNew[s] = Math
-//            .max(stepBoundReachNew[s] + stepBoundStayNew[s] * lowerBound, lowerbounds[s]);
-//        upperboundsNew[s] = Math
-//            .min(stepBoundReachNew[s] + stepBoundStayNew[s] * upperBound, upperbounds[s]);
+        decisionValue = min? Math.min(decisionValue, decisionValueNew) : Math.max(decisionValue, decisionValueNew);
         double reachVal = 0.0;
         double stayVal = 0.0;
 
         for (int succ : mdp.getChoice(s, a).keySet()) {
-          reachVal += mdp.getChoice(s,a).get(succ)* (stepBoundReach[succ]);
-          stayVal += mdp.getChoice(s,a).get(succ)* (stepBoundStay[succ]);
+          reachVal += mdp.getChoice(s, a).get(succ) * (stepBoundReach[succ]);
+          stayVal += mdp.getChoice(s, a).get(succ) * (stepBoundStay[succ]);
         }
         stepBoundReachNew[s] = reachVal;
         stepBoundStayNew[s] = stayVal;
-
-
 
       }
       /** to update global bounds if all state less than 1 */
@@ -740,46 +729,60 @@ public abstract class IterationMethod {
       if (allStatesStayValLessThan1) {
         //  if (allStatesStayValLessThan1 & update) {
         //double lower_val=Double.POSITIVE_INFINITY; //would be for rewards
-        double decisionValueMinCandidate = 1.0;
+
+        double lowerboundCandidate = 1.0;
         for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
-          decisionValueMinCandidate = Math.min(decisionValueMinCandidate, stepBoundReachNew[s] / (1 - stepBoundStayNew[s]));
+          lowerboundCandidate = Math
+                .min(lowerboundCandidate, stepBoundReachNew[s] / (1 - stepBoundStayNew[s]));
         }
-        //if(decisionValueMin < lower_val) System.out.println("Need of DECISION VALUE for LB in iteration " + iters + ". DecVal: "+decisionValueMin + ", approx_lower: "+ lower_val + ", oldlowerBound: "+ lowerBound2);
-        decisionValueMinCandidate = Math.min(decisionValueMin, decisionValueMinCandidate);
-        lowerBound = Math.max(lowerBoundNew, decisionValueMinCandidate);
+        if(min){
+          if(decisionValue < lowerboundCandidate) System.out.println("Need of DECISION VALUE for LB in iteration " + iters + ". DecVal: "+decisionValue + ", approx_lower: "+ lowerboundCandidate + ", oldlowerBound: "+ lowerBoundNew);
+            lowerboundCandidate = Math.min(decisionValue, lowerboundCandidate);
+        }
+        lowerBound = Math.max(lowerBoundNew, lowerboundCandidate);
         lowerBoundNew = lowerBound; //remember this for next iteration
 
-        System.out.println("lowerBound: "+lowerBound);
+        System.out.println("lowerBound: "+ lowerBound);
 
         //double upper_val=Double.NEGATIVE_INFINITY;
-        double decisionValueMaxCandidate = 0.0;
+        double upperBoundCandidate = 0.0;
         for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
-          decisionValueMaxCandidate = Math.max(decisionValueMaxCandidate, stepBoundReachNew[s] / (1 - stepBoundStayNew[s]));
+          upperBoundCandidate = Math.max(upperBoundCandidate, stepBoundReachNew[s] / (1 - stepBoundStayNew[s]));
         }
-        //if(decisionValueMax > upper_val) System.out.println("Need of DECISION VALUE for UBin iteration " + iters + ". DecVal: "+decisionValueMax + ", approx_upper: "+ upper_val + ", oldupperBound: "+ upperBound2);
-        decisionValueMaxCandidate = Math.max(decisionValueMax, decisionValueMaxCandidate);
-        upperBound = Math.min(upperBoundNew, decisionValueMaxCandidate);
-        upperBoundNew = upperBound;
+        if(!min) {
+          if (decisionValue > upperBoundCandidate) {
+            System.out.println(
+                "Need of DECISION VALUE for UBin iteration " + iters + ". DecVal: " + decisionValue
+                    + ", approx_upper: " + upperBoundCandidate + ", oldupperBound: " + upperBoundNew);
+
+            double[] underApproximationforVI  = new double[stepBoundReach.length];
+            double[] overApproximationforVI  = new double[stepBoundReach.length];
+
+            for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+              underApproximationforVI[s] = stepBoundReach[s] + stepBoundStay[s] * lowerBound;
+              overApproximationforVI[s] = stepBoundReach[s] + stepBoundStay[s] * upperBound;
+            }
+            //TODO: call BVI here on current approximation
+          }
+          upperBoundCandidate = Math.max(decisionValue, upperBoundCandidate);
+        }
+        upperBound = Math.min(upperBoundNew, upperBoundCandidate);
+        upperBoundNew = upperBound; //remember this for next iteration
 
         System.out.println("upperBound: "+upperBound);
       }
-//      System.out.println("GLB: " + lowerBound);
-//      System.out.println("GUB: " + upperBound);
-//      System.out.println("decisionValLB: "+ decisionValueMin);
-//      System.out.println("decisionValUB: "+ decisionValueMax);
-
 
       // Swap vectors for next iter
       // Now lowerBounds is the most up-to-date approximation, while the lowerBoundsNew contains the previous iteration
       tmpsoln = stepBoundReach;
       stepBoundReach = stepBoundReachNew;
       stepBoundReachNew = tmpsoln;
-      System.out.println("Reach: " + Arrays.toString(stepBoundReach));
+      //System.out.println("Reach: " + Arrays.toString(stepBoundReach));
 
       tmpsoln = stepBoundStay;
       stepBoundStay = stepBoundStayNew;
       stepBoundStayNew = tmpsoln;
-      System.out.println("Stay: " + Arrays.toString(stepBoundStay));
+      //System.out.println("Stay: " + Arrays.toString(stepBoundStay));
       double [] overApproximation = new double[stepBoundReach.length];
       double [] underApproximation = new double[stepBoundReach.length];
       for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
@@ -787,8 +790,212 @@ public abstract class IterationMethod {
         overApproximation[s] = stepBoundReach[s] + stepBoundStay[s] * upperBound;
       }
 
-      System.out.println("Under-approximation: " + Arrays.toString(underApproximation));
-      System.out.println("Over-approximation: " + Arrays.toString(overApproximation));
+      //System.out.println("Under-approximation: " + Arrays.toString(underApproximation));
+      //System.out.println("Over-approximation: " + Arrays.toString(overApproximation));
+
+
+      /**
+       * Check termination
+       */
+      double relevantStayVal = 0;
+      if (initialState != -1) {
+        relevantStayVal = stepBoundStay[initialState];
+      } else {
+        for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+          relevantStayVal = Math.max(relevantStayVal, stepBoundStay[s]);
+        }
+      }
+      /**modifed termination criterion for the termination testing**/
+      done = (upperBound - lowerBound) * relevantStayVal < this.termCritParam;
+      //done = relevantStayVal < 2 * this.termCritParam;
+      if (done) {
+//			print_smg(stpg,lowerBounds,upperBounds);
+        //When we are done, we have to insert the smarter values
+        if (initialState != -1) {
+          //Only in initial state
+          //System.out.println("ReachFin: " + Arrays.toString(stepBoundReach) + "\nStay: " + Arrays.toString(stepBoundStay) + "\nLB: " + lowerBound + "\nUB: " + upperBound);
+          double lb_i = stepBoundReach[initialState] + stepBoundStay[initialState] * lowerBound;
+          double ub_i = stepBoundReach[initialState] + stepBoundStay[initialState] * upperBound;
+        } else {
+          //in all states, for topological VI. Need the second thing as temp, since meaning of content switches from reach/stayVal to actual lower/upper bound
+          for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+//            stepBoundReachNew[s] = stepBoundReach[s] + stepBoundStay[s] * lowerBound;
+//            stepBoundStayNew[s] = stepBoundReach[s] + stepBoundStay[s] * upperBound;
+            stepBoundReachNew[s] = stepBoundReach[s];
+            stepBoundStayNew[s] = stepBoundStay[s];
+          }
+          stepBoundReach = stepBoundReachNew.clone();
+          stepBoundStay = stepBoundStayNew.clone();
+        }
+      } else{
+        //System.out.println("Reach: " + Arrays.toString(stepBoundReach) + "\nStay: " + Arrays.toString(stepBoundStay) + "\nLB: " + lowerBound + "\nUB: " + upperBound);
+        for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+          double lbprint = stepBoundReach[s] + stepBoundStay[s] * lowerBound;
+          double ubprint =stepBoundReach[s] + stepBoundStay[s] * upperBound;
+          ///System.out.println("bounds for state "+ s + " are: [" + lbprint +", "+ ubprint +"]");
+        }
+      }
+    }
+    if(initialState!=-1){
+      double lbprint = stepBoundReach[initialState] + stepBoundStay[initialState] * lowerBound;
+      double ubprint =stepBoundReach[initialState] + stepBoundStay[initialState] * upperBound;
+      System.out.println("Resulting interval: ["+lbprint+","+ ubprint + "]");
+    }
+    for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+      // storing the approximated value in stepBoundReachNew
+      stepBoundReachNew[s] = stepBoundReach[s] + stepBoundStay[s] * (lowerBound+upperBound)/2;
+    }
+
+    return new double[][]{stepBoundReachNew, stepBoundReach,stepBoundStay,{iters},{lowerBound},{upperBound}};
+  }
+
+
+
+  public double[][] doSoundValueIterationUntildVal(MDP mdp, boolean min, double[] stepBoundReach, double[] stepBoundReachNew, double[] stepBoundStay, double[] stepBoundStayNew,
+      int iters, List<BitSet> mecs, ECComputerDefault ec, BitSet subset, IntSet subsetAsIntSet, int initialState, BitSet yes) throws  PrismException{
+    iters = 0;
+    boolean done = false;
+    double tmpsoln[];
+
+    // Helper variables needed for SVI
+    double decisionValue, decisionValueNew, lowerBound, lowerBoundNew, upperBound, upperBoundNew;
+    lowerBound = lowerBoundNew = 0;
+    upperBound = upperBoundNew = 1;
+    decisionValue = min? 1 : 0;
+
+    while (!done) {
+      iters++;
+      System.out.println("ITERATION:" + iters);
+
+      /**
+       * BELLMAN UPDATES
+       * (Special for SVI, others just normal Bellmann.)
+       **/
+      // For SVI, we need the special find action
+      // Recall that lower bounds are stepBoundReach and upperBounds are stepBoundStay. So in fact, upperBounds are not upperBounds but sth completely different. We just use the name, because this code is for four different kinds of VI at once
+      boolean update = true;
+
+      for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+        // find if the player is min or max
+        int a;
+        a = findAction(mdp, s, stepBoundReach, stepBoundStay, min, lowerBound, upperBound);
+        if(iters==240 && s == 185)
+        {
+          System.out.println("here");
+        }
+        decisionValueNew = computeDecisionValue(mdp, stepBoundReach, stepBoundStay, s, a, min);
+
+        decisionValue = min? Math.min(decisionValue, decisionValueNew) : Math.max(decisionValue, decisionValueNew);
+        double reachVal = 0.0;
+        double stayVal = 0.0;
+
+        for (int succ : mdp.getChoice(s, a).keySet()) {
+          reachVal += mdp.getChoice(s, a).get(succ) * (stepBoundReach[succ]);
+          stayVal += mdp.getChoice(s, a).get(succ) * (stepBoundStay[succ]);
+        }
+        stepBoundReachNew[s] = reachVal;
+        stepBoundStayNew[s] = stayVal;
+
+      }
+      /** to update global bounds if all state less than 1 */
+      boolean allStatesStayValLessThan1 = true;
+      for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+        if (stepBoundStayNew[s] == 1) {
+          allStatesStayValLessThan1 = false;
+          break;
+        }
+      }
+
+      /** Do smart SVI stuff: Compute upper and lower bound. This is used for checking termination.*/
+      // When we terminate, the vectors lowerBounds and upperBounds are updated to contain the smarter values, i.e. best lower and upper bound SVI can give us right now
+      if (allStatesStayValLessThan1) {
+        //  if (allStatesStayValLessThan1 & update) {
+        //double lower_val=Double.POSITIVE_INFINITY; //would be for rewards
+
+        double lowerboundCandidate = 1.0;
+        for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+          lowerboundCandidate = Math
+              .min(lowerboundCandidate, stepBoundReachNew[s] / (1 - stepBoundStayNew[s]));
+        }
+        if(min){
+          if(decisionValue < lowerboundCandidate) {
+            System.out.println(
+                "Need of DECISION VALUE for LB in iteration " + iters + ". DecVal: " + decisionValue
+                    + ", approx_lower: " + lowerboundCandidate + ", oldlowerBound: "
+                    + lowerBoundNew);
+            double[] underApproximationforVI  = new double[stepBoundReach.length];
+            double[] overApproximationforVI  = new double[stepBoundReach.length];
+
+            for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+              underApproximationforVI[s] = stepBoundReach[s] + stepBoundStay[s] * lowerBound;
+              overApproximationforVI[s] = stepBoundReach[s] + stepBoundStay[s] * upperBound;
+              if(underApproximationforVI[s] > overApproximationforVI[s]){
+                System.out.println("ERRORRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR...");
+              }
+            }
+            return new double[][]{underApproximationforVI, overApproximationforVI};
+          }
+          lowerboundCandidate = Math.min(decisionValue, lowerboundCandidate);
+
+
+        }
+        lowerBound = Math.max(lowerBoundNew, lowerboundCandidate);
+        lowerBoundNew = lowerBound; //remember this for next iteration
+
+        System.out.println("lowerBound: "+ lowerBound);
+
+        //double upper_val=Double.NEGATIVE_INFINITY;
+        double upperBoundCandidate = 0.0;
+        for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+          upperBoundCandidate = Math.max(upperBoundCandidate, stepBoundReachNew[s] / (1 - stepBoundStayNew[s]));
+        }
+        if(!min) {
+          if (decisionValue > upperBoundCandidate) {
+            System.out.println(
+                "Need of DECISION VALUE for UBin iteration " + iters + ". DecVal: " + decisionValue
+                    + ", approx_upper: " + upperBoundCandidate + ", oldupperBound: " + upperBoundNew);
+
+            double[] underApproximationforVI  = new double[stepBoundReach.length];
+            double[] overApproximationforVI  = new double[stepBoundReach.length];
+
+            for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+              underApproximationforVI[s] = stepBoundReach[s] + stepBoundStay[s] * lowerBound;
+              overApproximationforVI[s] = stepBoundReach[s] + stepBoundStay[s] * upperBound;
+              if(underApproximationforVI[s] > overApproximationforVI[s]){
+                System.out.println("ERRORRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR...");
+              }
+            }
+            //TODO: call BVI here on current approximation
+            return new double[][]{underApproximationforVI, overApproximationforVI};
+          }
+          upperBoundCandidate = Math.max(decisionValue, upperBoundCandidate);
+        }
+        upperBound = Math.min(upperBoundNew, upperBoundCandidate);
+        upperBoundNew = upperBound; //remember this for next iteration
+
+        System.out.println("upperBound: "+upperBound);
+      }
+
+      // Swap vectors for next iter
+      // Now lowerBounds is the most up-to-date approximation, while the lowerBoundsNew contains the previous iteration
+      tmpsoln = stepBoundReach;
+      stepBoundReach = stepBoundReachNew;
+      stepBoundReachNew = tmpsoln;
+      //System.out.println("Reach: " + Arrays.toString(stepBoundReach));
+
+      tmpsoln = stepBoundStay;
+      stepBoundStay = stepBoundStayNew;
+      stepBoundStayNew = tmpsoln;
+      //System.out.println("Stay: " + Arrays.toString(stepBoundStay));
+      double [] overApproximation = new double[stepBoundReach.length];
+      double [] underApproximation = new double[stepBoundReach.length];
+      for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+        underApproximation[s] = stepBoundReach[s] + stepBoundStay[s] * lowerBound;
+        overApproximation[s] = stepBoundReach[s] + stepBoundStay[s] * upperBound;
+      }
+
+      //System.out.println("Under-approximation: " + Arrays.toString(underApproximation));
+      //System.out.println("Over-approximation: " + Arrays.toString(overApproximation));
 
 
       /**

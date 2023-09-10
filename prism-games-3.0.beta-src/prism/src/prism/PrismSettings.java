@@ -1158,7 +1158,8 @@ public class PrismSettings implements Observer
 		} else if (sw.equals("svi")){
 		  set(PRISM_MDP_SOLN_METHOD, "Sound value iteration");
 		  set(PRISM_SMG_SOLN_METHOD, "Sound value iteration");
-		} else if (sw.equals("ovi")){
+		}
+		else if (sw.equals("ovi")){
 			set(PRISM_SMG_SOLN_METHOD, "Optimistic value iteration");
 		} else if (sw.equals("analyse")){
 			set(PRISM_SMG_SOLN_METHOD, "Analyse");
