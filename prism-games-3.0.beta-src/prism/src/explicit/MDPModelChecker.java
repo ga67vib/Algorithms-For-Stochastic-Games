@@ -1132,16 +1132,18 @@ public class MDPModelChecker extends ProbModelChecker
       if (getDoTopologicalValueIteration()) {
         throw new PrismNotSupportedException("Todo development exception: Currently topological is not supported for Sound value iteration");
       } else {
-        if(true){
+        if(false){
           double[][] subres = iterationMethod
               .doSoundValueIterationUntildVal(mdp, min, stepBoundReach, stepBoundReach2, stepBoundStay,
                   stepBoundStay2, iters, mecs, ec, unknown, null, initialState, yes);
           // Create solution vector(s) from SVI solutions
-          double[] initAbove = new double[n];
-          double[] initBelow = new double[n];
+          double[] initAbove, initBelow;
           initBelow = subres[0];
           initAbove = subres[1];
           // Start value iteration
+          System.out.println("After first occurrence of dVal, now BVI starts with:");
+//          System.out.println("Under-approximation: " + Arrays.toString(initBelow));
+//          System.out.println("Over-approximation: " + Arrays.toString(initAbove));
           timer = System.currentTimeMillis();
           String description = (min ? "min" : "max")
               + (topological ? ", topological": "" )

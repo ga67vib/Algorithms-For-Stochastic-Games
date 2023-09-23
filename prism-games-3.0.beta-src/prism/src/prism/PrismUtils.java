@@ -129,7 +129,10 @@ public class PrismUtils
 		} else {
 			for (int i = 0; i < n; i++) {
 				if (!doublesAreCloseRel(d1[i], d2[i], epsilon))
+        {
+          //System.out.println("values are not epsilon(" + epsilon +") close..." + "for val1: "+ d1[i] + ", and for val2: " + d2[i]);
 					return false;
+        }
 			}
 		}
 		return true;
