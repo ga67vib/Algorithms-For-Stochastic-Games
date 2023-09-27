@@ -1460,10 +1460,6 @@ public class STPGModelChecker extends ProbModelChecker
     // Need initstate to determine whether done in bounded case
     int initialState = stpg.getFirstInitialState();
 
-
-
-
-
     // Start iterations
 
     if (getDoTopologicalValueIteration() & solnMethodOptions%2==1) {
@@ -1517,7 +1513,7 @@ public class STPGModelChecker extends ProbModelChecker
     // Finished value iteration
     timer = System.currentTimeMillis() - timer;
     if (verbosity >= 1) {
-      mainLog.print("Sound Value iteration variant "+ variant + "(" + (min1 ? "min" : "max") + (min2 ? "min" : "max") + ")");
+      mainLog.print("Sound-Value iteration variant "+ variant + "(" + (min1 ? "min" : "max") + (min2 ? "min" : "max") + ")");
       mainLog.println(" took " + iters + " iterations and " + timer / 1000.0 + " seconds.");
     }
 
@@ -1635,18 +1631,8 @@ public class STPGModelChecker extends ProbModelChecker
           decisionValueMin = Math.min(decisionValueMin, decisionValue);
         else
           decisionValueMax = Math.max(decisionValueMax, decisionValue);
-          //decisionValueMax = decisionValue;
 
-        // Matrix-vector multiply and min/max ops (Monotonic Bellman update); monotonic thing is needed, since deflating can make weird values occur
-
-        // keep old bounds as they are and update new bounds object
-//        stepBoundReachNew[s] = Math
-//            .max(stpg.mvMultSingle(s, a, stepBoundReach), stepBoundReachNew[s]);
-//        stepBoundStayNew[s] = Math.min(stpg.mvMultSingle(s, a, stepBoundStay), stepBoundStayNew[s]);
-//        lowerboundsNew[s] = Math
-//            .max(stepBoundReachNew[s] + stepBoundStayNew[s] * lowerBound, lowerbounds[s]);
-//        upperboundsNew[s] = Math
-//            .min(stepBoundReachNew[s] + stepBoundStayNew[s] * upperBound, upperbounds[s]);
+        // computing the updates for state s when using action a
         double reachVal = 0.0;
         double stayVal = 0.0;
         for (int succ : stpg.getChoice(s, a).keySet()) {
@@ -1656,32 +1642,34 @@ public class STPGModelChecker extends ProbModelChecker
           reachVal += stpg.getChoice(s,a).get(succ)* (stepBoundReach[succ]);
           stayVal += stpg.getChoice(s,a).get(succ)* (stepBoundStay[succ]);
         }
+
+        // updating the new vectors for the old value
         stepBoundReachNew[s] = reachVal;
         stepBoundStayNew[s] = stayVal;
 
-        System.out.println("state:" + s);
-        if(!min){
-          System.out.println("is a Maximizer state");
-        }
-        else{
-          System.out.println("is a Minimizer state");
-        }
-        if(!besStates.get(s)){
-          System.out.println("and is NOT in BES");
-        }
-        else{
-          System.out.println("is in BES");
-        }
-        if(!mecStates.get(s)){
-          System.out.println("is NOT in MEC");
-        }
-        else{
-          System.out.println("is in MEC");
-        }
+//        System.out.println("state:" + s);
+//        if(!min){
+//          System.out.println("is a Maximizer state");
+//        }
+//        else{
+//          System.out.println("is a Minimizer state");
+//        }
+//        if(!besStates.get(s)){
+//          System.out.println("and is NOT in BES");
+//        }
+//        else{
+//          System.out.println("is in BES");
+//        }
+//        if(!mecStates.get(s)){
+//          System.out.println("is NOT in MEC");
+//        }
+//        else{
+//          System.out.println("is in MEC");
+//        }
         double ub1 =stepBoundReachNew[s] + stepBoundStayNew[s] * upperBound;
         double ub2 = stepBoundReach[s] + stepBoundStay[s] * upperBound;
         if((stepBoundReachNew[s] + stepBoundStayNew[s] * upperBound <= stepBoundReach[s]+stepBoundStay[s]*upperBound)){
-          System.out.println("upperbound not worse- ub1: " + ub1 +", ub2:"+ ub2);
+          // System.out.println("upperbound not worse- ub1: " + ub1 +", ub2:"+ ub2);
         }
         else{
           System.out.println("upperbound worse- ub1: " + ub1 +", ub2:"+ ub2);
@@ -1691,32 +1679,12 @@ public class STPGModelChecker extends ProbModelChecker
           stepBoundReachNew[s] = stepBoundReach[s];
           stepBoundStayNew[s] = stepBoundStay[s];
           update = false;
-          System.out.println("PLAYING DUMMY ACTION");
+          // System.out.println("PLAYING DUMMY ACTION");
         }
-//        if(!mecStates.get(s)|true)
-//          double oldVal= stepBoundReach[s]+stepBoundStay[s]*upperBound;
-//          double newVal= stepBoundReachNew[s] + stepBoundStayNew[s] * upperBound;
-//          System.out.println("STATE: " + s + ": OldVal:" + oldVal + ", NewVal: " + newVal );
-//          if(newVal > oldVal){
-//            System.out.println(mecStates.get(s)? "in MEC: ": "Outside MEC: "+"ERRRRRRRRRRRRRRRRRRRRRRRRRRRR:Not monotonic DEC");
-//
-//          }
-//        }
-//        if(!mecStates.get(s)|true){
-//          double oldVal= stepBoundReach[s]+stepBoundStay[s]*lowerBound;
-//          double newVal= stepBoundReachNew[s] + stepBoundStayNew[s] * lowerBound;
-//          //System.out.println("STATE: " + s + ": OldVal:" + oldVal + ", NewVal: " + newVal );
-//          if(newVal < oldVal){
-//            System.out.println(mecStates.get(s)? "in MEC: ": "Outside MEC: "+"ERRRRRRRRRRRRRRRRRRRRRRRRRRRR:Not monotonic INC");
-//
-//          }
-//        }
-
-
         /**Update: If s is in MEC then reach and stay will remain the old one*/
       }
 
-      //Can only to smart stuff for SVI if every stayVal is less than 1 (else we would divide by 0)
+      // Can only to smart stuff for SVI if every stayVal is less than 1 (else we would divide by 0)
       boolean allStatesStayValLessThan1 = true;
       for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
         if (stepBoundStayNew[s] == 1) {
@@ -1727,8 +1695,9 @@ public class STPGModelChecker extends ProbModelChecker
 
       // Do smart SVI stuff: Compute upper and lower bound. This is used for checking termination.
       // When we terminate, the vectors lowerBounds and upperBounds are updated to contain the smarter values, i.e. best lower and upper bound SVI can give us right now
-      if (allStatesStayValLessThan1) {
-      //  if (allStatesStayValLessThan1 & update) {
+      // if (allStatesStayValLessThan1) {
+      if(mecs.size()>0) update = false;
+      if (allStatesStayValLessThan1 & update) {
         //double lower_val=Double.POSITIVE_INFINITY; //would be for rewards
         double lower_val = 1.0;
         for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
@@ -1739,9 +1708,6 @@ public class STPGModelChecker extends ProbModelChecker
         lowerBound = Math.max(lowerBoundNew, lower_val);
         lowerBoundNew = lowerBound; //remember this for next iteration
 
-        //lowerBound=0.0; //TODO:Delete this
-        System.out.println("lowerBound: "+lowerBound);
-
         //double upper_val=Double.NEGATIVE_INFINITY;
         double upper_val = 0.0;
         for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
@@ -1751,36 +1717,28 @@ public class STPGModelChecker extends ProbModelChecker
         upper_val = Math.max(decisionValueMax, upper_val);
         upperBound = Math.min(upperBoundNew, upper_val);
         upperBoundNew = upperBound;
-
-        // upperBound=1.0; //TODO:Delete this
-        System.out.println("upperBound: "+upperBound);
       }
-//      System.out.println("GLB: " + lowerBound);
-//      System.out.println("GUB: " + upperBound);
-//      System.out.println("decisionValLB: "+ decisionValueMin);
-//      System.out.println("decisionValUB: "+ decisionValueMax);
-
 
       // Swap vectors for next iter
       // Now lowerBounds is the most up-to-date approximation, while the lowerBoundsNew contains the previous iteration
       tmpsoln = stepBoundReach;
       stepBoundReach = stepBoundReachNew;
       stepBoundReachNew = tmpsoln;
-      System.out.println("Reach: " + Arrays.toString(stepBoundReach));
+      // System.out.println("Reach: " + Arrays.toString(stepBoundReach));
 
       tmpsoln = stepBoundStay;
       stepBoundStay = stepBoundStayNew;
       stepBoundStayNew = tmpsoln;
-      System.out.println("Stay: " + Arrays.toString(stepBoundStay));
-      double [] overApproximation = new double[stepBoundReach.length];
-      double [] underApproximation = new double[stepBoundReach.length];
-      for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
-        underApproximation[s] = stepBoundReach[s] + stepBoundStay[s] * lowerBound;
-        overApproximation[s] = stepBoundReach[s] + stepBoundStay[s] * upperBound;
-      }
-
-      System.out.println("Under-approximation: " + Arrays.toString(underApproximation));
-      System.out.println("Over-approximation: " + Arrays.toString(overApproximation));
+      // System.out.println("Stay: " + Arrays.toString(stepBoundStay));
+//      double [] overApproximation = new double[stepBoundReach.length];
+//      double [] underApproximation = new double[stepBoundReach.length];
+//      for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+//        underApproximation[s] = stepBoundReach[s] + stepBoundStay[s] * lowerBound;
+//        overApproximation[s] = stepBoundReach[s] + stepBoundStay[s] * upperBound;
+//      }
+//
+//      System.out.println("Under-approximation: " + Arrays.toString(underApproximation));
+//      System.out.println("Over-approximation: " + Arrays.toString(overApproximation));
 
 
       /**
@@ -1831,8 +1789,8 @@ public class STPGModelChecker extends ProbModelChecker
       mainLog.println("Resulting interval: ["+lbprint+","+ ubprint + "]");
     }
     for (int s = subset.nextSetBit(0); s >= 0; s = subset.nextSetBit(s + 1)) {
+      // step bound reach now has epsilon-approximate value
       stepBoundReachNew[s] = stepBoundReach[s] + stepBoundStay[s] * (lowerBound+upperBound)/2;
-      //stepBoundStayNew[s] = stepBoundReach[s] + stepBoundStay[s] * upperBound;
     }
 
     return new double[][]{stepBoundReachNew, stepBoundReach,stepBoundStay,{iters},{lowerBound},{upperBound}};
@@ -1889,7 +1847,7 @@ public class STPGModelChecker extends ProbModelChecker
           //TODO: currently taking the most conservative lower and upperbound to Compute BES
           for (int i=0; i<sccCount; i++){
             conservativeLB=Math.min(conservativeLB,lowerBound[i]);
-            conservativeUB=Math.min(conservativeUB,upperBound[i]);
+            conservativeUB=Math.max(conservativeUB,upperBound[i]); //TODO: Math.max?
           }
           HashMap<Integer, Integer> mecBES =BestExitSequence(stpg, min1, min2, stepBoundReach, stepBoundStay, mec, ec, conservativeLB, conservativeUB);
           BES.putAll(mecBES);
@@ -1949,25 +1907,25 @@ public class STPGModelChecker extends ProbModelChecker
         stepBoundReachNew[s] = reachVal;
         stepBoundStayNew[s] = stayVal;
 
-        System.out.println("state:" + s);
-        if(!min){
-          System.out.println("is a Maximizer state");
-        }
-        else{
-          System.out.println("is a Minimizer state");
-        }
-        if(!besStates.get(s)){
-          System.out.println("and is NOT in BES");
-        }
-        else{
-          System.out.println("is in BES");
-        }
-        if(!mecStates.get(s)){
-          System.out.println("is NOT in MEC");
-        }
-        else{
-          System.out.println("is in MEC");
-        }
+//        System.out.println("state:" + s);
+//        if(!min){
+//          System.out.println("is a Maximizer state");
+//        }
+//        else{
+//          System.out.println("is a Minimizer state");
+//        }
+//        if(!besStates.get(s)){
+//          System.out.println("and is NOT in BES");
+//        }
+//        else{
+//          System.out.println("is in BES");
+//        }
+//        if(!mecStates.get(s)){
+//          System.out.println("is NOT in MEC");
+//        }
+//        else{
+//          System.out.println("is in MEC");
+//        }
         double ub1 =stepBoundReachNew[s] + stepBoundStayNew[s] * upperBound[sccs.getSCCIndex(s)];
         double ub2 = stepBoundReach[s] + stepBoundStay[s] * upperBound[sccs.getSCCIndex(s)];
         if((stepBoundReachNew[s] + stepBoundStayNew[s] * upperBound[sccs.getSCCIndex(s)] <= stepBoundReach[s]+stepBoundStay[s]*upperBound[sccs.getSCCIndex(s)])){
@@ -2209,7 +2167,7 @@ public class STPGModelChecker extends ProbModelChecker
     // Finished value iteration
     timer = System.currentTimeMillis() - timer;
     if (verbosity >= 1) {
-      mainLog.print("Sound Value iteration variant "+ variant + "(" + (min1 ? "min" : "max") + (min2 ? "min" : "max") + ")");
+      mainLog.print("Sound-Value iteration variant "+ variant + "(" + (min1 ? "min" : "max") + (min2 ? "min" : "max") + ")");
       mainLog.println(" took " + iters + " iterations and " + timer / 1000.0 + " seconds.");
     }
 
